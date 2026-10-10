@@ -29,5 +29,21 @@ func capture() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("/tmp/cosmo-menu.png")
+	game.ui.hide_page()
+	for target in ["office","garden","planet"]:
+		game.travel(target,440 if target=="office" else (600 if target=="garden" else 1080))
+		game.camera_x = 480 if target=="planet" else 0
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("/tmp/cosmo-"+target+".png")
+	game.travel("office",440)
+	game.ui.show_page("save")
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("/tmp/cosmo-save.png")
+	game.ui.show_page("shop")
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("/tmp/cosmo-shop.png")
 	print("Gameplay capture result: ", error)
 	quit(error)

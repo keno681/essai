@@ -18,9 +18,42 @@ Prototype original de jeu solo en 2D de côté, de gestion et d'humour.
 
 ## Mise à jour graphique
 
+### Exploration, bureau et wrapcoincoins
+
+L'interface utilise une console industrielle à bordures métalliques et accents
+dorés, inspirée des interfaces de stratégie spatiale de StarCraft. La monnaie
+est le **wrapcoincoin**, représenté par un petit canard dans le HUD.
+
+Le snack garde ses trois plantes. La porte **SERRE** à gauche mène à six bacs
+supplémentaires. À droite de la serre, la porte **PLANÈTE** ouvre une vallée
+de 360 mètres à explorer. Récolter ses plantes avec E découvre le citron
+astral, le piment comète et le riz de cristal. Ces découvertes débloquent
+deux recettes, accessibles avec les touches 4 et 5, et les commandes au PC.
+
+La porte **BUREAU** du snack, entre le jardin et la cuisine, mène à une pièce
+séparée. Près du canapé, appuyer sur E pour **sauvegarder** ou **charger**.
+La sauvegarde du canapé conserve l'inventaire, les découvertes, les livraisons,
+les wrapcoincoins, le personnage et la progression. Elle reste distincte de
+la reprise automatique à la fermeture du jeu. Près du PC, E ouvre le catalogue :
+commander un lot de trois ingrédients coûte des wrapcoincoins et déclenche
+une livraison après quatre secondes de jeu, une fois le PC fermé.
+
+Les clients ont des répliques à l'arrivée et après leur commande, affichées
+progressivement. Sous Windows, Godot utilise la synthèse vocale installée :
+voix française si disponible, sinon une autre voix du système. Sans voix
+installée, les sous-titres restent disponibles. **Options → Voix des clients**
+active ou désactive les voix. Leur sortie audio Windows reste à confirmer ;
+les dialogues et sous-titres ont été vérifiés sous Linux.
+
+![Bureau, canapé et PC](art/office-gameplay.png)
+
+![Six bacs supplémentaires](art/garden-gameplay.png)
+
+![Exploration de la planète](art/planet-gameplay.png)
+
 ### HUD, inventaire et races
 
-Interface de console spatiale inspirée de Starbound : barre de raccourcis,
+Interface de console spatiale : barre de raccourcis,
 menu cliquable avec reprise, inventaire, personnage, options, nouveau service
 avec confirmation et quitter. `I` ouvre l'inventaire avec quantités, icônes et
 sélection des recettes ; `Échap` ouvre le menu. Les infobulles des recettes
@@ -49,11 +82,11 @@ Le cuisinier tient réellement son wrap à la main. Le décor a été généré 
 ce projet ; aucun visuel de Wrap House Simulator ou Fallout Shelter n'est inclus.
 
 ![Capture du jeu en fonctionnement](art/gameplay.png)
-Vous récoltez au jardin orbital, préparez trois recettes de wraps et servez
+Vous récoltez au jardin orbital et sur la planète, préparez cinq recettes de wraps et servez
 des clients extraterrestres patients. Trois commandes réussies terminent le
-premier service ; vous pouvez continuer et ouvrir une terrasse pour 35 crédits.
-La terrasse augmente chaque vente de 5 crédits. La progression du restaurant
-est sauvegardée automatiquement ; l'inventaire est réinitialisé au lancement.
+premier service ; vous pouvez continuer et ouvrir une terrasse pour 35 wrapcoincoins.
+La terrasse augmente chaque vente de 5 wrapcoincoins. La reprise automatique
+et la sauvegarde du canapé conservent maintenant aussi l'inventaire.
 
 ## Jouer
 
@@ -64,7 +97,8 @@ godot --path .
 ```
 
 Entrée commence la partie. Flèches ou Q/D (A/D aussi) déplacent le personnage ;
-E récolte, cuisine ou sert selon votre position. Les touches 1, 2 et 3 choisissent
+E récolte, cuisine, sert, passe une porte ou utilise le canapé/PC selon votre position.
+Les touches 1 à 5 choisissent
 la recette. Espace saute, R range un wrap en restituant ses ingrédients,
 I ouvre l'inventaire, Échap ouvre le menu et N demande confirmation avant
 de recommencer la progression.
@@ -90,7 +124,7 @@ Le prototype utilise un décor généré, des dessins vectoriels et du code cré
 Il n'inclut aucun fichier extrait de Starbound ou de Wrap House.
 Les races de Starbound sont représentées par des illustrations redessinées.
 Il ne nécessite aucun de ces jeux et n'est donc pas destiné à Melty.
-Il n'a pas encore de voyage entre planètes, de campagne, de musique ou de multijoueur.
+Il n'a pas encore de voyage entre plusieurs planètes, de campagne, de musique ou de multijoueur.
 Le moteur est Godot (https://godotengine.org), sous licence MIT.
 La licence de diffusion et les autorisations de remix du projet restent à choisir
 pour accorder des droits de réutilisation. Le dépôt et les archives sont fournis

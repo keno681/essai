@@ -12,6 +12,12 @@ required = {
     "animations": {"id"},
     "races": {"id", "name", "color", "sprite_index", "source_x", "source_width"},
     "interface": {"id"},
+    "rooms": {"id", "name", "width", "asset"},
+    "beds": {"id", "x", "ingredient", "room", "regrow_seconds"},
+    "wild_nodes": {"id", "x", "ingredient", "room", "regrow_seconds"},
+    "doors": {"id", "room", "x", "target", "arrival_x"},
+    "currency": {"id", "name", "plural", "logo"},
+    "dialogues": {"id", "greeting", "thanks"},
 }
 errors = []
 for table, columns in required.items():
@@ -31,6 +37,19 @@ for customer in data["customers"]:
 for visual in data["visuals"]:
     if not (Path(__file__).parents[1] / visual["asset"]).is_file():
         errors.append(f"{visual['id']}: illustration manquante")
+rooms = {row["id"] for row in data["rooms"]}
+for room in data["rooms"]:
+    if not (Path(__file__).parents[1] / room["asset"]).is_file():
+        errors.append(f"{room['id']}: décor manquant")
+for node in data["beds"] + data["wild_nodes"]:
+    if node["ingredient"] not in ingredients or node["room"] not in rooms:
+        errors.append(f"{node['id']}: référence ingrédient/pièce non résolue")
+for door in data["doors"]:
+    if door["room"] not in rooms or door["target"] not in rooms:
+        errors.append(f"{door['id']}: porte non résolue")
+for station in data["stations"]:
+    if station["room"] not in rooms:
+        errors.append(f"{station['id']}: pièce non résolue")
 for recipe in data["recipes"]:
     for ingredient in recipe["ingredients"]:
         if ingredient not in ingredients:

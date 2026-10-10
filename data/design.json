@@ -5,21 +5,60 @@
       "name": "Salade lunaire",
       "color": "80dda0",
       "x": 130,
-      "regrow_seconds": 8
+      "regrow_seconds": 8,
+      "short_name": "SALADE",
+      "buy_price": 2,
+      "starter": true
     },
     {
       "id": "sunfruit",
       "name": "Tomate solaire",
       "color": "ff9778",
       "x": 270,
-      "regrow_seconds": 10
+      "regrow_seconds": 10,
+      "short_name": "TOMATE",
+      "buy_price": 3,
+      "starter": true
     },
     {
       "id": "mushroom",
       "name": "Champi cosmique",
       "color": "bd9df4",
       "x": 410,
-      "regrow_seconds": 12
+      "regrow_seconds": 12,
+      "short_name": "CHAMPI",
+      "buy_price": 4,
+      "starter": true
+    },
+    {
+      "id": "starlime",
+      "name": "Citron astral",
+      "short_name": "CITRON",
+      "color": "dce784",
+      "x": 0,
+      "regrow_seconds": 16,
+      "buy_price": 5,
+      "starter": false
+    },
+    {
+      "id": "firepepper",
+      "name": "Piment comète",
+      "short_name": "PIMENT",
+      "color": "f18b58",
+      "x": 0,
+      "regrow_seconds": 18,
+      "buy_price": 6,
+      "starter": false
+    },
+    {
+      "id": "crystalrice",
+      "name": "Riz de cristal",
+      "short_name": "RIZ",
+      "color": "91dce6",
+      "x": 0,
+      "regrow_seconds": 20,
+      "buy_price": 7,
+      "starter": false
     }
   ],
   "recipes": [
@@ -52,6 +91,28 @@
       ],
       "price": 16,
       "joke": "Explose en bouche, pas en cuisine."
+    },
+    {
+      "id": "comet",
+      "name": "La Comète",
+      "ingredients": [
+        "sunfruit",
+        "starlime",
+        "firepepper"
+      ],
+      "price": 24,
+      "joke": "Un petit coup de soleil en bouche."
+    },
+    {
+      "id": "crystal",
+      "name": "Le Cristal",
+      "ingredients": [
+        "moonleaf",
+        "mushroom",
+        "crystalrice"
+      ],
+      "price": 28,
+      "joke": "Craquant, sans casser les dents."
     }
   ],
   "customers": [
@@ -110,19 +171,36 @@
       "id": "kitchen",
       "name": "Cuisine",
       "x": 650,
-      "action": "cook"
+      "action": "cook",
+      "room": "restaurant"
     },
     {
       "id": "counter",
       "name": "Comptoir",
       "x": 845,
-      "action": "serve"
+      "action": "serve",
+      "room": "restaurant"
     },
     {
       "id": "upgrade",
       "name": "Agrandir",
       "x": 1090,
-      "action": "upgrade"
+      "action": "upgrade",
+      "room": "restaurant"
+    },
+    {
+      "id": "couch",
+      "name": "Canapé / sauvegarde",
+      "x": 440,
+      "action": "save",
+      "room": "office"
+    },
+    {
+      "id": "computer",
+      "name": "PC / commandes",
+      "x": 830,
+      "action": "shop",
+      "room": "office"
     }
   ],
   "systems": [
@@ -144,6 +222,39 @@
       "waiting_x": 946,
       "exit_x": 1270,
       "speed": 105
+    },
+    {
+      "id": "manual_save",
+      "station": "couch",
+      "file": "user://sofa-save.json",
+      "fields": [
+        "coins",
+        "served",
+        "upgraded",
+        "inventory",
+        "discovered",
+        "room",
+        "player_x",
+        "order",
+        "customer",
+        "holding",
+        "player_race",
+        "cooldowns"
+      ]
+    },
+    {
+      "id": "shopping",
+      "station": "computer",
+      "delivery_seconds": 4,
+      "batch_size": 3
+    },
+    {
+      "id": "exploration",
+      "new_ingredients": [
+        "starlime",
+        "firepepper",
+        "crystalrice"
+      ]
     }
   ],
   "visuals": [
@@ -246,7 +357,7 @@
     {
       "id": "hud",
       "title": "COSMO WRAP",
-      "theme": "space_console"
+      "theme": "industrial_command_console"
     },
     {
       "id": "inventory",
@@ -272,8 +383,222 @@
         "fullscreen",
         "sound",
         "brightness",
-        "walking_speed"
+        "walking_speed",
+        "voices"
       ]
+    },
+    {
+      "id": "save",
+      "station": "couch",
+      "actions": [
+        "save",
+        "load",
+        "close"
+      ]
+    },
+    {
+      "id": "shop",
+      "station": "computer",
+      "actions": [
+        "order",
+        "close"
+      ]
+    }
+  ],
+  "rooms": [
+    {
+      "id": "restaurant",
+      "name": "Snack orbital",
+      "width": 1200,
+      "asset": "art/restaurant.png"
+    },
+    {
+      "id": "office",
+      "name": "Bureau du gérant",
+      "width": 1200,
+      "asset": "art/office.png"
+    },
+    {
+      "id": "garden",
+      "name": "Serre de culture",
+      "width": 1200,
+      "asset": "art/greenhouse.png"
+    },
+    {
+      "id": "planet",
+      "name": "Vallée des comètes",
+      "width": 3600,
+      "asset": "art/planet.png"
+    }
+  ],
+  "beds": [
+    {
+      "id": "bed1",
+      "x": 140,
+      "ingredient": "moonleaf",
+      "room": "garden",
+      "regrow_seconds": 8
+    },
+    {
+      "id": "bed2",
+      "x": 305,
+      "ingredient": "sunfruit",
+      "room": "garden",
+      "regrow_seconds": 9
+    },
+    {
+      "id": "bed3",
+      "x": 470,
+      "ingredient": "mushroom",
+      "room": "garden",
+      "regrow_seconds": 10
+    },
+    {
+      "id": "bed4",
+      "x": 635,
+      "ingredient": "moonleaf",
+      "room": "garden",
+      "regrow_seconds": 11
+    },
+    {
+      "id": "bed5",
+      "x": 800,
+      "ingredient": "sunfruit",
+      "room": "garden",
+      "regrow_seconds": 12
+    },
+    {
+      "id": "bed6",
+      "x": 965,
+      "ingredient": "mushroom",
+      "room": "garden",
+      "regrow_seconds": 13
+    }
+  ],
+  "wild_nodes": [
+    {
+      "id": "wild1",
+      "x": 420,
+      "ingredient": "starlime",
+      "room": "planet",
+      "regrow_seconds": 25
+    },
+    {
+      "id": "wild2",
+      "x": 1080,
+      "ingredient": "firepepper",
+      "room": "planet",
+      "regrow_seconds": 25
+    },
+    {
+      "id": "wild3",
+      "x": 1720,
+      "ingredient": "crystalrice",
+      "room": "planet",
+      "regrow_seconds": 25
+    },
+    {
+      "id": "wild4",
+      "x": 2380,
+      "ingredient": "starlime",
+      "room": "planet",
+      "regrow_seconds": 25
+    },
+    {
+      "id": "wild5",
+      "x": 3070,
+      "ingredient": "firepepper",
+      "room": "planet",
+      "regrow_seconds": 25
+    }
+  ],
+  "doors": [
+    {
+      "id": "snack_garden",
+      "room": "restaurant",
+      "x": 42,
+      "target": "garden",
+      "arrival_x": 65
+    },
+    {
+      "id": "snack_office",
+      "room": "restaurant",
+      "x": 550,
+      "target": "office",
+      "arrival_x": 140
+    },
+    {
+      "id": "office_snack",
+      "room": "office",
+      "x": 120,
+      "target": "restaurant",
+      "arrival_x": 555
+    },
+    {
+      "id": "garden_snack",
+      "room": "garden",
+      "x": 42,
+      "target": "restaurant",
+      "arrival_x": 75
+    },
+    {
+      "id": "garden_planet",
+      "room": "garden",
+      "x": 1110,
+      "target": "planet",
+      "arrival_x": 80
+    },
+    {
+      "id": "planet_garden",
+      "room": "planet",
+      "x": 42,
+      "target": "garden",
+      "arrival_x": 1090
+    }
+  ],
+  "currency": [
+    {
+      "id": "wrapcoincoin",
+      "name": "wrapcoincoin",
+      "plural": "wrapcoincoins",
+      "logo": "duck"
+    }
+  ],
+  "dialogues": [
+    {
+      "id": "human",
+      "greeting": "Un wrap après le travail !",
+      "thanks": "Merci ! Ce wrap est délicieux."
+    },
+    {
+      "id": "avian",
+      "greeting": "Pas de graines, ça me chatouille le bec.",
+      "thanks": "Cui-cui ! À très bientôt."
+    },
+    {
+      "id": "apex",
+      "greeting": "Ma pause déjeuner est sacrée.",
+      "thanks": "Voilà un déjeuner qui vaut le détour."
+    },
+    {
+      "id": "floran",
+      "greeting": "Floran veut croquer !",
+      "thanks": "Floran aime ce wrap !"
+    },
+    {
+      "id": "hylotl",
+      "greeting": "Un wrap, trois yeux pour le savourer.",
+      "thanks": "Merci. Mes trois yeux brillent de joie."
+    },
+    {
+      "id": "glitch",
+      "greeting": "Commande détectée. Faim : 100 %.",
+      "thanks": "Satisfaction maximale. Merci, cuisinier."
+    },
+    {
+      "id": "novakid",
+      "greeting": "Bien cuit, partenaire.",
+      "thanks": "Excellent, partenaire. À la prochaine."
     }
   ]
 }

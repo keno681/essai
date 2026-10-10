@@ -35,12 +35,28 @@ var sound_enabled := true
 var brightness := 1.0
 var speed_setting := 1
 var sound_player: AudioStreamPlayer
+var room := "restaurant"
+var camera_x := 0.0
+var room_textures: Dictionary = {}
+var discovered: Array = ["moonleaf","sunfruit","mushroom"]
+var node_cooldowns: Dictionary = {}
+var deliveries: Array = []
+var voice_enabled := true
+var speech := ""
+var speech_time := 0.0
+var speech_elapsed := 0.0
+var speech_pid := -1
+var saving_notice := "Aucune sauvegarde sur ce canapé."
 
 func _ready() -> void:
+	get_tree().auto_accept_quit = false
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
 	for item in sheet.ingredients:
 		inventory[item.id] = 0
 		cooldowns[item.id] = 0.0
+	for row in sheet.beds + sheet.wild_nodes: node_cooldowns[row.id] = 0.0
+	for row in sheet.rooms:
+		room_textures[row.id] = load("res://"+row.asset)
 	load_progress()
 	load_settings()
 	actor_customer = customer
@@ -57,6 +73,12 @@ func animation(id: String) -> Dictionary:
 	for row in sheet.animations:
 		if row.id == id: return row
 	return {}
+
+func _notification(what: int) -> void:
+	if what==NOTIFICATION_WM_CLOSE_REQUEST:
+		save_progress()
+		if OS.get_name()=="Windows": DisplayServer.tts_stop()
+		get_tree().quit()
 
 func recipe(index: int) -> Dictionary:
 	return sheet.recipes[index]
@@ -98,7 +120,8 @@ func serve() -> bool:
 	customer_state = "leaving"
 	play_sound(740)
 	customer = (customer + 1) % sheet.customers.size()
-	order = (order + 1) % sheet.recipes.size()
+	next_order()
+	speak_dialogue("thanks")
 	if served == 3:
 		completed = true
 		say("Premier service réussi ! Continuez et agrandissez votre restaurant.")
@@ -108,7 +131,24 @@ func serve() -> bool:
 	return true
 
 func interact() -> void:
+	for door in sheet.doors:
+		if door.room==room and absf(player.x-float(door.x))<30:
+			travel(door.target,float(door.arrival_x))
+			return
+	if room=="office":
+		if absf(player.x-440)<80: ui.show_page("save")
+		elif absf(player.x-830)<80: ui.show_page("shop")
+		else: say("Approchez du canapé ou du PC, puis appuyez sur E.")
+		return
+	if room in ["garden","planet"]:
+		for node in sheet.beds if room=="garden" else sheet.wild_nodes:
+			if absf(player.x-float(node.x))<62:
+				harvest_node(node)
+				return
+		say("E près d'une plante pour récolter. Explorez vers la droite !")
+		return
 	for item in sheet.ingredients:
+		if not item.starter: continue
 		if absf(player.x - float(item.x)) < 58:
 			if cooldowns[item.id] > 0:
 				say("Ça repousse tranquillement… Essayez une autre plante.")
@@ -125,14 +165,14 @@ func interact() -> void:
 		serve()
 	elif absf(player.x - 1090) < 65:
 		if upgraded:
-			say("Votre terrasse est déjà ouverte ! +5 crédits par commande.")
+			say("Votre terrasse est déjà ouverte ! +5 wrapcoincoins par commande.")
 		elif coins >= 35:
 			coins -= 35
 			upgraded = true
 			save_progress()
-			say("Terrasse ouverte ! +5 crédits par commande.")
+			say("Terrasse ouverte ! +5 wrapcoincoins par commande.")
 		else:
-			say("La terrasse coûte 35 crédits. Encore quelques wraps !")
+			say("La terrasse coûte 35 wrapcoincoins. Encore quelques wraps !")
 	else:
 		say("Approchez d'une plante ou d'un poste, puis appuyez sur E.")
 
@@ -151,6 +191,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_1: selected = 0
 			KEY_2: selected = 1
 			KEY_3: selected = 2
+			KEY_4:
+				if recipe_unlocked(3): selected=3
+			KEY_5:
+				if recipe_unlocked(4): selected=4
 			KEY_E: interact()
 			KEY_SPACE:
 				if player.y >= 505: vertical = -450
@@ -164,6 +208,11 @@ func return_wrap() -> void:
 		say("Ingrédients rangés : rien n'est perdu.")
 
 func new_service() -> void:
+	room = "restaurant"
+	player.x = 565
+	discovered = ["moonleaf","sunfruit","mushroom"]
+	deliveries.clear()
+	for id in node_cooldowns: node_cooldowns[id] = 0.0
 	coins = 0
 	served = 0
 	upgraded = false
@@ -188,6 +237,7 @@ func update_customers(delta: float) -> void:
 		if is_equal_approx(customer_x,float(flow.waiting_x)):
 			customer_state = "waiting"
 			say(sheet.customers[customer].name+" commande "+recipe(order).name+".")
+			if room=="restaurant": speak_dialogue("greeting")
 	elif customer_state == "leaving":
 		customer_x = move_toward(customer_x,float(flow.exit_x),float(flow.speed)*delta)
 		npc_cycle += delta*float(animation("walk").frequency)
@@ -199,36 +249,33 @@ func update_customers(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not menu:
 		clock += delta
-		update_customers(delta)
+		if room=="restaurant": update_customers(delta)
+		speech_time = maxf(0.0,speech_time-delta)
+		speech_elapsed += delta
+		update_deliveries(delta)
 		var axis := float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_Q) or Input.is_physical_key_pressed(KEY_LEFT))
 		walking = absf(axis) > 0
 		if walking:
 			facing = signf(axis)
 			walk_cycle += delta * float(animation("walk").frequency)
 		action_time = maxf(0.0, action_time - delta)
-		player.x = clampf(player.x + axis * [180,240,310][speed_setting] * delta, 40, 1160)
+		player.x = clampf(player.x + axis * [180,240,310][speed_setting] * delta, 40, 3560 if room=="planet" else 1160)
+		camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
 		vertical += 1100 * delta
 		player.y = minf(505, player.y + vertical * delta)
 		if player.y >= 505: vertical = 0
 		for id in cooldowns: cooldowns[id] = maxf(0, cooldowns[id] - delta)
+		for id in node_cooldowns: node_cooldowns[id] = maxf(0,node_cooldowns[id]-delta)
 		message_time -= delta
 	queue_redraw()
 
 func save_progress() -> void:
-	var file := FileAccess.open("user://progress.json", FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify({"coins":coins,"served":served,"upgraded":upgraded,"customer":customer,"order":order}))
+	write_snapshot("user://progress.json")
 
 func load_progress() -> void:
 	if not FileAccess.file_exists("user://progress.json"): return
 	var saved = JSON.parse_string(FileAccess.get_file_as_string("user://progress.json"))
-	if saved is Dictionary:
-		coins = maxi(0, int(saved.get("coins", 0)))
-		served = maxi(0, int(saved.get("served", 0)))
-		upgraded = bool(saved.get("upgraded", false))
-		customer = posmod(int(saved.get("customer", 0)), sheet.customers.size())
-		order = posmod(int(saved.get("order", 0)), 3)
-		completed = served >= 3
+	if saved is Dictionary: apply_snapshot(saved)
 
 func label_at(words: String, position: Vector2, size: int = 18, color: Color = Color("dce8ef")) -> void:
 	draw_string(font, position, words, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
@@ -281,12 +328,16 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 
 func _draw() -> void:
 	if sheet.is_empty(): return
+	if room!="restaurant":
+		draw_other_room()
+		return
 	if backdrop:
 		draw_texture_rect(backdrop,Rect2(0,0,float(sheet.visuals[0].width),float(sheet.visuals[0].height)),false,Color(brightness,brightness,brightness))
 	else:
 		draw_rect(Rect2(0,190,1200,420),Color("463e39"))
 	# Soft room lighting and active stations stay legible without covering the art.
 	for item in sheet.ingredients:
+		if not item.starter: continue
 		var x := float(item.x)
 		if cooldowns[item.id] > 0:
 			panel(Rect2(x-23,455,46,22),Color("332f29"),6)
@@ -296,31 +347,43 @@ func _draw() -> void:
 			label_at("E · Récolter",Vector2(x-47,413),17,Color("f9d47b"))
 		label_at(item.name,Vector2(x-64,594),14,Color("edd8b7"))
 	for station in sheet.stations:
+		if station.room!=room: continue
 		var x := float(station.x)
 		if absf(player.x-x)<65 and not menu:
 			panel(Rect2(x-62,383,124,29),Color("302b27"),6)
 			label_at("E · "+station.name,Vector2(x-53,403),16,Color("f9d47b"))
 	label_at("CUISINE",Vector2(615,594),14,Color("edd8b7"))
 	label_at("COMPTOIR",Vector2(809,594),14,Color("edd8b7"))
-	label_at("TERRASSE OUVERTE" if upgraded else "TERRASSE · 35 CR",Vector2(1030,594),13,Color("edd8b7"))
+	label_at("TERRASSE OUVERTE" if upgraded else "TERRASSE · 35 WCC",Vector2(1030,594),13,Color("edd8b7"))
 	# Heat drifting from the grill, with gentle ambient light movement.
 	for i in range(5):
 		var rise := fmod(clock*22+i*17,78)
 		draw_arc(Vector2(628+sin(clock+i)*8,407-rise),9,0.2,2.4,14,Color(1,0.92,0.76,(1-rise/78)*0.13),2,true)
 	if upgraded:
 		draw_circle(Vector2(1127,432),26,Color(1,0.7,0.3,0.1))
-		label_at("+5 / wrap",Vector2(1060,366),16,Color("f9d47b"))
+		label_at("+5 WCC / wrap",Vector2(1060,366),16,Color("f9d47b"))
 	alien(Vector2(customer_x,505),Color(sheet.customers[actor_customer].color))
 	alien(player,Color("bca2e9"),true)
-	panel(Rect2(803,205,367,77),Color("eee2c9"),10)
-	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else ("Merci, à bientôt !" if customer_state=="leaving" else "Un client arrive…"),Vector2(818,232),19,Color("44382e"))
-	label_at(sheet.customers[actor_customer].line,Vector2(818,254),13,Color("685446"))
-	label_at("Client patient · Prenez votre temps",Vector2(818,273),12,Color("8b7055"))
+	panel(Rect2(763,205,407,107),Color("eee2c9"),10)
+	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else ("Merci, à bientôt !" if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("44382e"))
+	var spoken: String = speech.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
+	var words := spoken.split(" ")
+	var line := ""
+	var row_y := 254
+	for word in words:
+		if (line+word).length()>53:
+			label_at(line,Vector2(778,row_y),13,Color("685446"))
+			row_y += 17
+			line = ""
+		line += word+" "
+	label_at(line,Vector2(778,row_y),13,Color("685446"))
+	label_at("Client patient · Voix et sous-titres",Vector2(778,299),12,Color("8b7055"))
+	draw_doors()
 
 func save_settings() -> void:
 	var file := FileAccess.open("user://settings.json",FileAccess.WRITE)
 	if file:
-		file.store_string(JSON.stringify({"race":player_race,"fullscreen":fullscreen,"sound":sound_enabled,"brightness":brightness,"speed":speed_setting}))
+		file.store_string(JSON.stringify({"race":player_race,"fullscreen":fullscreen,"sound":sound_enabled,"brightness":brightness,"speed":speed_setting,"voices":voice_enabled}))
 
 func load_settings() -> void:
 	if not FileAccess.file_exists("user://settings.json"): return
@@ -329,6 +392,7 @@ func load_settings() -> void:
 	for race in sheet.races:
 		if race.id==data.get("race","human"): player_race=race.id
 	sound_enabled = bool(data.get("sound",true))
+	voice_enabled = bool(data.get("voices",true))
 	brightness = clampf(float(data.get("brightness",1)),0.55,1.25)
 	speed_setting = clampi(int(data.get("speed",1)),0,2)
 	set_fullscreen(bool(data.get("fullscreen",false)))
@@ -351,3 +415,203 @@ func play_sound(frequency: float) -> void:
 	stream.data = bytes
 	sound_player.stream = stream
 	sound_player.play()
+
+func ingredient(id: String) -> Dictionary:
+	for row in sheet.ingredients:
+		if row.id==id: return row
+	return {}
+
+func system(id: String) -> Dictionary:
+	for row in sheet.systems:
+		if row.id==id: return row
+	return {}
+
+func next_order() -> void:
+	for _step in range(sheet.recipes.size()):
+		order = (order+1)%sheet.recipes.size()
+		if recipe_unlocked(order): return
+
+func recipe_unlocked(index: int) -> bool:
+	for id in recipe(index).ingredients:
+		if not id in discovered: return false
+	return true
+
+func travel(destination: String, arrival_x: float) -> void:
+	room = destination
+	player = Vector2(arrival_x,505)
+	vertical = 0
+	camera_x = 0
+	speech_time = 0
+	if OS.get_name()=="Windows": DisplayServer.tts_stop()
+	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des ingrédients.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
+
+func harvest_node(node: Dictionary) -> bool:
+	if float(node_cooldowns[node.id])>0:
+		say("Cette plante repousse. Revenez dans %d secondes." % ceili(node_cooldowns[node.id]))
+		return false
+	var item := ingredient(node.ingredient)
+	inventory[node.ingredient] += 2
+	node_cooldowns[node.id] = float(node.regrow_seconds)
+	if not node.ingredient in discovered:
+		discovered.append(node.ingredient)
+		say("Découverte : "+item.name+" ! Disponible au PC et dans vos recettes.")
+	else: say("+2 "+item.name)
+	play_sound(620)
+	action_time = float(animation("harvest").duration)
+	return true
+
+func purchase(id: String) -> bool:
+	var item := ingredient(id)
+	if item.is_empty() or not id in discovered:
+		say("Explorez la planète pour découvrir cet ingrédient d'abord.")
+		return false
+	var batch := int(system("shopping").batch_size)
+	var cost := int(item.buy_price)*batch
+	if coins<cost:
+		say("Il manque des wrapcoincoins pour cette commande.")
+		return false
+	coins -= cost
+	deliveries.append({"ingredient":id,"quantity":batch,"remaining":float(system("shopping").delivery_seconds)})
+	say("Commande passée : 3 "+item.name+". Livraison dans 4 secondes de jeu.")
+	play_sound(580)
+	return true
+
+func update_deliveries(delta: float) -> void:
+	for i in range(deliveries.size()-1,-1,-1):
+		deliveries[i].remaining -= delta
+		if deliveries[i].remaining<=0:
+			var row: Dictionary = deliveries[i]
+			inventory[row.ingredient] += int(row.quantity)
+			say("Livraison reçue : +%d %s." % [row.quantity,ingredient(row.ingredient).name])
+			deliveries.remove_at(i)
+			play_sound(880)
+
+func speak_dialogue(kind: String) -> void:
+	var actor_id: String = sheet.customers[actor_customer].id
+	for row in sheet.dialogues:
+		if row.id==actor_id:
+			speech = row[kind]
+			if kind=="greeting": speech += " Je prendrai "+recipe(order).name+"."
+			break
+	speech_elapsed = 0
+	speech_time = maxf(5,speech.length()/12.0)
+	if voice_enabled:
+		if OS.get_name()=="Windows":
+			var voices := DisplayServer.tts_get_voices_for_language("fr")
+			if voices.is_empty():
+				var all_voices := DisplayServer.tts_get_voices()
+				if not all_voices.is_empty(): voices.append(all_voices[0].id)
+			if not voices.is_empty(): DisplayServer.tts_speak(speech,voices[0],75,1.0,1.0,0,true)
+		else: play_sound(240+actor_customer*35)
+
+func snapshot() -> Dictionary:
+	return {"version":2,"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+
+func write_snapshot(path: String) -> bool:
+	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
+	if not file: return false
+	file.store_string(JSON.stringify(snapshot()))
+	file.close()
+	return DirAccess.rename_absolute(path+".tmp",path)==OK
+
+func save_at_sofa() -> bool:
+	if room!="office": return false
+	if not write_snapshot("user://sofa-save.json"):
+		saving_notice = "Échec de sauvegarde. Votre ancienne partie est conservée."
+		return false
+	saving_notice = "Partie sauvegardée sur le canapé : %d wrapcoincoins." % coins
+	say(saving_notice)
+	return true
+
+func load_at_sofa() -> bool:
+	if room!="office" or not FileAccess.file_exists("user://sofa-save.json"):
+		saving_notice = "Aucune sauvegarde sur ce canapé."
+		return false
+	var data = JSON.parse_string(FileAccess.get_file_as_string("user://sofa-save.json"))
+	if not data is Dictionary or not data.get("inventory") is Dictionary:
+		saving_notice = "Sauvegarde illisible. La partie actuelle est conservée."
+		return false
+	apply_snapshot(data)
+	saving_notice = "Partie chargée : inventaire, découvertes et wrapcoincoins restaurés."
+	say(saving_notice)
+	return true
+
+func apply_snapshot(data: Dictionary) -> void:
+	coins = maxi(0,int(data.get("coins",0)))
+	served = maxi(0,int(data.get("served",0)))
+	upgraded = bool(data.get("upgraded",false))
+	customer = posmod(int(data.get("customer",0)),sheet.customers.size())
+	actor_customer = posmod(int(data.get("actor_customer",customer)),sheet.customers.size())
+	order = posmod(int(data.get("order",0)),sheet.recipes.size())
+	completed = served>=3
+	for id in inventory:
+		inventory[id] = maxi(0,int(data.get("inventory",{}).get(id,0)))
+		cooldowns[id] = maxf(0,float(data.get("cooldowns",{}).get(id,0)))
+	for id in node_cooldowns: node_cooldowns[id] = maxf(0,float(data.get("node_cooldowns",{}).get(id,0)))
+	discovered = ["moonleaf","sunfruit","mushroom"]
+	for id in data.get("discovered",[]):
+		if id in inventory and not id in discovered: discovered.append(id)
+	room = data.get("room","restaurant")
+	if not room in ["restaurant","office","garden","planet"]: room="restaurant"
+	player = Vector2(clampf(float(data.get("player_x",565)),40,3560 if room=="planet" else 1160),505)
+	camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
+	holding = clampi(int(data.get("holding",-1)),-1,sheet.recipes.size()-1)
+	customer_state = data.get("customer_state","arriving")
+	if not customer_state in ["arriving","waiting","leaving"]: customer_state="arriving"
+	customer_x = clampf(float(data.get("customer_x",1250)),946,1270)
+	for row in sheet.races:
+		if row.id==data.get("player_race",player_race): player_race=row.id
+	deliveries.clear()
+	for row in data.get("deliveries",[]):
+		if row is Dictionary and row.get("ingredient") in discovered:
+			deliveries.append({"ingredient":row.ingredient,"quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
+	speech_time = 0
+	vertical = 0
+
+func draw_doors() -> void:
+	for door in sheet.doors:
+		if door.room!=room: continue
+		var x := float(door.x)-camera_x
+		var names := {"restaurant":"SNACK","office":"BUREAU","garden":"SERRE","planet":"PLANÈTE"}
+		panel(Rect2(x-29,488,58,56),Color(0.08,0.17,0.2,0.8),4)
+		draw_rect(Rect2(x-18,502,36,28),Color("597888"),false,2)
+		label_at("→",Vector2(x-9,526),22,Color("efcb82"))
+		label_at(names[door.target],Vector2(clampf(x-33,5,1100),569),12,Color("f4d59a"))
+		if absf(player.x-float(door.x))<30 and not menu:
+			panel(Rect2(clampf(x-65,5,1060),443,130,28),Color("152433"),3)
+			label_at("E · "+names[door.target],Vector2(clampf(x-55,15,1070),462),15)
+
+func draw_other_room() -> void:
+	var texture: Texture2D = room_textures.get(room)
+	if texture:
+		if room=="planet":
+			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness))
+		else: draw_texture_rect(texture,Rect2(0,0,1200,768),false,Color(brightness,brightness,brightness))
+	var nodes: Array = sheet.wild_nodes if room=="planet" else (sheet.beds if room=="garden" else [])
+	for node in nodes:
+		var x := float(node.x)-camera_x
+		if x < -80 or x > 1280: continue
+		var item := ingredient(node.ingredient)
+		if room=="planet":
+			draw_line(Vector2(x,536),Vector2(x,468),Color("83b3a0"),5,true)
+			for j in range(5): draw_circle(Vector2(x+sin(j*1.5)*19,482+cos(j*1.5)*15),10,Color(item.color).darkened(0.4 if node_cooldowns[node.id]>0 else 0))
+			if node.ingredient=="crystalrice":
+				for j in range(4): draw_line(Vector2(x+j*8-12,530),Vector2(x+j*8-12,480-j*4),Color("a7edef"),5,true)
+		var known: bool = node.ingredient in discovered
+		label_at(item.name if known else "Plante inconnue",Vector2(x-66,594),13,Color("c6efdc"))
+		if absf(player.x-float(node.x))<62 and not menu:
+			panel(Rect2(x-65,414,138,28),Color("142630"),4)
+			label_at("E · Récolter" if node_cooldowns[node.id]<=0 else "%ds · Repousse" % ceili(node_cooldowns[node.id]),Vector2(x-56,433),15)
+	if room=="office":
+		for station in sheet.stations:
+			if station.room!="office": continue
+			var x := float(station.x)
+			label_at("CANAPÉ / SAUVEGARDE" if station.id=="couch" else "PC / COMMANDES",Vector2(x-92,594),13,Color("f4d59a"))
+			if absf(player.x-x)<80:
+				panel(Rect2(x-84,363,176,31),Color("152433"),4)
+				label_at("E · Sauver / charger" if station.id=="couch" else "E · Commander",Vector2(x-75,384),15)
+	if room=="planet":
+		label_at("VALLÉE DES COMÈTES · %d m" % int(player.x/10),Vector2(32,184),16,Color("bce9dc"))
+		label_at("DÉCOUVERTES : %d / 3" % (discovered.size()-3),Vector2(930,184),16,Color("bce9dc"))
+	alien(Vector2(player.x-camera_x,player.y),Color("bca2e9"),true)
+	draw_doors()

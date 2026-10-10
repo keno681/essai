@@ -6,6 +6,7 @@ func _initialize() -> void:
 func run_tests() -> void:
 	var game = load("res://main.gd").new()
 	root.add_child(game)
+	game.new_service()
 	game.coins = 0
 	game.served = 0
 	game.order = 0
@@ -69,5 +70,49 @@ func run_tests() -> void:
 	assert(game.holding == -1)
 	game.new_service()
 	assert(game.served == 0 and game.coins == 0 and not game.upgraded)
-	print("PASS : recettes, ventes, trajet arrivée/départ, double vente refusée, terrasse, récolte, inventaire, race et options persistantes, nouveau service.")
+	assert(game.sheet.beds.size() == 6)
+	assert(not game.recipe_unlocked(3))
+	game.travel("garden",140)
+	game.interact()
+	assert(game.inventory.moonleaf == 2)
+	game.travel("planet",420)
+	game.interact()
+	assert("starlime" in game.discovered)
+	assert(game.inventory.starlime == 2)
+	assert(not game.harvest_node(game.sheet.wild_nodes[0]), "Une plante ne peut pas être récoltée deux fois immédiatement")
+	game.player.x = 1080
+	game.interact()
+	assert(game.recipe_unlocked(3))
+	game.player.x = 1720
+	game.interact()
+	assert(game.recipe_unlocked(4))
+	assert(game.discovered.size() == 6)
+	game.travel("office",830)
+	game.coins = 60
+	var old = game.inventory.starlime
+	assert(game.purchase("starlime"))
+	assert(game.coins == 45)
+	assert(game.inventory.starlime == old, "La livraison ne doit pas être instantanée")
+	game.update_deliveries(4.1)
+	assert(game.inventory.starlime == old+3)
+	game.coins = 0
+	assert(not game.purchase("moonleaf"), "Achat refusé sans argent")
+	game.coins = 29
+	assert(game.purchase("moonleaf"))
+	game.player.x = 440
+	assert(game.save_at_sofa())
+	assert(game.save_at_sofa(), "La sauvegarde doit pouvoir être remplacée")
+	game.coins = 999
+	game.inventory.starlime = 0
+	game.discovered = ["moonleaf","sunfruit","mushroom"]
+	assert(game.load_at_sofa())
+	assert(game.coins == 23 and game.inventory.starlime == old+3)
+	assert(game.deliveries.size() == 1, "Les livraisons en attente doivent être restaurées")
+	assert(game.discovered.size() == 6)
+	assert(game.room == "office" and game.player.x == 440)
+	game.actor_customer = 0
+	game.speak_dialogue("greeting")
+	assert(not game.speech.is_empty() and game.speech_time>0)
+	game.new_service()
+	print("PASS : recettes, clients, inventaire, options, six bacs, exploration, trois découvertes, recettes débloquées, achat/livraison, solde insuffisant, sauvegarde remplacée et chargement complet, dialogues.")
 	quit(0)
