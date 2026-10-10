@@ -15,12 +15,24 @@ func capture() -> void:
 	game.customer = 4
 	game.customer_x = 946
 	game.customer_state = "waiting"
+	game.served=8
+	game.discovered.append_array(["starlime","firepepper"])
 	game.player.x = 715
 	game.holding = 0
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var error := root.get_texture().get_image().save_png("/tmp/cosmo-gameplay.png")
+	game.chat_with_customer("bonjour")
+	game.chat_with_customer("ma commande ?")
+	game.ui.show_page("chat")
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("/tmp/cosmo-chat.png")
+	game.ui.show_page("progress")
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("/tmp/cosmo-progress.png")
 	game.ui.show_page("inventory")
 	await process_frame
 	await RenderingServer.frame_post_draw

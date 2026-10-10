@@ -113,6 +113,30 @@
       ],
       "price": 28,
       "joke": "Craquant, sans casser les dents."
+    },
+    {
+      "id": "moon_tea",
+      "name": "Thé lunaire",
+      "ingredients": [
+        "moonleaf",
+        "sunfruit"
+      ],
+      "price": 18,
+      "joke": "Une infusion qui met en orbite.",
+      "kind": "drink",
+      "level": 1
+    },
+    {
+      "id": "nebula_soda",
+      "name": "Soda nébuleuse",
+      "ingredients": [
+        "starlime",
+        "firepepper"
+      ],
+      "price": 30,
+      "joke": "Des bulles de supernova !",
+      "kind": "drink",
+      "level": 2
     }
   ],
   "customers": [
@@ -201,6 +225,13 @@
       "x": 830,
       "action": "shop",
       "room": "office"
+    },
+    {
+      "id": "drinks",
+      "name": "Boissons",
+      "x": 745,
+      "action": "drink",
+      "room": "restaurant"
     }
   ],
   "systems": [
@@ -271,6 +302,12 @@
       "asset": "art/races.png",
       "columns": 7,
       "height_fraction": 0.86
+    },
+    {
+      "id": "accessories",
+      "asset": "art/accessories.svg",
+      "width": 600,
+      "height": 80
     }
   ],
   "animations": [
@@ -669,6 +706,79 @@
         "766376",
         "6e8779"
       ]
+    }
+  ],
+  "progression": [
+    {
+      "id": "snack",
+      "name": "Petit snack",
+      "served": 0,
+      "bonus": 0
+    },
+    {
+      "id": "bistro",
+      "name": "Bistrot orbital",
+      "served": 3,
+      "bonus": 1
+    },
+    {
+      "id": "cantine",
+      "name": "Cantine stellaire",
+      "served": 8,
+      "bonus": 3
+    },
+    {
+      "id": "palace",
+      "name": "Palais galactique",
+      "served": 15,
+      "bonus": 5
+    }
+  ],
+  "chat": [
+    {
+      "id": "hello",
+      "keywords": [
+        "bonjour",
+        "salut",
+        "coucou"
+      ],
+      "reply": "Salut ! Votre restaurant sent merveilleusement bon."
+    },
+    {
+      "id": "order",
+      "keywords": [
+        "commande",
+        "boire",
+        "manger",
+        "recette"
+      ],
+      "reply": "Je voudrais {order}, s’il vous plaît !"
+    },
+    {
+      "id": "planet",
+      "keywords": [
+        "planète",
+        "ingredient",
+        "ingrédient",
+        "explorer"
+      ],
+      "reply": "La serre mène à la planète. Les fruits sauvages valent le détour !"
+    },
+    {
+      "id": "thanks",
+      "keywords": [
+        "merci",
+        "bon app",
+        "bienvenue"
+      ],
+      "reply": "Merci à vous ! Je parlerai de votre snack dans toute la galaxie."
+    },
+    {
+      "id": "default",
+      "keywords": [
+        "*"
+      ],
+      "reply": "Je viens faire une pause entre deux voyages. Et vous, comment se passe le service ?"
     }
   ]
 }

@@ -140,5 +140,42 @@ func run_tests() -> void:
 		assert(game.recipe_unlocked(game.order))
 	assert(hats.size()==6 and races.size()==7 and forms.size()==3 and variations.size()==500)
 	game.new_service()
-	print("PASS : recettes, clients, inventaire, options, six bacs, exploration, trois découvertes, recettes débloquées, achat/livraison, solde insuffisant, sauvegarde remplacée et chargement complet, dialogues.")
+	assert(game.restaurant_level()==0 and not game.recipe_unlocked(5))
+	game.served=3
+	assert(game.restaurant_level()==1 and game.recipe_unlocked(5))
+	game.selected=5
+	for id in game.recipe(5).ingredients: game.inventory[id]=1
+	game.player.x=745
+	game.interact()
+	assert(game.holding==5 and game.inventory.moonleaf==0)
+	game.customer_state="waiting"
+	game.order=5
+	assert(game.serve())
+	assert(game.coins==19)
+	game.served=8
+	assert(game.restaurant_level()==2 and not game.recipe_unlocked(6))
+	game.discovered.append_array(["starlime","firepepper"])
+	assert(game.recipe_unlocked(6))
+	game.selected=6
+	for id in game.recipe(6).ingredients: game.inventory[id]=1
+	assert(game.cook() and game.holding==6)
+	game.customer_state="waiting"
+	game.order=6
+	assert(game.chat_with_customer("bonjour"))
+	assert(game.chat_log.size()==2)
+	assert(game.chat_with_customer("ma commande ?"))
+	assert(game.recipe(6).name in game.chat_log[-1])
+	var full=game.snapshot()
+	game.chat_log.clear()
+	game.served=0
+	game.apply_snapshot(full)
+	assert(game.chat_log.size()==4 and game.restaurant_level()==2)
+	game.customer_state="leaving"
+	assert(not game.chat_with_customer("bonjour"))
+	game.served=15
+	assert(game.restaurant_level()==3)
+	game.ui.show_page("chat")
+	game.ui.show_page("progress")
+	game.new_service()
+	print("PASS : recettes, clients, inventaire, options, six bacs, exploration, trois découvertes, recettes débloquées, achat/livraison, solde insuffisant, sauvegarde remplacée et chargement complet, dialogues, 500 apparences, progression, boissons, chat et persistance.")
 	quit(0)

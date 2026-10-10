@@ -67,7 +67,11 @@ func skin(bg: Color, border: Color = Color("496881"), width: int = 2) -> StyleBo
 	s.border_color = border
 	s.set_border_width_all(width)
 	s.border_color = border.lightened(0.08)
-	s.set_corner_radius_all(4)
+	s.set_corner_radius_all(2)
+	s.corner_radius_top_left=13
+	s.corner_radius_bottom_right=13
+	s.border_color=border
+	s.shadow_color=Color(border.r,border.g,border.b,0.2)
 	s.border_width_top = width+1
 	s.border_width_bottom = width+2
 	s.set_content_margin_all(12)
@@ -96,6 +100,10 @@ func button(words: String, action: Callable) -> Button:
 	node.add_theme_stylebox_override("hover",skin(Color("29485e"),CYAN))
 	node.add_theme_stylebox_override("pressed",skin(Color("375d70"),CYAN))
 	node.add_theme_stylebox_override("focus",StyleBoxEmpty.new())
+	var markings := SpaceButtonTrim.new()
+	markings.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	markings.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	node.add_child(markings)
 	node.pressed.connect(action)
 	return node
 
@@ -134,16 +142,17 @@ func _ready() -> void:
 	task = label("",15)
 	task.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(task)
+	row.add_child(button("CHAT [T]",func(): show_page("chat")))
 	row.add_child(button("SAC [I]",func(): show_page("inventory")))
 	row.add_child(button("MENU [Échap]",func(): show_page("menu")))
 	hotbar = HBoxContainer.new()
-	hotbar.position = Vector2(228,93)
+	hotbar.position = Vector2(45,93)
 	hotbar.add_theme_constant_override("separation",7)
 	root.add_child(hotbar)
 	for i in range(game.sheet.recipes.size()):
 		var index := i
 		var slot := button("",func(): game.selected=index)
-		slot.custom_minimum_size = Vector2(140,57)
+		slot.custom_minimum_size = Vector2(150,57)
 		slot.add_theme_font_size_override("font_size",13)
 		hotbar.add_child(slot)
 		slots.append(slot)
@@ -156,7 +165,7 @@ func _ready() -> void:
 	footer.add_child(text_column)
 	status = label("",17,Color("efd37d"))
 	text_column.add_child(status)
-	text_column.add_child(label("← → / Q D : marcher   E : agir   1 2 3 : recette   Espace : sauter   R : ranger   I : inventaire",13,Color("9fb9cb")))
+	text_column.add_child(label("← → / Q D : marcher   E : agir   1–7 : recette   Espace : sauter   R : ranger   I : inventaire   T : discuter",13,Color("9fb9cb")))
 	overlay = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(overlay)
@@ -207,10 +216,42 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"menu":"COSMO WRAP / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","menu":"COSMO WRAP / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	match name:
+		"chat":
+			box.add_child(label("Conversation locale avec le client au comptoir",16,CYAN))
+			if game.chat_log.is_empty(): box.add_child(label("Écrivez bonjour, commande, planète…",16))
+			for entry in game.chat_log:
+				var text := label(entry,16)
+				text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+				text.custom_minimum_size.x=600
+				box.add_child(text)
+			var input := LineEdit.new()
+			input.placeholder_text="Votre message au client…"
+			input.max_length=120
+			input.custom_minimum_size=Vector2(600,42)
+			box.add_child(input)
+			var send := func():
+				if game.chat_with_customer(input.text): show_page("chat")
+				else: input.placeholder_text="Un client doit attendre au comptoir."
+			input.text_submitted.connect(func(_text): send.call())
+			box.add_child(button("TRANSMETTRE",send))
+			box.add_child(label("Réponses prédéfinies, sans connexion à Internet.",13))
+			var focus_input := func():
+				if is_instance_valid(input) and input.is_inside_tree():
+					input.grab_focus()
+					box.get_parent().ensure_control_visible(input)
+			focus_input.call_deferred()
+		"progress":
+			var rank: int = game.restaurant_level()
+			box.add_child(label("RANG ACTUEL : "+game.sheet.progression[rank].name,20,CYAN))
+			for index in range(game.sheet.progression.size()):
+				var level: Dictionary = game.sheet.progression[index]
+				box.add_child(label(("✓ " if rank>=index else "○ ")+level.name+" : %d clients · +%d WCC / vente" % [level.served,level.bonus],17))
+			box.add_child(label("3 clients : thé lunaire · 8 clients : soda nébuleuse",16))
+			box.add_child(label("Le soda nécessite aussi les ingrédients de la planète.",16))
 		"save":
 			box.add_child(label("Posez-vous un instant. Toute la partie sera conservée.",16,Color("a8bec5")))
 			box.add_child(button("SAUVEGARDER SUR LE CANAPÉ",func(): game.save_at_sofa(); show_page("save")))
@@ -241,6 +282,7 @@ func show_page(name: String) -> void:
 		"menu":
 			box.add_child(label("Snack orbital • Solo • Clients patients",16,Color("9fb9cb")))
 			box.add_child(button("JOUER / REPRENDRE",hide_page))
+			box.add_child(button("ÉVOLUTION DU RESTAURANT",func(): show_page("progress")))
 			box.add_child(button("INVENTAIRE",func(): show_page("inventory")))
 			box.add_child(button("PERSONNAGE ET RACES",func(): show_page("races")))
 			box.add_child(button("OPTIONS",func(): show_page("options")))
@@ -335,8 +377,9 @@ func show_page(name: String) -> void:
 
 func _process(_delta: float) -> void:
 	credits.text = "%d wrapcoincoins" % game.coins
-	task.text = "SERVICE : %d / 3" % mini(game.served,3)
-	if game.served>=3: task.text = "SERVICE RÉUSSI ✓"
+	var rank: int = game.restaurant_level()
+	var target: String = str(int(game.sheet.progression[rank+1].served)) if rank+1<game.sheet.progression.size() else "∞"
+	task.text = "%s · %d / %s" % [game.sheet.progression[rank].name,game.served,target]
 	status.text = game.message if game.message_time>0 else "E : agir près d'un poste. I : inventaire. Les clients prennent leur temps."
 	for i in range(slots.size()):
 		slots[i].text = "%d  %s\n%d WCC" % [i+1,game.recipe(i).name,game.recipe(i).price]
@@ -347,3 +390,12 @@ func _process(_delta: float) -> void:
 				if ingredient.id==id: names.append("%s (%d)" % [ingredient.name,game.inventory[id]])
 		slots[i].tooltip_text = " + ".join(names)
 		slots[i].add_theme_stylebox_override("normal",skin(Color("31506b") if game.selected==i else Color("142237"),CYAN if game.selected==i else Color("496881")))
+
+class SpaceButtonTrim extends Control:
+	func _draw() -> void:
+		var tint := Color("70bbc9")
+		draw_line(Vector2(12,4),Vector2(size.x-18,4),Color(tint.r,tint.g,tint.b,0.3),1,true)
+		draw_line(Vector2(4,15),Vector2(4,size.y-10),tint,2,true)
+		draw_line(Vector2(size.x-12,size.y-4),Vector2(size.x-4,size.y-12),tint,2,true)
+		for index in range(3):
+			draw_circle(Vector2(size.x-8-index*4,9),0.8,tint)

@@ -49,6 +49,8 @@ var speech := ""
 var speech_time := 0.0
 var speech_elapsed := 0.0
 var speech_pid := -1
+var chat_log: Array = []
+var accessory_texture: Texture2D
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
 func _ready() -> void:
@@ -67,6 +69,7 @@ func _ready() -> void:
 	next_order()
 	load_progress()
 	load_settings()
+	accessory_texture = load("res://art/accessories.svg")
 	race_texture = load("res://art/races.png")
 	sound_player = AudioStreamPlayer.new()
 	add_child(sound_player)
@@ -96,7 +99,10 @@ func say(words: String) -> void:
 
 func cook() -> bool:
 	if holding >= 0:
-		say("Vous portez déjà un wrap. Servez-le au comptoir !")
+		say("Vous portez déjà une commande. Servez-le au comptoir !")
+		return false
+	if not recipe_unlocked(selected):
+		say("Cette recette sera débloquée avec votre réputation et vos découvertes.")
 		return false
 	for ingredient in recipe(selected).ingredients:
 		if inventory[ingredient] < 1:
@@ -107,7 +113,7 @@ func cook() -> bool:
 	holding = selected
 	action_time = float(animation("cook").duration)
 	play_sound(440)
-	say("Wrap prêt ! Direction le comptoir.")
+	say("Commande prête ! Direction le comptoir.")
 	return true
 
 func serve() -> bool:
@@ -120,7 +126,8 @@ func serve() -> bool:
 	if holding != order:
 		say("Ce n'est pas sa commande. 1 / 2 / 3 : choisissez la bonne recette ; R : ranger ce wrap.")
 		return false
-	coins += int(recipe(order).price) + (5 if upgraded else 0)
+	var previous_level := restaurant_level()
+	coins += int(recipe(order).price) + (5 if upgraded else 0) + int(sheet.progression[previous_level].bonus)
 	served += 1
 	action_time = float(animation("serve").duration)
 	holding = -1
@@ -134,6 +141,8 @@ func serve() -> bool:
 		say("Premier service réussi ! Continuez et agrandissez votre restaurant.")
 	else:
 		say("Merci ! Un client heureux, un pourboire intergalactique.")
+	if restaurant_level()>previous_level:
+		say("Nouveau rang : "+sheet.progression[restaurant_level()].name+" ! Bonus de vente et nouvelles boissons.")
 	save_progress()
 	return true
 
@@ -166,8 +175,12 @@ func interact() -> void:
 				cooldowns[item.id] = float(item.regrow_seconds)
 				say("+1 " + item.name)
 			return
-	if absf(player.x - 650) < 65:
-		cook()
+	if absf(player.x - 745) < 36:
+		if recipe(selected).get("kind", "wrap")=="drink": cook()
+		else: say("Choisissez une boisson : 6 ou 7, puis E.")
+	elif absf(player.x - 650) < 65:
+		if recipe(selected).get("kind", "wrap")=="wrap": cook()
+		else: say("Les boissons se fabriquent à la machine à droite de la cuisine.")
 	elif absf(player.x - 845) < 65:
 		serve()
 	elif absf(player.x - 1090) < 65:
@@ -188,6 +201,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE:
 		if menu: ui.hide_page()
 		else: ui.show_page("menu")
+	elif event.keycode == KEY_T:
+		ui.show_page("chat")
 	elif event.keycode == KEY_I:
 		if menu and ui.page == "inventory": ui.hide_page()
 		else: ui.show_page("inventory")
@@ -202,6 +217,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				if recipe_unlocked(3): selected=3
 			KEY_5:
 				if recipe_unlocked(4): selected=4
+			KEY_6:
+				if recipe_unlocked(5): selected=5
+			KEY_7:
+				if recipe_unlocked(6): selected=6
 			KEY_E: interact()
 			KEY_SPACE:
 				if player.y >= 505: vertical = -450
@@ -219,6 +238,7 @@ func new_service() -> void:
 	player.x = 565
 	discovered = ["moonleaf","sunfruit","mushroom"]
 	deliveries.clear()
+	chat_log.clear()
 	for id in node_cooldowns: node_cooldowns[id] = 0.0
 	coins = 0
 	served = 0
@@ -334,7 +354,9 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 	var head_width := width*float(look.get("head_width",1.0))
 	draw_texture_rect_region(race_texture,Rect2(-head_width*0.5,-height*0.66-head_height,head_width,head_height),Rect2(source_x,0,cell.x,cell.y*0.34),Color(look.get("skin_colors","ffffff")))
 	if not chef and not look.is_empty(): draw_accessories(head_width,height*0.66+head_height,look)
-	if chef and holding>=0:
+	if chef and holding>=0 and recipe(holding).get("kind","wrap")=="drink":
+		draw_drink(Vector2(20,-57),Color("a5d5b7") if holding==5 else Color("d08bea"))
+	elif chef and holding>=0:
 		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
 		draw_line(Vector2(12,-62),Vector2(29,-62),Color("679958"),4,true)
 		draw_line(Vector2(16,-62),Vector2(26,-62),Color("c4583f"),3,true)
@@ -351,6 +373,7 @@ func _draw() -> void:
 		draw_texture_rect(backdrop,Rect2(0,0,float(sheet.visuals[0].width),float(sheet.visuals[0].height)),false,Color(brightness,brightness,brightness))
 	else:
 		draw_rect(Rect2(0,190,1200,420),Color("463e39"))
+	draw_restaurant_details()
 	# Soft room lighting and active stations stay legible without covering the art.
 	for item in sheet.ingredients:
 		if not item.starter: continue
@@ -393,7 +416,7 @@ func _draw() -> void:
 			line = ""
 		line += word+" "
 	label_at(line,Vector2(778,row_y),13,Color("685446"))
-	label_at("Client patient · Voix et sous-titres",Vector2(778,299),12,Color("8b7055"))
+	label_at("T : discuter · Voix et sous-titres",Vector2(778,299),12,Color("8b7055"))
 	draw_doors()
 
 func save_settings() -> void:
@@ -464,6 +487,7 @@ func next_order() -> void:
 	order = choices[customer_rng.randi_range(0,choices.size()-1)]
 
 func recipe_unlocked(index: int) -> bool:
+	if restaurant_level()<int(recipe(index).get("level",0)): return false
 	for id in recipe(index).ingredients:
 		if not id in discovered: return false
 	return true
@@ -537,7 +561,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":3,"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"version":4,"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -569,6 +593,10 @@ func load_at_sofa() -> bool:
 	return true
 
 func apply_snapshot(data: Dictionary) -> void:
+	chat_log.clear()
+	for entry in data.get("chat_log",[]):
+		if entry is String: chat_log.append(entry.left(220))
+	while chat_log.size()>20: chat_log.pop_front()
 	coins = maxi(0,int(data.get("coins",0)))
 	served = maxi(0,int(data.get("served",0)))
 	upgraded = bool(data.get("upgraded",false))
@@ -681,28 +709,68 @@ func draw_accessories(width: float, height: float, look: Dictionary) -> void:
 		draw_polyline(points,skin.darkened(0.18),4,true)
 		for step in [5,9,13]: draw_circle(points[step],1.3,skin.lightened(0.2))
 	var hat: String = look.hats
-	var top := Vector2(0,head_top+height*0.07)
-	if hat=="fez":
-		draw_colored_polygon(PackedVector2Array([top+Vector2(-12,0),top+Vector2(-9,-17),top+Vector2(9,-17),top+Vector2(12,0)]),Color("bc3448"))
-		draw_line(top+Vector2(0,-18),top+Vector2(11,-9),ink,2,true)
-		draw_line(top+Vector2(11,-9),top+Vector2(12,1+sin(clock)*2),Color("edc268"),3,true)
-	elif hat=="fedora":
-		panel(Rect2(top+Vector2(-12,-15),Vector2(24,16)),Color("8c7053"),4)
-		draw_line(top+Vector2(-12,-3),top+Vector2(12,-3),ink,4,true)
-		draw_line(top+Vector2(-19,1),top+Vector2(20,1),Color("ae9166"),5,true)
-	elif hat=="helmet":
-		draw_circle(top+Vector2(0,-3),16,Color("657f93"))
-		draw_arc(top+Vector2(0,-3),13,PI,TAU,20,Color("a1c8dc"),3,true)
-		draw_line(top+Vector2(3,3),top+Vector2(21,3),Color("73d9e4"),5,true)
-	elif hat=="cap" or hat=="beanie":
-		panel(Rect2(top+Vector2(-14,-12),Vector2(28,15)),Color(look.clothing_colors).darkened(0.3),7)
-		draw_line(top+Vector2(-14,2),top+Vector2(22 if hat=="cap" else 14,2),ink,4,true)
-		if hat=="beanie": draw_circle(top+Vector2(0,-15),4,Color(look.clothing_colors))
-	if look.glasses!="none":
-		for offset in [-9,3]:
-			var center := face+Vector2(offset,0)
-			if look.glasses=="round":
-				draw_circle(center,5,Color(0.5,0.9,1,0.3))
-				draw_arc(center,5,0,TAU,18,ink,1.5,true)
-			else: panel(Rect2(center-Vector2(5,4),Vector2(10,8)),Color("263447") if look.glasses=="dark" else Color("48aebf"),2)
-		draw_line(face+Vector2(-4,0),face+Vector2(-2,0),ink,2,true)
+	var hat_index := ["none","fez","fedora","cap","helmet","beanie"].find(hat)
+	if hat_index>0 and accessory_texture:
+		draw_texture_rect_region(accessory_texture,Rect2(-width*0.48,head_top-12,width*0.96,40),Rect2((hat_index-1)*100,0,100,80))
+	var glasses_index := ["none","round","dark","visor"].find(look.glasses)
+	if glasses_index>0 and accessory_texture:
+		draw_texture_rect_region(accessory_texture,Rect2(face-Vector2(19,9),Vector2(33,15)),Rect2((glasses_index-1)*100,80,100,45))
+
+func restaurant_level() -> int:
+	var result := 0
+	for index in range(sheet.progression.size()):
+		if served>=int(sheet.progression[index].served): result=index
+	return result
+
+func chat_with_customer(words: String) -> bool:
+	words = words.strip_edges().left(120)
+	if words.is_empty(): return false
+	if room!="restaurant" or customer_state!="waiting":
+		say("Attendez un client au comptoir pour discuter.")
+		return false
+	chat_log.append("Vous : "+words)
+	var reply: String = sheet.chat[-1].reply
+	for row in sheet.chat:
+		var matched := false
+		for keyword in row.keywords:
+			if keyword!="*" and keyword in words.to_lower(): matched=true
+		if matched:
+			reply=row.reply
+			break
+	reply=reply.replace("{order}",recipe(order).name)
+	chat_log.append(sheet.customers[actor_customer].name+" : "+reply)
+	while chat_log.size()>20: chat_log.pop_front()
+	speech=reply
+	speech_elapsed=0
+	speech_time=8
+	if voice_enabled and OS.get_name()=="Windows":
+		var voices := DisplayServer.tts_get_voices_for_language("fr")
+		if not voices.is_empty(): DisplayServer.tts_speak(reply,voices[0],70,1,1,0,true)
+	save_progress()
+	return true
+
+func draw_drink(at: Vector2, tint: Color) -> void:
+	draw_colored_polygon(PackedVector2Array([at+Vector2(-9,-16),at+Vector2(9,-16),at+Vector2(6,3),at+Vector2(-6,3)]),Color("bacbd0"))
+	draw_colored_polygon(PackedVector2Array([at+Vector2(-7,-12),at+Vector2(7,-12),at+Vector2(5,1),at+Vector2(-5,1)]),tint.darkened(0.2))
+	draw_line(at+Vector2(-5,-11),at+Vector2(-3,0),Color(1,1,1,0.7),2,true)
+	draw_line(at+Vector2(3,-8),at+Vector2(6,-25),Color("e8c599"),2,true)
+
+func draw_restaurant_details() -> void:
+	# Tiny decorative ball tucked on a shelf; intentionally has no hitbox.
+	var ball := Vector2(1045,377)
+	draw_circle(ball+Vector2(1,2),6,Color(0,0,0,0.45))
+	draw_circle(ball,5,Color("dad8ce"))
+	draw_colored_polygon(PackedVector2Array([ball+Vector2(-5,0),ball+Vector2(-4,-3),ball+Vector2(0,-5),ball+Vector2(4,-3),ball+Vector2(5,0)]),Color("a93932"))
+	draw_line(ball-Vector2(5,0),ball+Vector2(5,0),Color("302a26"),1.5,true)
+	draw_circle(ball,2,Color("302a26"))
+	draw_circle(ball,1,Color("eae0cc"))
+	# Beverage dispenser, with a lit panel, nozzle and metal drip tray.
+	panel(Rect2(724,421,39,59),Color("28343b"),3)
+	panel(Rect2(727,424,33,39),Color("566570"),3)
+	draw_rect(Rect2(733,430,20,17),Color("183139"))
+	draw_line(Vector2(736,435),Vector2(750,435),Color("81c7c5"),2,true)
+	draw_line(Vector2(743,451),Vector2(743,462),Color("b8bab5"),4,true)
+	for offset in range(5): draw_line(Vector2(729+offset*6,473),Vector2(729+offset*6,478),Color("87949a"),2,true)
+	label_at("BOISSONS",Vector2(709,612),12,Color("d5d8cd"))
+	if restaurant_level()>=1:
+		label_at("★".repeat(restaurant_level()),Vector2(1006,340),22,Color("e7c078"))
