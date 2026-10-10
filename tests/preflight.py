@@ -19,6 +19,7 @@ required = {
     "currency": {"id", "name", "plural", "logo"},
     "customer_variation": {"id", "size_min", "size_max", "head_min", "head_max", "hats", "glasses", "tentacle_counts", "tentacle_forms", "skin_colors", "clothing_colors", "pants_colors", "shoe_colors"},
     "progression": {"id", "name", "served", "bonus"},
+    "ai_chat": {"id", "model", "endpoint", "max_output_tokens", "history_messages", "timeout_seconds", "enabled_by_default", "persist_key", "fallback"},
     "chat": {"id", "keywords", "reply"},
     "dialogues": {"id", "greeting", "thanks"},
 }

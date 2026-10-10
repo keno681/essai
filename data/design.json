@@ -780,5 +780,18 @@
       ],
       "reply": "Je viens faire une pause entre deux voyages. Et vous, comment se passe le service ?"
     }
+  ],
+  "ai_chat": [
+    {
+      "id": "openai",
+      "model": "gpt-4.1-mini",
+      "endpoint": "https://api.openai.com/v1/responses",
+      "max_output_tokens": 160,
+      "history_messages": 8,
+      "timeout_seconds": 20,
+      "enabled_by_default": false,
+      "persist_key": false,
+      "fallback": "local_dialogues"
+    }
   ]
 }
