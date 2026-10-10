@@ -230,22 +230,34 @@ func show_page(name: String) -> void:
 				text.custom_minimum_size.x=600
 				box.add_child(text)
 			var chat_scroller := box.get_parent() as ScrollContainer
-			chat_scroller.custom_minimum_size.y=260
+			chat_scroller.custom_minimum_size.y=225
 			var latest := box.get_child(box.get_child_count()-1) as Control
 			var composer := VBoxContainer.new()
 			composer.add_theme_constant_override("separation",10)
 			chat_scroller.get_parent().add_child(composer)
 			var input := LineEdit.new()
 			input.placeholder_text="Votre message au client…"
-			input.max_length=120
+			input.max_length=int(game.sheet.local_chat[0].message_limit)
 			input.custom_minimum_size=Vector2(600,42)
 			composer.add_child(input)
 			var send := func():
-				if game.chat_with_customer(input.text): show_page("chat")
+				if game.chat_with_customer(input.text):
+					if game.customer_state=="leaving" and game.customer_emotion=="angry": hide_page()
+					else: show_page("chat")
 				else: input.placeholder_text="Le client doit attendre et être disponible."
 			input.text_submitted.connect(func(_text): send.call())
 			var send_button := button("TRANSMETTRE",send)
 			composer.add_child(send_button)
+			var suggestions := HBoxContainer.new()
+			composer.add_child(suggestions)
+			for phrase in ["Raconte une histoire","Raconte la suite","Tes traditions"]:
+				var prompt: String = phrase
+				var shortcut := button(phrase,func():
+					if game.chat_with_customer(prompt): show_page("chat"))
+				shortcut.custom_minimum_size.y=34
+				shortcut.add_theme_font_size_override("font_size",13)
+				shortcut.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+				suggestions.add_child(shortcut)
 			composer.add_child(label("Dialogues contextuels locaux : aucune connexion ni clé nécessaire.",13))
 			var focus_input := func():
 				if is_instance_valid(input) and input.is_inside_tree():

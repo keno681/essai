@@ -26,6 +26,7 @@ var font: Font = ThemeDB.fallback_font
 var ui: CanvasLayer
 var race_texture: Texture2D
 var player_race := "human"
+var customer_emotion := "calm"
 var customer_state := "arriving"
 var customer_x := 1250.0
 var actor_customer := 0
@@ -132,6 +133,7 @@ func serve() -> bool:
 	var previous_level := restaurant_level()
 	coins += int(recipe(order).price) + (5 if upgraded else 0) + int(sheet.progression[previous_level].bonus)
 	served += 1
+	customer_emotion="happy"
 	reset_customer_conversation()
 	action_time = float(animation("serve").duration)
 	holding = -1
@@ -238,6 +240,7 @@ func return_wrap() -> void:
 		say("Ingrédients rangés : rien n'est perdu.")
 
 func new_service() -> void:
+	customer_emotion="calm"
 	reset_customer_conversation()
 	room = "restaurant"
 	player.x = 565
@@ -272,10 +275,13 @@ func update_customers(delta: float) -> void:
 			say(sheet.customers[customer].name+" commande "+recipe(order).name+".")
 			if room=="restaurant": speak_dialogue("greeting")
 	elif customer_state == "leaving":
-		customer_x = move_toward(customer_x,float(flow.exit_x),float(flow.speed)*delta)
+		var hurry := float(sheet.customer_reactions[0].speed_multiplier) if customer_emotion=="angry" else 1.0
+		customer_x = move_toward(customer_x,float(flow.exit_x),float(flow.speed)*hurry*delta)
 		npc_cycle += delta*float(animation("walk").frequency)
 		if is_equal_approx(customer_x,float(flow.exit_x)):
 			actor_customer = customer
+			customer_emotion="calm"
+			reset_customer_conversation()
 			appearance = queued_appearance.duplicate(true)
 			customer_x = float(flow.spawn_x)
 			customer_state = "arriving"
@@ -365,7 +371,7 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
 		draw_line(Vector2(12,-62),Vector2(29,-62),Color("679958"),4,true)
 		draw_line(Vector2(16,-62),Vector2(26,-62),Color("c4583f"),3,true)
-	if not chef and customer_state=="leaving":
+	if not chef and customer_state=="leaving" and customer_emotion!="angry":
 		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
 	draw_set_transform(Vector2.ZERO)
 
@@ -407,10 +413,13 @@ func _draw() -> void:
 		draw_circle(Vector2(1127,432),26,Color(1,0.7,0.3,0.1))
 		label_at("+5 WCC / wrap",Vector2(1060,366),16,Color("f9d47b"))
 	alien(Vector2(customer_x,505),Color(sheet.customers[actor_customer].color))
+	if customer_emotion=="angry":
+		label_at("!",Vector2(customer_x-4,365),27,Color("f28c78"))
 	alien(player,Color("bca2e9"),true)
 	panel(Rect2(763,205,407,107),Color("eee2c9"),10)
-	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else ("Merci, à bientôt !" if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("44382e"))
-	var spoken: String = speech.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
+	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("44382e"))
+	var excerpt: String = speech.left(105)+"… [T : texte complet]" if speech.length()>130 else speech
+	var spoken: String = excerpt.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
 	var words := spoken.split(" ")
 	var line := ""
 	var row_y := 254
@@ -566,7 +575,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":5,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"version":6,"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -602,7 +611,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	if data.get("chat_memory") is Dictionary: chat_memory=dialogue_engine.restore_memory(data.chat_memory,sheet)
 	chat_log.clear()
 	for entry in data.get("chat_log",[]):
-		if entry is String: chat_log.append(entry.left(220))
+		if entry is String: chat_log.append(entry.left(int(sheet.local_chat[0].response_limit)+50))
 	while chat_log.size()>20: chat_log.pop_front()
 	coins = maxi(0,int(data.get("coins",0)))
 	served = maxi(0,int(data.get("served",0)))
@@ -625,6 +634,8 @@ func apply_snapshot(data: Dictionary) -> void:
 	player = Vector2(clampf(float(data.get("player_x",565)),40,3560 if room=="planet" else 1160),505)
 	camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
 	holding = clampi(int(data.get("holding",-1)),-1,sheet.recipes.size()-1)
+	customer_emotion=data.get("customer_emotion","calm")
+	if customer_emotion not in ["calm","happy","angry"]: customer_emotion="calm"
 	customer_state = data.get("customer_state","arriving")
 	if not customer_state in ["arriving","waiting","leaving"]: customer_state="arriving"
 	customer_x = clampf(float(data.get("customer_x",1250)),946,1270)
@@ -730,13 +741,14 @@ func restaurant_level() -> int:
 	return result
 
 func chat_with_customer(words: String) -> bool:
-	words = words.strip_edges().left(120)
+	words = words.strip_edges().left(int(sheet.local_chat[0].message_limit))
 	if words.is_empty(): return false
 	if room!="restaurant" or customer_state!="waiting":
 		say("Attendez un client au comptoir pour discuter.")
 		return false
 	chat_log.append("Vous : "+words)
 	append_customer_reply(local_customer_reply(words))
+	if chat_memory.get("topic")=="dismiss": dismiss_customer()
 	return true
 
 func local_customer_reply(words: String) -> String:
@@ -751,7 +763,7 @@ func append_customer_reply(reply: String) -> void:
 	while chat_log.size()>20: chat_log.pop_front()
 	speech=reply
 	speech_elapsed=0
-	speech_time=8
+	speech_time=maxf(8.0,reply.length()/35.0+4)
 	if voice_enabled and OS.get_name()=="Windows":
 		var voices := DisplayServer.tts_get_voices_for_language("fr")
 		if not voices.is_empty(): DisplayServer.tts_speak(reply,voices[0],70,1,1,0,true)
@@ -785,3 +797,13 @@ func draw_restaurant_details() -> void:
 	label_at("BOISSONS",Vector2(709,612),12,Color("d5d8cd"))
 	if restaurant_level()>=1:
 		label_at("★".repeat(restaurant_level()),Vector2(1006,340),22,Color("e7c078"))
+
+func dismiss_customer() -> bool:
+	if customer_state!="waiting": return false
+	customer_emotion="angry"
+	customer_state="leaving"
+	choose_customer()
+	next_order()
+	say("Le client part en colère, sans achat. Un autre voyageur arrivera après son départ.")
+	save_progress()
+	return true

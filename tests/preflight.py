@@ -20,8 +20,9 @@ required = {
     "customer_variation": {"id", "size_min", "size_max", "head_min", "head_max", "hats", "glasses", "tentacle_counts", "tentacle_forms", "skin_colors", "clothing_colors", "pants_colors", "shoe_colors"},
     "progression": {"id", "name", "served", "bonus"},
     "local_chat": {"id", "engine", "network", "subscription", "memory_scope", "message_limit", "log_limit", "response_limit"},
-    "chat_personalities": {"id", "race_name", "origin", "preference", "hobby", "flavors"},
-    "chat_topics": {"id", "keywords", "responses", "explanation"},
+    "chat_personalities": {"id", "race_name", "origin", "preference", "hobby", "flavors", "story", "customs", "dream"},
+    "customer_reactions": {"id", "intent", "emotion", "state", "sale", "speed_multiplier"},
+    "chat_topics": {"id", "keywords", "responses", "explanation", "followups"},
     "dialogues": {"id", "greeting", "thanks"},
 }
 errors = []

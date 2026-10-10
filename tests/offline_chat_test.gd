@@ -51,11 +51,11 @@ func run_tests() -> void:
 		assert(game.chat_with_customer("D'où viens-tu ?"))
 		replies[game.chat_log[-1]]=true
 		for topic in game.sheet.chat_topics:
-			if topic.id=="unknown": continue
+			if topic.id in ["unknown","dismiss"]: continue
 			assert(game.chat_with_customer(topic.keywords[0]))
 			assert(game.chat_memory.topic==topic.id)
 			assert(not "{" in game.chat_log[-1] and not "}" in game.chat_log[-1])
-			assert(game.speech.length()<=320)
+			assert(game.speech.length()<=int(game.sheet.local_chat[0].response_limit))
 	assert(replies.size()==7,"Chaque race doit avoir une origine et un dialogue propres")
 	game.reset_customer_conversation()
 	var jokes := {}
@@ -77,10 +77,62 @@ func run_tests() -> void:
 	assert(game.serve())
 	assert(game.chat_memory.is_empty())
 	assert(not game.chat_with_customer("bonjour"))
+	game.customer_state="waiting"
+	game.actor_customer=4
+	game.reset_customer_conversation()
+	var chapters := {}
+	for prompt in ["Raconte une histoire", "Raconte la suite", "Et ensuite ?"]:
+		assert(game.chat_with_customer(prompt))
+		assert(game.chat_memory.topic=="story")
+		assert(game.speech.length()>200)
+		chapters[game.speech]=true
+	assert(chapters.size()==3)
+	game.reset_customer_conversation()
+	assert(game.chat_with_customer("Tu peux me raconter une histoire, bonjour ?"))
+	assert(game.chat_memory.topic=="story", "Le sujet précis doit primer sur une salutation")
+	assert(game.chat_with_customer("Raconte la suite"))
+	var complete=game.chat_log.duplicate()
+	game.travel("office",440)
+	assert(game.save_at_sofa())
+	game.chat_log.clear()
+	game.chat_memory.clear()
+	assert(game.load_at_sofa())
+	assert(game.chat_log==complete, "Les textes longs ne doivent pas être tronqués au chargement")
+	game.travel("restaurant",565)
+	assert(game.chat_with_customer("La suite"))
+	assert(game.speech==game.sheet.chat_personalities[4].story[2])
+	for prompt in ["casse toi", "va-t’en", "dégage"]:
+		game.customer_state="waiting"
+		game.customer_x=946
+		game.reset_customer_conversation()
+		var old_actor=game.actor_customer
+		var balance=game.coins
+		var sales=game.served
+		var stock=game.inventory.duplicate()
+		var carried=game.holding
+		assert(game.chat_with_customer(prompt))
+		assert(game.customer_state=="leaving" and game.customer_emotion=="angry")
+		assert(game.coins==balance and game.served==sales and game.inventory==stock and game.holding==carried)
+		assert(not game.serve())
+		var departure=game.snapshot()
+		game.customer_emotion="calm"
+		game.apply_snapshot(departure)
+		assert(game.customer_emotion=="angry" and game.customer_state=="leaving")
+		game.update_customers(10)
+		assert(game.actor_customer!=old_actor and game.customer_emotion=="calm")
+		assert(game.customer_state=="arriving" and game.chat_memory.is_empty())
+		game.update_customers(10)
+		assert(game.customer_state=="waiting")
+	game.ui.show_page("chat")
+	var fields=game.ui.window.find_children("*","LineEdit",true,false)
+	assert(fields.size()==1)
+	fields[0].text="casse-toi"
+	fields[0].text_submitted.emit(fields[0].text)
+	assert(not game.menu and game.customer_state=="leaving" and game.customer_emotion=="angry", "La fenêtre doit se fermer pour laisser le client partir immédiatement")
 	for child in game.get_children(): assert(not child is HTTPRequest)
 	game.new_service()
 	assert(game.chat_log.is_empty() and game.chat_memory.is_empty())
 	game.queue_free()
 	await process_frame
-	print("PASS chat autonome : gratuit sans HTTP, sept personnalités, accents, contexte réel, 140 sujets/races, relances, réponses variées, prénom, sauvegarde/chargement, mémoire par client, aucune modification des ressources.")
+	print("PASS chat autonome : gratuit sans HTTP, sept personnalités, accents, contexte réel, 161 sujets/races, histoires en trois parties, textes longs conservés, insultes et départ en colère sans vente, relances, réponses variées, prénom, sauvegarde/chargement, mémoire par client, aucune modification des ressources.")
 	quit(0)

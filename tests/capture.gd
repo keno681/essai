@@ -24,9 +24,8 @@ func capture() -> void:
 	await RenderingServer.frame_post_draw
 	var error := root.get_texture().get_image().save_png("/tmp/cosmo-gameplay.png")
 	game.chat_with_customer("Je m’appelle Keno")
-	game.chat_with_customer("D’où viens-tu ?")
-	game.chat_with_customer("Pourquoi ?")
-	game.chat_with_customer("ma commande ?")
+	game.chat_with_customer("Raconte une histoire")
+	game.chat_with_customer("Raconte la suite")
 	game.ui.show_page("chat")
 	await process_frame
 	await RenderingServer.frame_post_draw
@@ -63,5 +62,13 @@ func capture() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("/tmp/cosmo-shop.png")
+	game.ui.hide_page()
+	game.travel("restaurant",715)
+	game.customer_state="waiting"
+	game.customer_x=946
+	game.chat_with_customer("casse toi")
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("/tmp/cosmo-angry.png")
 	print("Gameplay capture result: ", error)
 	quit(error)

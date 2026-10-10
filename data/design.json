@@ -737,13 +737,13 @@
   "local_chat": [
     {
       "id": "autonomous",
-      "engine": "contextual_dialogue",
+      "engine": "intent_scoring_and_story_memory",
       "network": false,
       "subscription": false,
       "memory_scope": "current_customer",
-      "message_limit": 120,
+      "message_limit": 180,
       "log_limit": 20,
-      "response_limit": 320
+      "response_limit": 1000
     }
   ],
   "chat_personalities": [
@@ -756,6 +756,13 @@
       "flavors": [
         "Après ma tournée, une bonne pause déjeuner, ça change tout.",
         "Je traverse la galaxie, mais je reviens toujours aux bonnes tables."
+      ],
+      "customs": "À Port-Cuillère, on laisse toujours une chaise libre à la table. C’est une vieille coutume de dockers : un équipage retardé doit pouvoir trouver un repas chaud, même après la fermeture du marché. Les enfants décorent cette chaise avec des cartes de constellations.",
+      "dream": "J’aimerais transformer un vieux cargo en cantine volante. Je ferais escale dans les petites colonies que les grands transporteurs oublient. Il me manque encore un four qui ne s’éteint pas à chaque virage… et beaucoup de recettes à apprendre.",
+      "story": [
+        "J’ai réparé un cargo dont la panne apparaissait seulement à l’heure du déjeuner. Tous les mécaniciens accusaient le moteur. Moi, j’ai remarqué qu’au même moment le cuisinier branchait son grille-wrap sur le tableau de bord. Le capitaine refusait pourtant de renoncer à sa croûte dorée.",
+        "On a donc testé le vaisseau avec et sans déjeuner. Sans wrap, parfait ; avec wrap, extinction des phares ! Le vrai coupable était une prise bricolée derrière le siège. Le cuisinier jurait que son installation était « presque réglementaire ». Il avait fixé le câble avec une tranche de pain.",
+        "J’ai séparé les circuits et installé une vraie cuisine. Le capitaine m’a payé en pièces détachées, mais le cuisinier m’a offert un abonnement à vie à ses repas. Depuis, avant de réparer un vaisseau, je demande toujours où se trouve le grille-pain. On évite ainsi bien des mystères."
       ]
     },
     {
@@ -767,6 +774,13 @@
       "flavors": [
         "Je garde les pieds au sol pendant le repas. Enfin, les serres !",
         "Le bec reconnaît les bonnes adresses."
+      ],
+      "customs": "Sur les falaises de Plumehaute, les repas de fête commencent par un silence. Chacun écoute le vent et nomme une personne absente à laquelle il pense. Puis les enfants font assez de bruit pour réveiller toute la vallée. C’est notre manière de garder une place aux voyageurs.",
+      "dream": "Je voudrais dessiner une carte des courants d’air de toute la planète. Pas une carte militaire : une carte pour ceux qui volent par plaisir. J’y ajouterais les endroits où se reposer, les beaux couchers de soleil et, bien sûr, les bonnes adresses pour déjeuner.",
+      "story": [
+        "Un jour, j’ai livré une boîte de gâteaux à une observatrice installée sur la plus haute falaise. Le vent me portait si bien que je suis arrivé en avance. Mais la boîte était vide. J’ai aussitôt pensé aux pirates, aux animaux et à une étrange anomalie spatiale.",
+        "L’observatrice a regardé mes plumes couvertes de miettes. Pendant le vol, j’avais ouvert la boîte pour vérifier la qualité… puis oublié chaque vérification. Nous avons ri si fort qu’une station météo a enregistré notre fou rire comme une tempête inhabituelle.",
+        "Je suis revenu avec deux boîtes : une pour elle et une pour les vérifications. Elle m’a appris à lire les nuages pendant que nous mangions. Depuis, je ne livre jamais de nourriture le ventre vide. Un bon livreur doit connaître ses faiblesses, surtout quand elles sentent la cannelle."
       ]
     },
     {
@@ -778,6 +792,13 @@
       "flavors": [
         "Ma pause déjeuner est sacrée.",
         "Un bon repas vaut tous les protocoles de ma station."
+      ],
+      "customs": "À Rochebrune, chaque famille garde un carnet de repas. On n’y note pas seulement les ingrédients : on écrit avec qui on a mangé et ce qui nous a fait rire. Le mien est rempli de taches de sauce. Je trouve qu’elles racontent parfois mieux le voyage que mes phrases.",
+      "dream": "Je rêve d’un observatoire ouvert à tous, avec une cuisine au rez-de-chaussée. Les enfants pourraient voir les lunes pendant que leurs parents discutent autour d’un repas. Pour moi, découvrir les étoiles et partager une table sont deux façons de se sentir moins seul.",
+      "story": [
+        "J’organisais une soirée d’observation pour ma colonie. J’avais calculé l’heure, le vent et même la quantité de soupe nécessaire. Au moment où tout le monde est arrivé, un nuage a caché le ciel. Des mois de préparation, et nous ne pouvions admirer qu’un immense plafond gris.",
+        "Une petite fille a proposé de dessiner les étoiles que nous connaissions sur les nappes. Les anciens ont raconté leurs premières traversées, et les enfants ont inventé des constellations en forme de légumes. J’avais prévu une conférence ; ils en ont fait une véritable fête.",
+        "Quand les nuages se sont enfin ouverts, personne n’a couru vers les télescopes : nous avons d’abord terminé la soupe ensemble. C’est ma plus belle soirée d’observation. Depuis, j’apporte toujours des nappes en papier, des crayons et une marmite supplémentaire."
       ]
     },
     {
@@ -789,6 +810,13 @@
       "flavors": [
         "Floran a faim, mais Floran sait attendre.",
         "Floran aime votre jardin. Plantes sentent bon !"
+      ],
+      "customs": "Dans les jardins de Racine-Verte, on offre une bouture quand on devient ami. Floran garde les siennes près de la fenêtre et leur donne des noms de voyageurs. Une pousse qui grandit rappelle qu’une amitié demande de l’eau, du temps… et parfois de ne pas croquer le pot.",
+      "dream": "Floran veut un jardin assez grand pour nourrir tout le quartier. Avec des plantes qui piquent, des plantes qui chantent au vent et une immense table au milieu. Les visiteurs pourraient cueillir leur repas. Floran surveillerait seulement ceux qui confondent la salade et les décorations.",
+      "story": [
+        "Floran a planté une petite graine inconnue derrière la maison. La marchande avait dit : « Un peu d’eau suffit. » Floran a voulu être généreux. Le lendemain, une liane avait soulevé le toit, encerclé la cuisine et emprunté les rideaux pour fabriquer un nid.",
+        "Les voisins voulaient couper la liane. Floran a plutôt suivi ses racines : elles cherchaient la lumière du four, pas le soleil. La plante adorait la chaleur du pain. Floran lui a construit une petite serre près de la boulangerie, et elle a enfin rendu les rideaux.",
+        "Aujourd’hui, la liane porte des fruits délicieux et protège la terrasse de la pluie. La boulangère l’appelle « la cliente qui ne paie jamais ». Floran apporte de l’eau et repart avec du pain. Une catastrophe de jardin peut devenir un bon voisin, si on prend le temps de la comprendre."
       ]
     },
     {
@@ -800,6 +828,13 @@
       "flavors": [
         "Trois yeux pour admirer le plat, une bouche pour le savourer.",
         "Une bonne cuisine demande autant de soin qu’un beau poème."
+      ],
+      "customs": "À Onde-Claire, on sert une petite infusion avant de parler affaires. La tasse laisse le temps d’observer la personne en face, et le silence n’est pas considéré comme une gêne. Un restaurant peut être animé tout en offrant ce moment de calme. Votre snack possède déjà quelque chose de cette douceur.",
+      "dream": "J’aimerais écrire un recueil de poèmes sur les lieux où les voyageurs se rencontrent : ports, cuisines, petits restaurants. Les grandes batailles ont déjà leurs livres. Moi, je voudrais raconter une soupe partagée, une chaise offerte et les gens qui nous rendent courageux.",
+      "story": [
+        "Je devais lire un poème lors de la fête des marées d’Onde-Claire. J’avais répété pendant des semaines devant les poissons du jardin. Le jour venu, j’ai ouvert mon carnet sur scène : toutes les pages étaient collées. J’avais oublié de le protéger pendant une promenade sous les cascades.",
+        "Je me suis arrêté, incapable de réciter une seule ligne. Au fond de la salle, une cuisinière m’a tendu une tasse d’infusion et a dit : « Racontez-nous simplement pourquoi vous êtes venu. » J’ai parlé de ma grand-mère, qui m’avait appris à écouter la pluie sur les fenêtres.",
+        "Le public a applaudi cette histoire imparfaite plus longtemps que mes anciens poèmes. Depuis, je garde mon carnet dans une pochette étanche, mais je laisse une page vide pour les surprises. Et lorsque je manque de mots, je commence par partager une tasse avec quelqu’un."
       ]
     },
     {
@@ -811,6 +846,13 @@
       "flavors": [
         "Analyse : ambiance chaleureuse détectée.",
         "Module gourmandise : opérationnel."
+      ],
+      "customs": "À Boulonbourg, nous célébrons le premier tic-tac d’une horloge réparée. Tout le quartier s’arrête une seconde pour l’écouter. Certains trouvent cela étrange ; pour nous, une machine remise en marche mérite autant de joie qu’un jardin qui refleurit. Nous servons ensuite un repas très précisément désordonné.",
+      "dream": "Projet personnel : construire une horloge qui ne mesure pas les heures, mais les bons moments. Un rire ajouterait une minute, un repas partagé en ajouterait dix. Les ingénieurs déclarent ce mécanisme impossible. Observation : les meilleures idées commencent souvent par cette remarque.",
+      "story": [
+        "Rapport de mission : j’étais chargé de régler l’horloge centrale de Boulonbourg. À midi, elle sonnait treize coups. Les habitants accusaient un engrenage, puis un fantôme. J’ai passé trois nuits à vérifier chaque roue, chaque ressort et chaque poussière. Tout était parfaitement réglé.",
+        "Le treizième coup venait d’un marchand qui frappait sa casserole pour annoncer la soupe. Son échoppe était derrière le clocher. J’ai voulu lui demander de changer d’horaire, mais il m’a expliqué que ses clients attendaient ce son depuis quarante ans. Problème : deux traditions valides occupaient la même seconde.",
+        "Solution adoptée : le clocher sonne douze coups, puis je descends donner le treizième avec la casserole. L’horloge est correcte, la soupe reste chaude et personne ne perd sa tradition. Conclusion : un problème mécanique possède parfois une excellente solution culinaire."
       ]
     },
     {
@@ -822,10 +864,109 @@
       "flavors": [
         "Ça réchauffe le cœur, partenaire !",
         "La route est longue ; autant bien manger avant de repartir."
+      ],
+      "customs": "Sur les pistes de Braise-Rouge, on échange une chanson contre un repas quand les poches sont vides. Il faut jouer honnêtement : trois notes sincères valent mieux qu’un grand numéro sans âme. J’ai vu des saloons entiers chanter pour payer le dîner d’un voyageur trop fatigué pour tenir son instrument.",
+      "dream": "Je voudrais ouvrir un saloon roulant sur une vieille locomotive spatiale. On verrait les nébuleuses passer derrière les fenêtres pendant le concert du soir. Il y aurait une petite scène et une cuisine toujours allumée. La première tournée serait pour les voyageurs qui ont perdu leur chemin.",
+      "story": [
+        "J’accompagnais un convoi à travers une zone de brouillard stellaire. Notre pilote avait une carte superbe, mais elle représentait une autre région. Au troisième passage devant le même astéroïde, il a prétendu que ce caillou voyageait lui aussi. Personne n’a été convaincu, partenaire.",
+        "Nous avions presque épuisé nos réserves quand j’ai reconnu un rythme dans les balises radio. Une ancienne ligne de fret diffusait encore les notes de sa chanson d’accueil. J’ai sorti mon harmonica et joué avec elle jusqu’à retrouver le bon embranchement. Le pilote a parlé de « navigation musicale avancée ».",
+        "Nous sommes arrivés au port avec une heure de retard et une nouvelle chanson. Le pilote conserve toujours sa mauvaise carte : elle lui rappelle de demander de l’aide avant de tourner en rond. Moi, je garde un harmonica de secours. Dans la galaxie, on ne sait jamais quelle petite chose nous ramènera à la maison."
       ]
     }
   ],
   "chat_topics": [
+    {
+      "id": "dismiss",
+      "keywords": [
+        "casse toi",
+        "va t en",
+        "degages",
+        "degage",
+        "allez vous en",
+        "cassez vous",
+        "fiche le camp",
+        "sors de mon restaurant"
+      ],
+      "responses": [
+        "Très bien, {player}. Je venais simplement manger et discuter ; inutile de me parler ainsi. Je repars sans ma commande. J’espère que votre prochain visiteur sera accueilli avec davantage de respect.",
+        "Je m’en vais. Un repas ne vaut pas la peine de rester là où l’on est traité de cette manière. Gardez votre cuisine, je trouverai une autre table.",
+        "Message reçu. Vous ne souhaitez pas me recevoir : je prends la sortie. C’est dommage, j’avais entendu de bonnes choses sur votre snack."
+      ],
+      "explanation": "Je vous ai entendu. Je pars maintenant.",
+      "followups": [
+        "Je quitte votre restaurant."
+      ],
+      "priority": 6
+    },
+    {
+      "id": "story",
+      "keywords": [
+        "histoire",
+        "histoires",
+        "anecdote",
+        "anecdotes",
+        "souvenir",
+        "souvenirs",
+        "aventure personnelle",
+        "raconte une histoire",
+        "raconte moi une histoire"
+      ],
+      "responses": [
+        "{story}"
+      ],
+      "explanation": "{story}",
+      "followups": [
+        "{story}"
+      ]
+    },
+    {
+      "id": "culture",
+      "keywords": [
+        "tradition",
+        "traditions",
+        "coutume",
+        "coutumes",
+        "culture",
+        "fete",
+        "fetes",
+        "ton peuple",
+        "tes traditions",
+        "ta culture",
+        "vos coutumes"
+      ],
+      "responses": [
+        "{customs} Et chez vous, y a-t-il une tradition que vous aimez partager avec vos invités ?",
+        "{customs} J’aime retrouver un peu de cette ambiance lorsque je découvre une nouvelle table."
+      ],
+      "explanation": "{customs}",
+      "followups": [
+        "{customs}"
+      ]
+    },
+    {
+      "id": "dream",
+      "keywords": [
+        "reve",
+        "reves",
+        "avenir",
+        "projet",
+        "projets",
+        "ambition",
+        "ambitions",
+        "ton reve",
+        "tes reves",
+        "ton projet",
+        "tes projets"
+      ],
+      "responses": [
+        "{dream} Ce n’est encore qu’un projet, mais chaque voyage me donne une idée de plus.",
+        "{dream} Et vous, comment imaginez-vous votre restaurant dans quelques années ?"
+      ],
+      "explanation": "{dream} Si je devais commencer demain, je chercherais surtout des amis prêts à m’aider.",
+      "followups": [
+        "{dream} Si je devais commencer demain, je chercherais surtout des amis prêts à m’aider."
+      ]
+    },
     {
       "id": "remember_name",
       "keywords": [
@@ -838,7 +979,10 @@
         "Vous êtes {player}. Je n’oublie pas la personne qui prépare mon repas !",
         "Bien sûr, {player} ! Nous discutons depuis tout à l’heure."
       ],
-      "explanation": "Je retiens votre nom pendant ma visite, {player}."
+      "explanation": "Je retiens votre nom pendant ma visite, {player}.",
+      "followups": [
+        "Je retiens votre nom pendant ma visite, {player}."
+      ]
     },
     {
       "id": "name",
@@ -847,13 +991,19 @@
         "tu t appelles",
         "qui es tu",
         "t es qui",
-        "presente toi"
+        "presente toi",
+        "comment tu t appelles",
+        "comment t appelles tu",
+        "quel est ton nom"
       ],
       "responses": [
-        "Je m’appelle {name}, je suis {race}. Et vous, comment vous appelez-vous ?",
-        "{name}, pour vous servir ! Enfin… aujourd’hui, c’est plutôt vous qui me servez."
+        "Je m’appelle {name}, je suis {race}. Et vous, comment vous appelez-vous ? Je viens de {origin}, et quand je ne voyage pas, j’aime {hobby}. Votre snack est une bonne occasion de faire connaissance. Si vous me donnez votre prénom, je le retiendrai pendant ma visite ; je préfère parler avec une personne qu’avec un simple numéro de commande.",
+        "{name}, pour vous servir ! Enfin… aujourd’hui, c’est plutôt vous qui me servez. Je viens de {origin}, et quand je ne voyage pas, j’aime {hobby}. Votre snack est une bonne occasion de faire connaissance. Si vous me donnez votre prénom, je le retiendrai pendant ma visite ; je préfère parler avec une personne qu’avec un simple numéro de commande."
       ],
-      "explanation": "Je viens de {origin}. {flavor}"
+      "explanation": "Je viens de {origin}. {flavor}",
+      "followups": [
+        "Je viens de {origin}. {flavor}"
+      ]
     },
     {
       "id": "price",
@@ -867,10 +1017,14 @@
         "wrapcoincoins"
       ],
       "responses": [
-        "Ma commande vaut {price} wrapcoincoins au menu. Les bonus du restaurant vous rapportent {bonus} WCC de plus.",
-        "{price} wrapcoincoins pour {order}. Le petit canard sur la monnaie me fait toujours sourire."
+        "Ma commande coûte {price} wrapcoincoins au menu, et vos améliorations ajoutent actuellement {bonus} WCC à votre recette de vente. J’aime cette petite monnaie au canard : elle rend les échanges moins solennels que les grands crédits des stations commerciales. Gardez de quoi commander au PC les ingrédients qui vous manquent ; un restaurant bien approvisionné travaille beaucoup plus sereinement.",
+        "Ma commande vaut {price} wrapcoincoins au menu. Les bonus du restaurant vous rapportent {bonus} WCC de plus. Un restaurant a besoin de réserves autant que de beaux équipements. Vos wrapcoincoins servent à commander au PC ou à ouvrir la terrasse. La terrasse apporte 5 WCC de plus par vente, et les rangs du restaurant donnent leurs propres bonus.",
+        "{price} wrapcoincoins pour {order}. Le petit canard sur la monnaie me fait toujours sourire. Un restaurant a besoin de réserves autant que de beaux équipements. Vos wrapcoincoins servent à commander au PC ou à ouvrir la terrasse. La terrasse apporte 5 WCC de plus par vente, et les rangs du restaurant donnent leurs propres bonus."
       ],
-      "explanation": "Les wrapcoincoins servent à acheter les ingrédients au PC et à ouvrir la terrasse."
+      "explanation": "Les wrapcoincoins servent à acheter les ingrédients au PC et à ouvrir la terrasse.",
+      "followups": [
+        "Les wrapcoincoins servent à acheter les ingrédients au PC et à ouvrir la terrasse."
+      ]
     },
     {
       "id": "ingredients",
@@ -883,10 +1037,16 @@
         "recette"
       ],
       "responses": [
-        "Pour {order}, il faut {ingredients}. Ça promet !",
-        "Ma recette contient {ingredients}. Vous avez tout en réserve ?"
+        "Pour ma commande, {order}, vous utilisez {ingredients}. J’aime connaître ce qui arrive dans mon assiette : cela donne envie de comprendre le jardin et les personnes qui s’en occupent. Les bacs fournissent les produits du quotidien ; pour les saveurs rares, il faut explorer la planète. Vous préférez cultiver tranquillement ou partir chercher une surprise dehors ?",
+        "Pour {order}, il faut {ingredients}. Ça promet ! Le jardin et la serre donnent les produits de base, tandis que la planète fournit les saveurs rares. Après une découverte, le PC permet aussi de commander des ingrédients. J’aime comprendre le chemin qu’un produit a suivi avant d’arriver dans mon assiette.",
+        "Ma recette contient {ingredients}. Vous avez tout en réserve ? Le jardin et la serre donnent les produits de base, tandis que la planète fournit les saveurs rares. Après une découverte, le PC permet aussi de commander des ingrédients. J’aime comprendre le chemin qu’un produit a suivi avant d’arriver dans mon assiette."
       ],
-      "explanation": "Récoltez dans les bacs ; les ingrédients rares se trouvent sur la planète, au-delà de la serre."
+      "explanation": "Récoltez dans les bacs ; les ingrédients rares se trouvent sur la planète, au-delà de la serre.",
+      "followups": [
+        "Récoltez dans les bacs ; les ingrédients rares se trouvent sur la planète, au-delà de la serre.",
+        "{ingredients} : voilà les produits nécessaires à {order}. Un ingrédient dans chaque bac ne suffit pas forcément à toute une soirée ; gardez un peu de réserve et consultez votre inventaire avant de commencer.",
+        "Les plantes poussent à nouveau après la récolte. Si un bac est encore vide, vous pouvez visiter la serre ou discuter pendant un moment plutôt que d’attendre devant lui."
+      ]
     },
     {
       "id": "drinks",
@@ -897,13 +1057,20 @@
         "soif",
         "the",
         "soda",
-        "jus"
+        "jus",
+        "que veux tu boire",
+        "tu as soif",
+        "boisson preferee"
       ],
       "responses": [
-        "Le thé lunaire se débloque après 3 clients ; le soda nébuleuse après 8. Les deux se préparent à la machine à boissons.",
-        "Un thé lunaire ou un soda nébuleuse ? Votre machine est juste à droite de la cuisine."
+        "Une boisson accompagne aussi la conversation. Le thé lunaire se débloque après 3 clients, et le soda nébuleuse après 8, lorsque ses ingrédients sauvages sont découverts. La machine est à droite de la cuisine : sélectionnez 6 ou 7 puis utilisez E près du poste. J’imagine très bien des voyageurs s’attarder ici avec une tasse, simplement pour raconter leur journée.",
+        "Le thé lunaire se débloque après 3 clients ; le soda nébuleuse après 8. Les deux se préparent à la machine à boissons. J’aime m’attarder avec une tasse après un repas : les récits deviennent souvent plus intéressants lorsqu’on n’est plus pressé. Le thé se débloque à 3 clients et le soda à 8 ; choisissez 6 ou 7 puis préparez-le à la machine, à droite de la cuisine.",
+        "Un thé lunaire ou un soda nébuleuse ? Votre machine est juste à droite de la cuisine. J’aime m’attarder avec une tasse après un repas : les récits deviennent souvent plus intéressants lorsqu’on n’est plus pressé. Le thé se débloque à 3 clients et le soda à 8 ; choisissez 6 ou 7 puis préparez-le à la machine, à droite de la cuisine."
       ],
-      "explanation": "Sélectionnez 6 ou 7, puis E devant la machine. Le soda exige aussi des ingrédients sauvages."
+      "explanation": "Sélectionnez 6 ou 7, puis E devant la machine. Le soda exige aussi des ingrédients sauvages.",
+      "followups": [
+        "Sélectionnez 6 ou 7, puis E devant la machine. Le soda exige aussi des ingrédients sauvages."
+      ]
     },
     {
       "id": "order",
@@ -918,10 +1085,14 @@
         "tu veux quoi"
       ],
       "responses": [
-        "Je voudrais {order}, s’il vous plaît. {flavor}",
-        "Pour moi, ce sera {order}. Je prends mon temps, ne vous inquiétez pas."
+        "Je voudrais {order}, {player}. J’aime quand un plat raconte quelque chose de la personne qui le prépare : une herbe cueillie le matin, une sauce ajustée avec patience, un petit détail que personne ne remarque tout de suite. Chez moi, à {origin}, on prend le temps de parler pendant que la cuisine travaille. Alors ne vous pressez pas pour moi.",
+        "Je voudrais {order}, s’il vous plaît. {flavor} Pour {order}, il faut {ingredients}. Je suis curieux de découvrir votre manière de les assembler. Prenez le temps de cuisiner : je préfère un repas préparé avec soin à une course contre la montre. Pendant ce temps, nous pouvons parler de nos voyages.",
+        "Pour moi, ce sera {order}. Je prends mon temps, ne vous inquiétez pas. Pour {order}, il faut {ingredients}. Je suis curieux de découvrir votre manière de les assembler. Prenez le temps de cuisiner : je préfère un repas préparé avec soin à une course contre la montre. Pendant ce temps, nous pouvons parler de nos voyages."
       ],
-      "explanation": "Choisissez ma recette dans le HUD, préparez-la au bon poste puis servez-la au comptoir."
+      "explanation": "Choisissez ma recette dans le HUD, préparez-la au bon poste puis servez-la au comptoir.",
+      "followups": [
+        "Choisissez ma recette dans le HUD, préparez-la au bon poste puis servez-la au comptoir."
+      ]
     },
     {
       "id": "origin",
@@ -934,13 +1105,22 @@
         "voyages",
         "chez toi",
         "d ou",
-        "ta maison"
+        "ta maison",
+        "d ou viens tu",
+        "tu viens d ou",
+        "ou habites tu"
       ],
       "responses": [
-        "Je viens de {origin}. J’ai entendu parler de votre snack pendant mon voyage.",
-        "Chez moi, à {origin}, les repas sont une affaire sérieuse. {flavor}"
+        "Je viens de {origin}. J’y ai laissé des amis, quelques objets auxquels je tiens et une cuisine dont je connais chaque bruit. Voyager me plaît, mais il suffit parfois d’une odeur de repas pour que tout me revienne. C’est pour cela que je m’arrête dans les petits restaurants : on y rencontre des personnes, pas seulement des menus.",
+        "Je viens de {origin}. J’ai entendu parler de votre snack pendant mon voyage. {customs} Ces habitudes me suivent même loin de chez moi.",
+        "Chez moi, à {origin}, les repas sont une affaire sérieuse. {flavor} {customs} Ces habitudes me suivent même loin de chez moi."
       ],
-      "explanation": "Quand je voyage, je cherche surtout de bonnes tables et des gens avec qui discuter."
+      "explanation": "Quand je voyage, je cherche surtout de bonnes tables et des gens avec qui discuter.",
+      "followups": [
+        "Quand je voyage, je cherche surtout de bonnes tables et des gens avec qui discuter.",
+        "{customs}",
+        "{dream}"
+      ]
     },
     {
       "id": "planet",
@@ -955,10 +1135,16 @@
         "serre"
       ],
       "responses": [
-        "Passez par la serre pour explorer la planète : citron stellaire, piment comète et riz cristal vous attendent.",
-        "Vos bacs sont pratiques, mais la planète cache des ingrédients pour de nouvelles recettes."
+        "La planète mérite une promenade attentive. Entre deux récoltes, regardez les couleurs des plantes et les coins où elles poussent : un ingrédient inconnu donne souvent envie d’inventer une nouvelle recette. Le citron stellaire, le piment comète et le riz cristal élargiront votre menu. Je vous conseille de partir par la serre et de rentrer avec assez de place dans l’inventaire.",
+        "Passez par la serre pour explorer la planète : citron stellaire, piment comète et riz cristal vous attendent. Le citron stellaire, le piment comète et le riz cristal élargissent vos possibilités en cuisine. Chaque découverte rend aussi l’ingrédient disponible au PC. Ce que j’aime dans l’exploration, c’est rentrer avec quelque chose que je ne pensais pas trouver.",
+        "Vos bacs sont pratiques, mais la planète cache des ingrédients pour de nouvelles recettes. Le citron stellaire, le piment comète et le riz cristal élargissent vos possibilités en cuisine. Chaque découverte rend aussi l’ingrédient disponible au PC. Ce que j’aime dans l’exploration, c’est rentrer avec quelque chose que je ne pensais pas trouver."
       ],
-      "explanation": "Les plantes sauvages repoussent après la récolte. Pensez à faire un tour aux trois coins de la planète."
+      "explanation": "Les plantes sauvages repoussent après la récolte. Pensez à faire un tour aux trois coins de la planète.",
+      "followups": [
+        "Les plantes sauvages repoussent après la récolte. Pensez à faire un tour aux trois coins de la planète.",
+        "La sortie à droite de la serre mène à une vallée plus vaste que le snack. Avancez pour découvrir les plantes sauvages ; chacune vous donne une nouvelle saveur et repousse après la récolte. Pensez à revenir au bureau pour sauvegarder vos découvertes.",
+        "Une découverte ajoute aussi l’ingrédient à la liste du PC. Vous pouvez donc explorer une première fois, puis commander un complément lorsque vous souhaitez cuisiner sans refaire tout le trajet."
+      ]
     },
     {
       "id": "progress",
@@ -973,10 +1159,16 @@
         "terrasse"
       ],
       "responses": [
-        "Votre établissement est au rang {rank}. Les étapes arrivent à 3, 8 et 15 clients servis.",
-        "Au rang {rank}, votre snack commence à faire parler de lui. Continuez les services et ouvrez la terrasse !"
+        "Votre restaurant est au rang {rank}. Ce qui me plaît, c’est de voir un petit lieu prendre vie sans perdre son accueil. Les étapes à 3, 8 et 15 clients vous donnent des bonus et de nouvelles boissons, mais les voyageurs reviendront aussi pour vos conversations. Un bon établissement devient un repère : on sait qu’une chaise et un repas nous y attendent.",
+        "Votre établissement est au rang {rank}. Les étapes arrivent à 3, 8 et 15 clients servis. Un restaurant devient un point de rencontre quand les voyageurs savent qu’ils y seront bien reçus. Les rangs à 3, 8 et 15 clients apportent des bonus et des boissons. Je serais heureux de revenir un jour pour voir comment votre snack a grandi.",
+        "Au rang {rank}, votre snack commence à faire parler de lui. Continuez les services et ouvrez la terrasse ! Un restaurant devient un point de rencontre quand les voyageurs savent qu’ils y seront bien reçus. Les rangs à 3, 8 et 15 clients apportent des bonus et des boissons. Je serais heureux de revenir un jour pour voir comment votre snack a grandi."
       ],
-      "explanation": "Les rangs donnent des bonus de vente et débloquent des boissons. La terrasse coûte 35 WCC et ajoute 5 WCC par vente."
+      "explanation": "Les rangs donnent des bonus de vente et débloquent des boissons. La terrasse coûte 35 WCC et ajoute 5 WCC par vente.",
+      "followups": [
+        "Les rangs donnent des bonus de vente et débloquent des boissons. La terrasse coûte 35 WCC et ajoute 5 WCC par vente.",
+        "Les voyageurs remarquent les petits changements : des bacs mieux entretenus, une terrasse accueillante, une nouvelle boisson. Vos bonus actuels ajoutent {bonus} WCC par vente ; continuez à servir les commandes pour franchir les prochains seuils.",
+        "À votre place, je garderais aussi un peu de monnaie pour les livraisons du PC. Explorer apporte de nouvelles recettes, puis un stock régulier vous permet de les proposer sans interrompre chaque service."
+      ]
     },
     {
       "id": "hobby",
@@ -990,10 +1182,16 @@
         "metier"
       ],
       "responses": [
-        "Quand je ne voyage pas, j’aime {hobby}. Et vous, vous avez une passion ?",
-        "Mon passe-temps favori : {hobby}. Ça change des longues traversées spatiales."
+        "J’aime {hobby}. Au début, c’était simplement une façon de passer le temps entre deux voyages ; puis j’ai découvert que cela m’aidait à regarder les choses autrement. Je reviens souvent avec des idées prises dans les endroits les plus ordinaires. Votre restaurant, par exemple, ferait un excellent sujet de conversation chez moi.",
+        "Quand je ne voyage pas, j’aime {hobby}. Et vous, vous avez une passion ? {dream} Mon passe-temps m’aide à imaginer ce projet, même lorsque la route est longue.",
+        "Mon passe-temps favori : {hobby}. Ça change des longues traversées spatiales. {dream} Mon passe-temps m’aide à imaginer ce projet, même lorsque la route est longue."
       ],
-      "explanation": "À {origin}, j’ai découvert que je pouvais passer des heures à {hobby}."
+      "explanation": "À {origin}, j’ai découvert que je pouvais passer des heures à {hobby}.",
+      "followups": [
+        "À {origin}, j’ai découvert que je pouvais passer des heures à {hobby}.",
+        "{customs}",
+        "{dream}"
+      ]
     },
     {
       "id": "favorite",
@@ -1006,13 +1204,24 @@
         "gout",
         "gouts",
         "delicieux",
-        "bon repas"
+        "bon repas",
+        "tu preferes",
+        "plat prefere",
+        "recette preferee",
+        "tu aimes quoi",
+        "tes gouts"
       ],
       "responses": [
-        "J’aime {preference}. Aujourd’hui, ma commande reste {order}.",
-        "Mes goûts ? {preference}. {flavor}"
+        "J’apprécie {preference}, mais un repas ne se résume pas à ses ingrédients. Je me souviens surtout des personnes avec qui je l’ai partagé. Un plat très simple peut devenir mon préféré s’il arrive au bon moment. Aujourd’hui, j’ai choisi {order} : je suis curieux de découvrir votre façon de le préparer.",
+        "J’aime {preference}. Aujourd’hui, ma commande reste {order}. Un repas me plaît encore davantage quand la personne qui le prépare m’explique ses ingrédients. À {origin}, les bonnes tables font partie des souvenirs que l’on emporte en voyage. Aujourd’hui, j’aimerais surtout découvrir votre façon de préparer {order}.",
+        "Mes goûts ? {preference}. {flavor} Un repas me plaît encore davantage quand la personne qui le prépare m’explique ses ingrédients. À {origin}, les bonnes tables font partie des souvenirs que l’on emporte en voyage. Aujourd’hui, j’aimerais surtout découvrir votre façon de préparer {order}."
       ],
-      "explanation": "C’est une question de goût ; je découvre volontiers d’autres recettes lors de ma prochaine visite."
+      "explanation": "C’est une question de goût ; je découvre volontiers d’autres recettes lors de ma prochaine visite.",
+      "followups": [
+        "C’est une question de goût ; je découvre volontiers d’autres recettes lors de ma prochaine visite.",
+        "{customs}",
+        "{dream}"
+      ]
     },
     {
       "id": "race",
@@ -1028,10 +1237,16 @@
         "plante"
       ],
       "responses": [
-        "Je suis {race}. On a tous nos habitudes, mais la bonne cuisine nous rassemble.",
-        "Un client {race} dans votre snack ! {flavor}"
+        "Je suis {race}, mais tous les gens de mon peuple ne pensent pas exactement comme moi. Nous partageons certaines traditions, puis chacun suit sa route. J’aime {hobby} et j’apprécie {preference}. Si vous voulez mieux me connaître, demandez-moi une histoire ou une coutume de chez moi : ce sera plus parlant qu’une simple étiquette.",
+        "Je suis {race}. On a tous nos habitudes, mais la bonne cuisine nous rassemble. {customs} Voilà une tradition qui représente mieux mon peuple qu’un simple portrait.",
+        "Un client {race} dans votre snack ! {flavor} {customs} Voilà une tradition qui représente mieux mon peuple qu’un simple portrait."
       ],
-      "explanation": "Ma taille, mes vêtements et mes accessoires changent d’une visite à l’autre ; mon peuple a aussi ses petites traditions."
+      "explanation": "Ma taille, mes vêtements et mes accessoires changent d’une visite à l’autre ; mon peuple a aussi ses petites traditions.",
+      "followups": [
+        "Ma taille, mes vêtements et mes accessoires changent d’une visite à l’autre ; mon peuple a aussi ses petites traditions.",
+        "{customs}",
+        "{dream}"
+      ]
     },
     {
       "id": "joke",
@@ -1040,15 +1255,17 @@
         "rire",
         "drole",
         "humour",
-        "rigolo",
-        "raconte une histoire"
+        "rigolo"
       ],
       "responses": [
         "Pourquoi le wrap a-t-il pris une fusée ? Pour aller se faire rouler dans les étoiles !",
         "Un robot entre au snack : « Un wrap sans bug, s’il vous plaît ! »",
         "Que dit un canard à la caisse ? « Gardez la monnaie, coin-coin ! »"
       ],
-      "explanation": "J’en ai d’autres : le piment a rejoint l’équipage parce qu’il voulait mettre le feu à l’ambiance !"
+      "explanation": "J’en ai d’autres : le piment a rejoint l’équipage parce qu’il voulait mettre le feu à l’ambiance !",
+      "followups": [
+        "J’en ai d’autres : le piment a rejoint l’équipage parce qu’il voulait mettre le feu à l’ambiance !"
+      ]
     },
     {
       "id": "feeling",
@@ -1060,13 +1277,22 @@
         "content",
         "heureux",
         "triste",
-        "journee"
+        "journee",
+        "comment te sens tu",
+        "tu te sens comment",
+        "comment tu vas"
       ],
       "responses": [
-        "Ça va bien, {player}. Le voyage était long, mais votre snack me remet d’aplomb.",
-        "Un peu fatigué par la route, mais ravi de faire une pause. {flavor}"
+        "Je vais plutôt bien, {player}. Le voyage m’a fatigué, et j’avais besoin d’un endroit où personne ne me demande de repartir immédiatement. Dans un snack comme le vôtre, on peut regarder la cuisine, discuter et laisser le bruit des moteurs derrière soi. Vous avez déjà eu une journée où une simple pause changeait tout ?",
+        "Ça va bien, {player}. Le voyage était long, mais votre snack me remet d’aplomb. J’avais besoin de quitter un instant le bruit des moteurs. Ici, on entend la cuisine et les conversations : c’est reposant. Lorsque je reprendrai ma route vers {origin}, cette petite pause fera partie de mon voyage autant que les paysages.",
+        "Un peu fatigué par la route, mais ravi de faire une pause. {flavor} J’avais besoin de quitter un instant le bruit des moteurs. Ici, on entend la cuisine et les conversations : c’est reposant. Lorsque je reprendrai ma route vers {origin}, cette petite pause fera partie de mon voyage autant que les paysages."
       ],
-      "explanation": "Je me détends en discutant avec vous. Une bonne pause vaut parfois mieux qu’un moteur neuf."
+      "explanation": "Je me détends en discutant avec vous. Une bonne pause vaut parfois mieux qu’un moteur neuf.",
+      "followups": [
+        "Je me détends en discutant avec vous. Une bonne pause vaut parfois mieux qu’un moteur neuf.",
+        "{customs}",
+        "{dream}"
+      ]
     },
     {
       "id": "compliment",
@@ -1080,10 +1306,14 @@
         "adorable"
       ],
       "responses": [
+        "Merci, {player}. Un compliment sincère peut changer toute une journée, surtout après une longue traversée. J’essaie de faire la même chose quand quelqu’un prend le temps de m’accueillir. Votre snack a quelque chose de rassurant : on y sent le travail des mains et l’envie de recevoir les gens. Gardez cela, même lorsqu’il deviendra plus grand.",
         "Merci, {player} ! Votre accueil rend ce voyage beaucoup plus agréable.",
         "C’est gentil ! {flavor}"
       ],
-      "explanation": "Une bonne table et un accueil chaleureux : je n’en demande pas davantage."
+      "explanation": "Une bonne table et un accueil chaleureux : je n’en demande pas davantage.",
+      "followups": [
+        "Une bonne table et un accueil chaleureux : je n’en demande pas davantage."
+      ]
     },
     {
       "id": "insult",
@@ -1099,7 +1329,10 @@
         "Restons courtois, {player}. Je suis venu manger et discuter tranquillement.",
         "Un peu de calme : nous pouvons repartir sur de bonnes bases."
       ],
-      "explanation": "Je préfère parler de cuisine ou de voyages que nous disputer."
+      "explanation": "Je préfère parler de cuisine ou de voyages que nous disputer.",
+      "followups": [
+        "Je préfère parler de cuisine ou de voyages que nous disputer."
+      ]
     },
     {
       "id": "thanks",
@@ -1113,7 +1346,10 @@
         "Merci à vous, {player} ! Je recommande votre snack aux voyageurs.",
         "Avec plaisir ! {flavor}"
       ],
-      "explanation": "Les clients heureux reviennent volontiers dans une bonne adresse."
+      "explanation": "Les clients heureux reviennent volontiers dans une bonne adresse.",
+      "followups": [
+        "Les clients heureux reviennent volontiers dans une bonne adresse."
+      ]
     },
     {
       "id": "farewell",
@@ -1128,7 +1364,10 @@
         "À bientôt, {player} ! Je partirai après avoir reçu ma commande.",
         "Bonne continuation ! Encore {order}, et je reprends la route."
       ],
-      "explanation": "Je dois continuer mon voyage, mais je reviendrai sûrement faire une pause ici."
+      "explanation": "Je dois continuer mon voyage, mais je reviendrai sûrement faire une pause ici.",
+      "followups": [
+        "Je dois continuer mon voyage, mais je reviendrai sûrement faire une pause ici."
+      ]
     },
     {
       "id": "greeting",
@@ -1142,10 +1381,14 @@
         "cc"
       ],
       "responses": [
-        "Bonjour, {player} ! Je suis {name}. {flavor}",
-        "Salut ! Ravi de faire une pause dans votre snack. Comment se passe le service ?"
+        "Bonjour, {player} ! Je m’appelle {name}. J’avais prévu de poursuivre mon voyage, puis l’odeur de votre cuisine m’a fait changer d’avis. Je viens de {origin}, et j’ai quelques histoires dans mes bagages. Nous pouvons parler de ma commande, de mes traditions ou de ce que j’aimerais faire un jour. Vous avez un petit moment pour discuter ?",
+        "Bonjour, {player} ! Je suis {name}. {flavor} J’arrive de {origin} et je suis heureux de poser mes bagages un moment. J’aime {hobby}, mais les rencontres restent ma partie préférée du voyage. Demandez-moi une histoire, mes traditions ou mes projets : j’ai tout le temps de discuter pendant que vous cuisinez.",
+        "Salut ! Ravi de faire une pause dans votre snack. Comment se passe le service ? J’arrive de {origin} et je suis heureux de poser mes bagages un moment. J’aime {hobby}, mais les rencontres restent ma partie préférée du voyage. Demandez-moi une histoire, mes traditions ou mes projets : j’ai tout le temps de discuter pendant que vous cuisinez."
       ],
-      "explanation": "Nous pouvons parler de ma commande, de mon voyage, de mes goûts ou de votre restaurant."
+      "explanation": "Nous pouvons parler de ma commande, de mon voyage, de mes goûts ou de votre restaurant.",
+      "followups": [
+        "Nous pouvons parler de ma commande, de mon voyage, de mes goûts ou de votre restaurant."
+      ]
     },
     {
       "id": "help",
@@ -1163,7 +1406,10 @@
         "E sert à agir près des postes, I ouvre l’inventaire et le canapé du bureau permet de sauvegarder.",
         "Le PC du bureau permet de commander les ingrédients découverts. Fermez-le pour recevoir la livraison."
       ],
-      "explanation": "Depuis le snack, la porte BUREAU mène au PC et au canapé. Les achats sont livrés après 4 secondes de jeu."
+      "explanation": "Depuis le snack, la porte BUREAU mène au PC et au canapé. Les achats sont livrés après 4 secondes de jeu.",
+      "followups": [
+        "Depuis le snack, la porte BUREAU mène au PC et au canapé. Les achats sont livrés après 4 secondes de jeu."
+      ]
     },
     {
       "id": "unknown",
@@ -1171,11 +1417,25 @@
         "*"
       ],
       "responses": [
+        "Je ne suis pas certain d’avoir compris votre question. Je connais surtout la cuisine du snack, mes voyages et les petites habitudes de {origin}. Vous pouvez me demander une histoire, mes traditions, mes rêves ou ce que contient ma commande. Si vous reprenez le sujet avec quelques mots plus précis, j’essaierai de vous répondre autrement.",
         "Je ne connais pas bien ce sujet. Vous pouvez me parler de cuisine, de voyages ou de votre restaurant.",
         "Je ne suis pas sûr de comprendre. Vous parlez de ma commande, de mes goûts ou de mon voyage ?",
         "J’ai surtout des histoires de voyage et de repas. Quel sujet vous intéresse ?"
       ],
-      "explanation": "Je peux discuter du menu, de mes origines, de mes loisirs, de la planète et de votre progression."
+      "explanation": "Je peux discuter du menu, de mes origines, de mes loisirs, de la planète et de votre progression.",
+      "followups": [
+        "Je peux discuter du menu, de mes origines, de mes loisirs, de la planète et de votre progression."
+      ]
+    }
+  ],
+  "customer_reactions": [
+    {
+      "id": "dismiss",
+      "intent": "dismiss",
+      "emotion": "angry",
+      "state": "leaving",
+      "sale": false,
+      "speed_multiplier": 1.4
     }
   ]
 }

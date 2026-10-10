@@ -152,3 +152,9 @@ Le moteur local reconnaît les salutations, présentations, commandes, prix, ing
 Il s’agit d’un moteur de dialogues contextuels à règles et modèles de phrases, pas d’un grand modèle de langage comme ChatGPT : les questions hors de ses sujets reçoivent une demande de clarification. Le chat n’envoie aucune donnée sur Internet et ne modifie pas les commandes ou ressources.
 
 Validation : `godot --headless --audio-driver Dummy --path . --script tests/offline_chat_test.gd`, avec un `XDG_DATA_HOME` temporaire, teste les personnalités, variantes, mots accentués, relances, mémoire et sauvegardes.
+
+## Mini-IA locale et dialogues développés (v9)
+
+Le moteur donne un score aux mots et expressions reconnus pour identifier la question, puis combine le sujet, la personnalité et la mémoire du client. Sept histoires originales en trois parties, des traditions et des projets personnels complètent les réponses détaillées sur le menu, les ingrédients, les voyages et le restaurant. « Raconte la suite », « et ensuite ? » ou « dis-m’en plus » poursuivent le sujet actuel. Des boutons suggèrent une histoire, sa suite et les traditions. Le journal complet et la progression des histoires restent dans la sauvegarde, avec des réponses jusqu’à 1 000 caractères. Un aperçu court évite que les sous-titres débordent dans le décor.
+
+« Casse-toi », « va-t’en » ou « dégage » fait partir le client en colère, plus rapidement, sans vente ni récompense. Un nouveau client entre après son départ. La commande déjà portée est conservée et peut être rangée avec R. La colère et le départ sont sauvegardés. Ce sont des réactions locales codées ; aucun modèle de langage ou service externe n’est utilisé.
