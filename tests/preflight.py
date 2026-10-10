@@ -8,8 +8,10 @@ required = {
     "customers": {"id", "name", "color", "line"},
     "stations": {"id", "name", "x", "action"},
     "systems": {"id"},
-    "visuals": {"id", "asset", "width", "height"},
+    "visuals": {"id", "asset"},
     "animations": {"id"},
+    "races": {"id", "name", "color", "sprite_index", "source_x", "source_width"},
+    "interface": {"id"},
 }
 errors = []
 for table, columns in required.items():
@@ -22,6 +24,10 @@ for table, columns in required.items():
             errors.append(f"{table}: identifiant dupliqué {row['id']}")
         ids.add(row["id"])
 ingredients = {row["id"] for row in data["ingredients"]}
+races = {row["id"] for row in data["races"]}
+for customer in data["customers"]:
+    if customer["race"] not in races:
+        errors.append(f"{customer['id']}: race inconnue")
 for visual in data["visuals"]:
     if not (Path(__file__).parents[1] / visual["asset"]).is_file():
         errors.append(f"{visual['id']}: illustration manquante")

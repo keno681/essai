@@ -56,22 +56,53 @@
   ],
   "customers": [
     {
-      "id": "bloop",
-      "name": "Bloop",
-      "color": "87d7dd",
-      "line": "Sans gravité, s'il vous plaît."
+      "id": "human",
+      "name": "Milo",
+      "race": "human",
+      "color": "e2b080",
+      "line": "Un wrap après le travail !"
     },
     {
-      "id": "zaza",
-      "name": "Zaza",
-      "color": "ffb0ce",
-      "line": "J'ai trois estomacs, mais je commence petit."
+      "id": "avian",
+      "name": "Kiri",
+      "race": "avian",
+      "color": "dc8955",
+      "line": "Pas de graines, ça me chatouille le bec."
     },
     {
-      "id": "otto",
-      "name": "Otto",
-      "color": "f9d47b",
-      "line": "Votre meilleur wrap, terrien !"
+      "id": "apex",
+      "name": "Boris",
+      "race": "apex",
+      "color": "a49c9b",
+      "line": "Ma pause déjeuner est sacrée."
+    },
+    {
+      "id": "floran",
+      "name": "Liane",
+      "race": "floran",
+      "color": "82ad67",
+      "line": "Floran veut croquer !"
+    },
+    {
+      "id": "hylotl",
+      "name": "Nami",
+      "race": "hylotl",
+      "color": "83c5c2",
+      "line": "Un wrap, trois yeux pour le savourer."
+    },
+    {
+      "id": "glitch",
+      "name": "Sir Boulon",
+      "race": "glitch",
+      "color": "afb7bd",
+      "line": "Commande détectée. Faim : 100 %."
+    },
+    {
+      "id": "novakid",
+      "name": "Sunny",
+      "race": "novakid",
+      "color": "efb74f",
+      "line": "Bien cuit, partenaire."
     }
   ],
   "stations": [
@@ -106,6 +137,13 @@
       "first_goal": 3,
       "upgrade_cost": 35,
       "upgrade_bonus": 5
+    },
+    {
+      "id": "customer_flow",
+      "spawn_x": 1250,
+      "waiting_x": 946,
+      "exit_x": 1270,
+      "speed": 105
     }
   ],
   "visuals": [
@@ -114,6 +152,12 @@
       "asset": "art/restaurant.png",
       "width": 1200,
       "height": 768
+    },
+    {
+      "id": "races",
+      "asset": "art/races.png",
+      "columns": 7,
+      "height_fraction": 0.86
     }
   ],
   "animations": [
@@ -138,6 +182,98 @@
     {
       "id": "harvest",
       "duration": 0.6
+    }
+  ],
+  "races": [
+    {
+      "id": "human",
+      "name": "Humain",
+      "color": "e2b080",
+      "sprite_index": 0,
+      "source_x": 0,
+      "source_width": 244
+    },
+    {
+      "id": "avian",
+      "name": "Avien",
+      "color": "dc8955",
+      "sprite_index": 1,
+      "source_x": 244,
+      "source_width": 301
+    },
+    {
+      "id": "apex",
+      "name": "Apex",
+      "color": "a49c9b",
+      "sprite_index": 2,
+      "source_x": 545,
+      "source_width": 291
+    },
+    {
+      "id": "floran",
+      "name": "Floran",
+      "color": "82ad67",
+      "sprite_index": 3,
+      "source_x": 836,
+      "source_width": 270
+    },
+    {
+      "id": "hylotl",
+      "name": "Hylotl",
+      "color": "83c5c2",
+      "sprite_index": 4,
+      "source_x": 1106,
+      "source_width": 279
+    },
+    {
+      "id": "glitch",
+      "name": "Glitch",
+      "color": "afb7bd",
+      "sprite_index": 5,
+      "source_x": 1385,
+      "source_width": 257
+    },
+    {
+      "id": "novakid",
+      "name": "Novakid",
+      "color": "efb74f",
+      "sprite_index": 6,
+      "source_x": 1642,
+      "source_width": 274
+    }
+  ],
+  "interface": [
+    {
+      "id": "hud",
+      "title": "COSMO WRAP",
+      "theme": "space_console"
+    },
+    {
+      "id": "inventory",
+      "key": "I",
+      "columns": 6,
+      "slots": 18
+    },
+    {
+      "id": "menu",
+      "key": "Escape",
+      "actions": [
+        "resume",
+        "inventory",
+        "races",
+        "options",
+        "new_service",
+        "quit"
+      ]
+    },
+    {
+      "id": "options",
+      "settings": [
+        "fullscreen",
+        "sound",
+        "brightness",
+        "walking_speed"
+      ]
     }
   ]
 }

@@ -15,11 +15,25 @@ func run_tests() -> void:
 	game.selected = 0
 	for id in game.inventory: game.inventory[id] = 0
 	assert(not game.cook(), "Une recette sans ingrédients doit échouer")
+	assert(game.customer_state == "arriving")
+	var start = game.customer_x
+	game.update_customers(1)
+	assert(game.customer_x < start, "Le client doit marcher jusqu'au comptoir")
+	game.update_customers(10)
+	assert(game.customer_state == "waiting")
 	for i in range(3):
 		game.selected = i
 		for id in game.recipe(i).ingredients: game.inventory[id] += 1
 		assert(game.cook(), "La recette doit réussir avec ses ingrédients")
 		assert(game.serve(), "Le client doit recevoir sa commande")
+		assert(game.customer_state == "leaving")
+		assert(not game.serve(), "Impossible de servir deux fois un client en départ")
+		var previous_actor = game.actor_customer
+		game.update_customers(10)
+		assert(game.actor_customer != previous_actor)
+		assert(game.customer_state == "arriving")
+		game.update_customers(10)
+		assert(game.customer_state == "waiting")
 	assert(game.served == 3)
 	assert(game.coins == 42)
 	assert(game.completed)
@@ -38,5 +52,22 @@ func run_tests() -> void:
 	assert(game.inventory.moonleaf == before + 1)
 	game.interact()
 	assert(game.inventory.moonleaf == before + 1, "Repousse respectée")
-	print("PASS : 3 recettes, service, objectif, terrasse, refus commande incorrecte, récolte et repousse.")
+	game.ui.show_page("inventory")
+	assert(game.menu)
+	game.ui.hide_page()
+	assert(not game.menu)
+	game.player_race = "floran"
+	game.brightness = 0.8
+	game.speed_setting = 2
+	game.save_settings()
+	game.player_race = "human"
+	game.load_settings()
+	assert(game.player_race == "floran")
+	assert(is_equal_approx(game.brightness, 0.8))
+	assert(game.speed_setting == 2)
+	game.return_wrap()
+	assert(game.holding == -1)
+	game.new_service()
+	assert(game.served == 0 and game.coins == 0 and not game.upgraded)
+	print("PASS : recettes, ventes, trajet arrivée/départ, double vente refusée, terrasse, récolte, inventaire, race et options persistantes, nouveau service.")
 	quit(0)

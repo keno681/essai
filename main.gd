@@ -23,6 +23,18 @@ var backdrop: Texture2D
 var menu := true
 var completed := false
 var font: Font = ThemeDB.fallback_font
+var ui: CanvasLayer
+var race_texture: Texture2D
+var player_race := "human"
+var customer_state := "arriving"
+var customer_x := 1250.0
+var actor_customer := 0
+var npc_cycle := 0.0
+var fullscreen := false
+var sound_enabled := true
+var brightness := 1.0
+var speed_setting := 1
+var sound_player: AudioStreamPlayer
 
 func _ready() -> void:
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
@@ -30,6 +42,13 @@ func _ready() -> void:
 		inventory[item.id] = 0
 		cooldowns[item.id] = 0.0
 	load_progress()
+	load_settings()
+	actor_customer = customer
+	race_texture = load("res://art/races.png")
+	sound_player = AudioStreamPlayer.new()
+	add_child(sound_player)
+	ui = load("res://ui.gd").new()
+	add_child(ui)
 	var art_path: String = "res://" + sheet.visuals[0].asset
 	if ResourceLoader.exists(art_path):
 		backdrop = load(art_path)
@@ -58,10 +77,14 @@ func cook() -> bool:
 		inventory[ingredient] -= 1
 	holding = selected
 	action_time = float(animation("cook").duration)
+	play_sound(440)
 	say("Wrap prêt ! Direction le comptoir.")
 	return true
 
 func serve() -> bool:
+	if customer_state != "waiting":
+		say("Le prochain client arrive. Attendez-le au comptoir.")
+		return false
 	if holding < 0:
 		say("Votre client attend " + recipe(order).name + ".")
 		return false
@@ -72,6 +95,8 @@ func serve() -> bool:
 	served += 1
 	action_time = float(animation("serve").duration)
 	holding = -1
+	customer_state = "leaving"
+	play_sound(740)
 	customer = (customer + 1) % sheet.customers.size()
 	order = (order + 1) % sheet.recipes.size()
 	if served == 3:
@@ -89,6 +114,7 @@ func interact() -> void:
 				say("Ça repousse tranquillement… Essayez une autre plante.")
 			else:
 				inventory[item.id] += 1
+				play_sound(320)
 				action_time = float(animation("harvest").duration)
 				cooldowns[item.id] = float(item.regrow_seconds)
 				say("+1 " + item.name)
@@ -111,12 +137,15 @@ func interact() -> void:
 		say("Approchez d'une plante ou d'un poste, puis appuyez sur E.")
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if not event.is_pressed() or event.is_echo():
-		return
+	if not event.is_pressed() or event.is_echo(): return
 	if event.keycode == KEY_ESCAPE:
-		menu = not menu
-	elif menu and event.keycode in [KEY_ENTER, KEY_SPACE]:
-		menu = false
+		if menu: ui.hide_page()
+		else: ui.show_page("menu")
+	elif event.keycode == KEY_I:
+		if menu and ui.page == "inventory": ui.hide_page()
+		else: ui.show_page("inventory")
+	elif menu and event.keycode in [KEY_ENTER,KEY_SPACE]:
+		ui.hide_page()
 	elif not menu:
 		match event.keycode:
 			KEY_1: selected = 0
@@ -125,36 +154,59 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_E: interact()
 			KEY_SPACE:
 				if player.y >= 505: vertical = -450
-			KEY_R:
-				if holding >= 0:
-					for ingredient in recipe(holding).ingredients:
-						inventory[ingredient] += 1
-					holding = -1
-					say("Ingrédients rangés : rien n'est perdu.")
-			KEY_N:
-				coins = 0
-				served = 0
-				upgraded = false
-				completed = false
-				customer = 0
-				order = 0
-				holding = -1
-				for id in inventory:
-					inventory[id] = 0
-					cooldowns[id] = 0.0
-				save_progress()
-				say("Nouveau service !")
+			KEY_R: return_wrap()
+			KEY_N: ui.show_page("confirm")
+
+func return_wrap() -> void:
+	if holding >= 0:
+		for ingredient in recipe(holding).ingredients: inventory[ingredient] += 1
+		holding = -1
+		say("Ingrédients rangés : rien n'est perdu.")
+
+func new_service() -> void:
+	coins = 0
+	served = 0
+	upgraded = false
+	completed = false
+	customer = 0
+	actor_customer = 0
+	order = 0
+	holding = -1
+	customer_state = "arriving"
+	customer_x = 1250
+	for id in inventory:
+		inventory[id] = 0
+		cooldowns[id] = 0.0
+	save_progress()
+	say("Nouveau service !")
+
+func update_customers(delta: float) -> void:
+	var flow: Dictionary = sheet.systems[2]
+	if customer_state == "arriving":
+		customer_x = move_toward(customer_x,float(flow.waiting_x),float(flow.speed)*delta)
+		npc_cycle += delta*float(animation("walk").frequency)
+		if is_equal_approx(customer_x,float(flow.waiting_x)):
+			customer_state = "waiting"
+			say(sheet.customers[customer].name+" commande "+recipe(order).name+".")
+	elif customer_state == "leaving":
+		customer_x = move_toward(customer_x,float(flow.exit_x),float(flow.speed)*delta)
+		npc_cycle += delta*float(animation("walk").frequency)
+		if is_equal_approx(customer_x,float(flow.exit_x)):
+			actor_customer = customer
+			customer_x = float(flow.spawn_x)
+			customer_state = "arriving"
 
 func _process(delta: float) -> void:
-	clock += delta
 	if not menu:
+		clock += delta
+		update_customers(delta)
 		var axis := float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_Q) or Input.is_physical_key_pressed(KEY_LEFT))
 		walking = absf(axis) > 0
 		if walking:
 			facing = signf(axis)
 			walk_cycle += delta * float(animation("walk").frequency)
 		action_time = maxf(0.0, action_time - delta)
-		player.x = clampf(player.x + axis * 240 * delta, 40, 1160)
+		player.x = clampf(player.x + axis * [180,240,310][speed_setting] * delta, 40, 1160)
 		vertical += 1100 * delta
 		player.y = minf(505, player.y + vertical * delta)
 		if player.y >= 505: vertical = 0
@@ -174,7 +226,7 @@ func load_progress() -> void:
 		coins = maxi(0, int(saved.get("coins", 0)))
 		served = maxi(0, int(saved.get("served", 0)))
 		upgraded = bool(saved.get("upgraded", false))
-		customer = posmod(int(saved.get("customer", 0)), 3)
+		customer = posmod(int(saved.get("customer", 0)), sheet.customers.size())
 		order = posmod(int(saved.get("order", 0)), 3)
 		completed = served >= 3
 
@@ -188,70 +240,49 @@ func panel(rect: Rect2, color: Color, radius: int = 14) -> void:
 	draw_style_box(style, rect)
 
 func alien(position: Vector2, color: Color, chef: bool = false) -> void:
-	var phase := walk_cycle if chef else clock * float(animation("idle").frequency)
-	var stride := sin(phase) * float(animation("walk").amplitude) if chef and walking else sin(phase) * float(animation("idle").amplitude)
-	var bounce := absf(cos(phase)) * 2.0 if chef and walking else sin(clock * 2) * 1.0
-	var direction := facing if chef else -1.0
-	var skin := Color("e5b388") if chef else color.lightened(0.2)
-	var shirt := Color("f6eddc") if chef else color.darkened(0.3)
-	var pants := Color("343940")
-	var origin := position + Vector2(0, -6 - bounce)
-	draw_set_transform(position + Vector2(0,37), 0, Vector2(1.6,0.28))
-	draw_circle(Vector2.ZERO,22,Color(0.05,0.03,0.02,0.3))
-	draw_set_transform(origin,0,Vector2(direction,1))
-	# Articulated knees, forearms and feet: a proper walking silhouette.
-	for side in [-1,1]:
-		var hip := Vector2(side*7,9)
-		var knee := Vector2(side*7 + stride*side*0.55,23)
-		var ankle := Vector2(side*7 + stride*side,40)
-		draw_line(hip,knee,pants.darkened(0.12 if side<0 else 0),11,true)
-		draw_line(knee,ankle,pants,9,true)
-		panel(Rect2(ankle+Vector2(-5,-3),Vector2(17,7)),Color("352b2b"),3)
-	panel(Rect2(-18,-22,36,37),shirt,8)
-	if chef:
-		panel(Rect2(-12,-12,24,32),Color("b16b47"),3)
-		draw_line(Vector2(-11,-22),Vector2(-7,6),Color("b16b47"),3,true)
-		draw_line(Vector2(11,-22),Vector2(7,6),Color("b16b47"),3,true)
-		panel(Rect2(-7,5,14,8),Color("8f5039"),2)
-	else:
-		draw_line(Vector2(0,-20),Vector2(0,11),shirt.lightened(0.18),2,true)
-	for side in [-1,1]:
-		var shoulder := Vector2(side*18,-15)
-		var elbow := Vector2(side*22 - stride*side*0.35,0)
-		var hand := Vector2(side*20-stride*side*0.7,13)
-		if chef and side==1 and (holding>=0 or action_time>0):
-			elbow = Vector2(26,-4)
-			hand = Vector2(37,-16 + sin(action_time*24)*4 if action_time>0 else -13)
-		draw_line(shoulder,elbow,shirt.darkened(0.1),10,true)
-		draw_line(elbow,hand,skin,7,true)
-		draw_circle(hand,4,skin)
-		if chef and side==1 and holding>=0:
-			draw_set_transform(origin+Vector2(hand.x*direction,hand.y-6),-0.2*direction)
-			panel(Rect2(-6,-13,22,17),Color("efd1a0"),5)
-			draw_line(Vector2(-3,-10),Vector2(12,-10),Color("6a9e50"),4,true)
-			draw_line(Vector2(1,-9),Vector2(9,-9),Color("c85240"),3,true)
-			draw_set_transform(origin,0,Vector2(direction,1))
-	draw_line(Vector2(0,-22),Vector2(0,-31),skin.darkened(0.1),10,true)
-	panel(Rect2(-15,-59,30,32),skin,12)
-	draw_circle(Vector2(15,-41),4,skin.darkened(0.03))
-	draw_circle(Vector2(8,-47),2,Color("302e35"))
-	draw_line(Vector2(5,-51),Vector2(11,-51),Color("644a3d"),2,true)
-	draw_line(Vector2(10,-36),Vector2(4,-34),Color("935c50"),2,true)
-	draw_circle(Vector2(14,-42),2,Color("f0bf95") if chef else skin)
-	if chef:
-		panel(Rect2(-18,-63,36,9),Color("fff7e7"),3)
-		for x in [-10,0,10]: draw_circle(Vector2(x,-66),9,Color("fff7e7"))
-		draw_line(Vector2(-15,-55),Vector2(12,-55),Color("dcc9ac"),2,true)
-	else:
-		panel(Rect2(-16,-63,30,11),color.darkened(0.5),5)
-		draw_line(Vector2(-10,-59),Vector2(-15,-72),color,3,true)
-		draw_circle(Vector2(-15,-73),4,color.lightened(0.25))
+	if not race_texture: return
+	var race_id: String = player_race if chef else sheet.customers[actor_customer].race
+	var race_index := 0
+	var sprite_row: Dictionary = sheet.races[0]
+	for row in sheet.races:
+		if row.id == race_id:
+			race_index = int(row.sprite_index)
+			sprite_row = row
+	var moving := walking if chef else customer_state != "waiting"
+	var phase := walk_cycle if chef else npc_cycle
+	var stride := sin(phase)*0.2 if moving else 0.0
+	var direction := facing if chef else (1.0 if customer_state=="leaving" else -1.0)
+	var breathe := sin(clock*2.0)*1.2
+	var bob := absf(cos(phase))*2 if moving else breathe
+	var foot := position+Vector2(0,39)
+	var cell := Vector2(float(sprite_row.source_width),race_texture.get_height())
+	var source_x := float(sprite_row.source_x)
+	var height := 152.0
+	var width := height*cell.x/cell.y
+	var cut := 0.76
+	draw_set_transform(foot,0,Vector2(1.6,0.28))
+	draw_circle(Vector2.ZERO,20,Color(0.03,0.02,0.01,0.35))
+	# Split the HD sheet into an upper body and two leg pieces for cutout motion.
+	for side in [0,1]:
+		var hip := Vector2((side-0.5)*width*0.5,-height*(1-cut)+bob)
+		var angle := stride*(-1 if side==0 else 1)
+		draw_set_transform(foot+Vector2(hip.x*direction,hip.y),angle*direction,Vector2(direction,1))
+		draw_texture_rect_region(race_texture,Rect2(-width*0.25,0,width*0.5,height*(1-cut)),Rect2(source_x+cell.x*side*0.5,cell.y*cut,cell.x*0.5,cell.y*(1-cut)))
+	var gesture := sin(action_time*22)*0.025 if chef and action_time>0 else 0.0
+	draw_set_transform(foot+Vector2(0,bob),gesture,Vector2(direction,1))
+	draw_texture_rect_region(race_texture,Rect2(-width*0.5,-height,width,height*cut),Rect2(source_x,0,cell.x,cell.y*cut))
+	if chef and holding>=0:
+		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
+		draw_line(Vector2(12,-62),Vector2(29,-62),Color("679958"),4,true)
+		draw_line(Vector2(16,-62),Vector2(26,-62),Color("c4583f"),3,true)
+	if not chef and customer_state=="leaving":
+		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
 	draw_set_transform(Vector2.ZERO)
 
 func _draw() -> void:
 	if sheet.is_empty(): return
 	if backdrop:
-		draw_texture_rect(backdrop,Rect2(0,0,float(sheet.visuals[0].width),float(sheet.visuals[0].height)),false)
+		draw_texture_rect(backdrop,Rect2(0,0,float(sheet.visuals[0].width),float(sheet.visuals[0].height)),false,Color(brightness,brightness,brightness))
 	else:
 		draw_rect(Rect2(0,190,1200,420),Color("463e39"))
 	# Soft room lighting and active stations stay legible without covering the art.
@@ -279,35 +310,44 @@ func _draw() -> void:
 	if upgraded:
 		draw_circle(Vector2(1127,432),26,Color(1,0.7,0.3,0.1))
 		label_at("+5 / wrap",Vector2(1060,366),16,Color("f9d47b"))
-	alien(Vector2(946,505),Color(sheet.customers[customer].color))
+	alien(Vector2(customer_x,505),Color(sheet.customers[actor_customer].color))
 	alien(player,Color("bca2e9"),true)
 	panel(Rect2(803,205,367,77),Color("eee2c9"),10)
-	label_at(sheet.customers[customer].name+" · "+recipe(order).name,Vector2(818,232),19,Color("44382e"))
-	label_at(sheet.customers[customer].line,Vector2(818,254),13,Color("685446"))
+	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else ("Merci, à bientôt !" if customer_state=="leaving" else "Un client arrive…"),Vector2(818,232),19,Color("44382e"))
+	label_at(sheet.customers[actor_customer].line,Vector2(818,254),13,Color("685446"))
 	label_at("Client patient · Prenez votre temps",Vector2(818,273),12,Color("8b7055"))
-	panel(Rect2(22,19,1156,64),Color("302b27"))
-	label_at("COSMO / WRAP",Vector2(42,58),25,Color("ffd696"))
-	label_at("PREMIER SERVICE · SOLO · TRANQUILLE",Vector2(300,56),16,Color("91b2bc"))
-	label_at("%d crédits    %d / 3 clients" % [coins,served],Vector2(880,57),21,Color("f9d47b"))
-	for i in range(3):
-		var x := 25 + i*390
-		panel(Rect2(x,98,370,92),Color("67503a") if selected==i else Color("302b27"))
-		label_at("%d  %s" % [i+1,recipe(i).name],Vector2(x+15,127),21,Color("ffd696") if selected==i else Color("c4d4df"))
-		var parts: Array[String] = []
-		for id in recipe(i).ingredients:
-			for ingredient in sheet.ingredients:
-				if ingredient.id == id: parts.append("%s (%d)" % [ingredient.name,inventory[id]])
-		label_at(" + ".join(parts),Vector2(x+15,153),13)
-		label_at(recipe(i).joke,Vector2(x+15,174),13,Color("91b2bc"))
-	panel(Rect2(25,612,1150,82),Color("302b27"))
-	label_at(message if message_time > 0 else "Prenez votre temps. Vos clients ne partent jamais sans leur wrap.",Vector2(45,642),18,Color("ffd696"))
-	label_at("← → / Q D : marcher    E : agir    1 2 3 : recette    Espace : sauter    R : ranger    Échap : pause    N : recommencer",Vector2(45,677),15,Color("91b2bc"))
-	if menu:
-		draw_rect(Rect2(0,0,1200,720),Color(0.02,0.03,0.08,0.85))
-		panel(Rect2(260,190,680,355),Color("203140"),22)
-		label_at("COSMO WRAP",Vector2(370,266),48,Color("ffd696"))
-		label_at("Une petite cuisine. Un très grand univers.",Vector2(370,309),21)
-		label_at("1. Récoltez deux ingrédients au jardin, à gauche.",Vector2(310,367),20)
-		label_at("2. Choisissez la recette commandée, puis cuisinez.",Vector2(310,402),20)
-		label_at("3. Servez trois aliens et ouvrez votre terrasse !",Vector2(310,437),20)
-		label_at("ENTRÉE pour jouer · Aucun chrono, aucun stress",Vector2(325,506),21,Color("91dbc2"))
+
+func save_settings() -> void:
+	var file := FileAccess.open("user://settings.json",FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify({"race":player_race,"fullscreen":fullscreen,"sound":sound_enabled,"brightness":brightness,"speed":speed_setting}))
+
+func load_settings() -> void:
+	if not FileAccess.file_exists("user://settings.json"): return
+	var data = JSON.parse_string(FileAccess.get_file_as_string("user://settings.json"))
+	if not data is Dictionary: return
+	for race in sheet.races:
+		if race.id==data.get("race","human"): player_race=race.id
+	sound_enabled = bool(data.get("sound",true))
+	brightness = clampf(float(data.get("brightness",1)),0.55,1.25)
+	speed_setting = clampi(int(data.get("speed",1)),0,2)
+	set_fullscreen(bool(data.get("fullscreen",false)))
+
+func set_fullscreen(value: bool) -> void:
+	fullscreen = value
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if value else DisplayServer.WINDOW_MODE_WINDOWED)
+	save_settings()
+
+func play_sound(frequency: float) -> void:
+	if not sound_enabled or not is_instance_valid(sound_player): return
+	var bytes := PackedByteArray()
+	for i in range(5000):
+		var sample := int(sin(i*frequency*TAU/22050.0)*6000*(1.0-i/5000.0))
+		bytes.append(sample & 255)
+		bytes.append((sample >> 8) & 255)
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = 22050
+	stream.data = bytes
+	sound_player.stream = stream
+	sound_player.play()
