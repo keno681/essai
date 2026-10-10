@@ -1,26 +1,143 @@
 {
   "ingredients": [
-    {"id":"moonleaf","name":"Salade lunaire","color":"80dda0","x":130,"regrow_seconds":8},
-    {"id":"sunfruit","name":"Tomate solaire","color":"ff9778","x":270,"regrow_seconds":10},
-    {"id":"mushroom","name":"Champi cosmique","color":"bd9df4","x":410,"regrow_seconds":12}
+    {
+      "id": "moonleaf",
+      "name": "Salade lunaire",
+      "color": "80dda0",
+      "x": 130,
+      "regrow_seconds": 8
+    },
+    {
+      "id": "sunfruit",
+      "name": "Tomate solaire",
+      "color": "ff9778",
+      "x": 270,
+      "regrow_seconds": 10
+    },
+    {
+      "id": "mushroom",
+      "name": "Champi cosmique",
+      "color": "bd9df4",
+      "x": 410,
+      "regrow_seconds": 12
+    }
   ],
   "recipes": [
-    {"id":"orbit","name":"L'Orbite verte","ingredients":["moonleaf","sunfruit"],"price":12,"joke":"Une salade qui tourne rond."},
-    {"id":"nebula","name":"La Nébuleuse","ingredients":["moonleaf","mushroom"],"price":14,"joke":"Sans poussière d'étoile. Promis."},
-    {"id":"supernova","name":"La Supernova","ingredients":["sunfruit","mushroom"],"price":16,"joke":"Explose en bouche, pas en cuisine."}
+    {
+      "id": "orbit",
+      "name": "L'Orbite verte",
+      "ingredients": [
+        "moonleaf",
+        "sunfruit"
+      ],
+      "price": 12,
+      "joke": "Une salade qui tourne rond."
+    },
+    {
+      "id": "nebula",
+      "name": "La Nébuleuse",
+      "ingredients": [
+        "moonleaf",
+        "mushroom"
+      ],
+      "price": 14,
+      "joke": "Sans poussière d'étoile. Promis."
+    },
+    {
+      "id": "supernova",
+      "name": "La Supernova",
+      "ingredients": [
+        "sunfruit",
+        "mushroom"
+      ],
+      "price": 16,
+      "joke": "Explose en bouche, pas en cuisine."
+    }
   ],
   "customers": [
-    {"id":"bloop","name":"Bloop","color":"87d7dd","line":"Sans gravité, s'il vous plaît."},
-    {"id":"zaza","name":"Zaza","color":"ffb0ce","line":"J'ai trois estomacs, mais je commence petit."},
-    {"id":"otto","name":"Otto","color":"f9d47b","line":"Votre meilleur wrap, terrien !"}
+    {
+      "id": "bloop",
+      "name": "Bloop",
+      "color": "87d7dd",
+      "line": "Sans gravité, s'il vous plaît."
+    },
+    {
+      "id": "zaza",
+      "name": "Zaza",
+      "color": "ffb0ce",
+      "line": "J'ai trois estomacs, mais je commence petit."
+    },
+    {
+      "id": "otto",
+      "name": "Otto",
+      "color": "f9d47b",
+      "line": "Votre meilleur wrap, terrien !"
+    }
   ],
   "stations": [
-    {"id":"kitchen","name":"Cuisine","x":650,"action":"cook"},
-    {"id":"counter","name":"Comptoir","x":845,"action":"serve"},
-    {"id":"upgrade","name":"Agrandir","x":1090,"action":"upgrade"}
+    {
+      "id": "kitchen",
+      "name": "Cuisine",
+      "x": 650,
+      "action": "cook"
+    },
+    {
+      "id": "counter",
+      "name": "Comptoir",
+      "x": 845,
+      "action": "serve"
+    },
+    {
+      "id": "upgrade",
+      "name": "Agrandir",
+      "x": 1090,
+      "action": "upgrade"
+    }
   ],
   "systems": [
-    {"id":"movement","speed":240,"jump_speed":-450,"gravity":1100},
-    {"id":"service","first_goal":3,"upgrade_cost":35,"upgrade_bonus":5}
+    {
+      "id": "movement",
+      "speed": 240,
+      "jump_speed": -450,
+      "gravity": 1100
+    },
+    {
+      "id": "service",
+      "first_goal": 3,
+      "upgrade_cost": 35,
+      "upgrade_bonus": 5
+    }
+  ],
+  "visuals": [
+    {
+      "id": "restaurant",
+      "asset": "art/restaurant.png",
+      "width": 1200,
+      "height": 768
+    }
+  ],
+  "animations": [
+    {
+      "id": "walk",
+      "frequency": 9.0,
+      "amplitude": 17.0
+    },
+    {
+      "id": "idle",
+      "frequency": 1.7,
+      "amplitude": 1.3
+    },
+    {
+      "id": "cook",
+      "duration": 0.8
+    },
+    {
+      "id": "serve",
+      "duration": 0.65
+    },
+    {
+      "id": "harvest",
+      "duration": 0.6
+    }
   ]
 }

@@ -8,6 +8,8 @@ required = {
     "customers": {"id", "name", "color", "line"},
     "stations": {"id", "name", "x", "action"},
     "systems": {"id"},
+    "visuals": {"id", "asset", "width", "height"},
+    "animations": {"id"},
 }
 errors = []
 for table, columns in required.items():
@@ -20,6 +22,9 @@ for table, columns in required.items():
             errors.append(f"{table}: identifiant dupliqué {row['id']}")
         ids.add(row["id"])
 ingredients = {row["id"] for row in data["ingredients"]}
+for visual in data["visuals"]:
+    if not (Path(__file__).parents[1] / visual["asset"]).is_file():
+        errors.append(f"{visual['id']}: illustration manquante")
 for recipe in data["recipes"]:
     for ingredient in recipe["ingredients"]:
         if ingredient not in ingredients:

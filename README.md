@@ -15,6 +15,16 @@ et vérifie son SHA-512 avant de le lancer. Cette alternative nécessite Interne
 L'archive Windows est contrôlée, mais le lancement sous Windows reste à tester.
 
 Prototype original de jeu solo en 2D de côté, de gestion et d'humour.
+
+## Mise à jour graphique
+
+Décor original illustré de snack orbital : broche à kebab, cuisine inox,
+comptoir éclairé, serre et terrasse. Le cuisinier et les clients sont dessinés
+en 2D avec membres articulés, marche, respiration et gestes d'interaction.
+Le cuisinier tient réellement son wrap à la main. Le décor a été généré pour
+ce projet ; aucun visuel de Wrap House Simulator ou Fallout Shelter n'est inclus.
+
+![Capture du jeu en fonctionnement](art/gameplay.png)
 Vous récoltez au jardin orbital, préparez trois recettes de wraps et servez
 des clients extraterrestres patients. Trois commandes réussies terminent le
 premier service ; vous pouvez continuer et ouvrir une terrasse pour 35 crédits.
@@ -51,7 +61,7 @@ dans `data/design.json`. Vérifier leurs cellules et références avant chaque b
 
 ## Périmètre et crédits
 
-Le prototype utilise des dessins vectoriels et du code créés pour ce projet.
+Le prototype utilise un décor généré, des dessins vectoriels et du code créés pour ce projet.
 Il n'inclut ni fichiers, ni personnages, ni contenu de Starbound ou de Wrap House.
 Il ne nécessite aucun de ces jeux et n'est donc pas destiné à Melty.
 Il n'a pas encore de voyage entre planètes, de campagne, de son ou de multijoueur.
