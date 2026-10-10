@@ -50,15 +50,8 @@ var speech_time := 0.0
 var speech_elapsed := 0.0
 var speech_pid := -1
 var chat_log: Array = []
-var ai_enabled := false
-var ai_key := ""
-var ai_busy := false
-var ai_status := "Dialogues locaux"
-var ai_history: Array = []
-var ai_generation := 0
-var ai_http: HTTPRequest
-# Overridden only by the local integration test; never configurable in the UI.
-var ai_endpoint := "https://api.openai.com/v1/responses"
+var chat_memory: Dictionary = {}
+var dialogue_engine: RefCounted
 var accessory_texture: Texture2D
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
@@ -76,11 +69,9 @@ func _ready() -> void:
 	actor_customer = customer
 	appearance = queued_appearance.duplicate(true)
 	next_order()
+	dialogue_engine = load("res://dialogue.gd").new()
 	load_progress()
 	load_settings()
-	ai_http = HTTPRequest.new()
-	ai_http.timeout = float(sheet.ai_chat[0].timeout_seconds)
-	add_child(ai_http)
 	accessory_texture = load("res://art/accessories.svg")
 	race_texture = load("res://art/races.png")
 	sound_player = AudioStreamPlayer.new()
@@ -141,7 +132,7 @@ func serve() -> bool:
 	var previous_level := restaurant_level()
 	coins += int(recipe(order).price) + (5 if upgraded else 0) + int(sheet.progression[previous_level].bonus)
 	served += 1
-	reset_ai_conversation()
+	reset_customer_conversation()
 	action_time = float(animation("serve").duration)
 	holding = -1
 	customer_state = "leaving"
@@ -247,7 +238,7 @@ func return_wrap() -> void:
 		say("Ingrédients rangés : rien n'est perdu.")
 
 func new_service() -> void:
-	reset_ai_conversation()
+	reset_customer_conversation()
 	room = "restaurant"
 	player.x = 565
 	discovered = ["moonleaf","sunfruit","mushroom"]
@@ -507,7 +498,6 @@ func recipe_unlocked(index: int) -> bool:
 	return true
 
 func travel(destination: String, arrival_x: float) -> void:
-	reset_ai_conversation()
 	room = destination
 	player = Vector2(arrival_x,505)
 	vertical = 0
@@ -576,7 +566,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":4,"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"version":5,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -608,7 +598,8 @@ func load_at_sofa() -> bool:
 	return true
 
 func apply_snapshot(data: Dictionary) -> void:
-	reset_ai_conversation()
+	reset_customer_conversation()
+	if data.get("chat_memory") is Dictionary: chat_memory=dialogue_engine.restore_memory(data.chat_memory,sheet)
 	chat_log.clear()
 	for entry in data.get("chat_log",[]):
 		if entry is String: chat_log.append(entry.left(220))
@@ -744,28 +735,16 @@ func chat_with_customer(words: String) -> bool:
 	if room!="restaurant" or customer_state!="waiting":
 		say("Attendez un client au comptoir pour discuter.")
 		return false
-	if ai_busy:
-		say("Le client réfléchit déjà à votre message…")
-		return false
 	chat_log.append("Vous : "+words)
-	var fallback := local_customer_reply(words)
-	if ai_enabled and not ai_key.is_empty():
-		request_ai_reply(words,fallback)
-	else:
-		ai_status = "Dialogues locaux" if not ai_enabled else "Clé API absente : dialogue local"
-		append_customer_reply(fallback)
+	append_customer_reply(local_customer_reply(words))
 	return true
 
 func local_customer_reply(words: String) -> String:
-	var reply: String = sheet.chat[-1].reply
-	for row in sheet.chat:
-		var matched := false
-		for keyword in row.keywords:
-			if keyword!="*" and keyword in words.to_lower(): matched=true
-		if matched:
-			reply=row.reply
-			break
-	return reply.replace("{order}",recipe(order).name)
+	var person: Dictionary = sheet.customers[actor_customer]
+	var names: Array[String] = []
+	for id in recipe(order).ingredients: names.append(ingredient(id).name)
+	var context := {"name":person.name,"race":person.race,"order":recipe(order).name,"price":int(recipe(order).price),"ingredients":" et ".join(names),"rank":sheet.progression[restaurant_level()].name,"bonus":int(sheet.progression[restaurant_level()].bonus)+(5 if upgraded else 0)}
+	return dialogue_engine.reply(words,context,chat_memory,sheet)
 
 func append_customer_reply(reply: String) -> void:
 	chat_log.append(sheet.customers[actor_customer].name+" : "+reply)
@@ -778,66 +757,8 @@ func append_customer_reply(reply: String) -> void:
 		if not voices.is_empty(): DisplayServer.tts_speak(reply,voices[0],70,1,1,0,true)
 	save_progress()
 
-func reset_ai_conversation() -> void:
-	ai_generation += 1
-	ai_busy = false
-	ai_history.clear()
-	if is_instance_valid(ai_http):
-		ai_http.cancel_request()
-		for connection in ai_http.request_completed.get_connections():
-			ai_http.request_completed.disconnect(connection.callable)
-	ai_status = "IA prête" if ai_enabled and not ai_key.is_empty() else "Dialogues locaux"
-
-func configure_ai(key: String, enabled: bool) -> void:
-	reset_ai_conversation()
-	ai_key = key.strip_edges()
-	ai_enabled = enabled
-	ai_status = "IA prête" if enabled and not ai_key.is_empty() else ("Clé API absente : dialogue local" if enabled else "Dialogues locaux")
-
-func request_ai_reply(words: String, fallback: String) -> void:
-	ai_history.append({"role":"user","content":words})
-	while ai_history.size()>int(sheet.ai_chat[0].history_messages): ai_history.pop_front()
-	var person: Dictionary = sheet.customers[actor_customer]
-	var instructions := "Tu joues uniquement le client %s, race %s, dans un jeu de restaurant spatial humoristique. Ta personnalité : %s. Ta commande actuelle : %s. Le restaurant est au rang %s. Réponds en français en une ou deux phrases, au maximum 40 mots. Réagis naturellement au joueur et garde ton rôle. Tu ne peux ni modifier les ressources ni exécuter des actions dans le jeu. Ne prétends pas avoir modifié la commande ou donné des objets. Ne demande pas de données personnelles ou de clés API." % [person.name,person.race,person.line,recipe(order).name,sheet.progression[restaurant_level()].name]
-	var payload := {"model":sheet.ai_chat[0].model,"instructions":instructions,"input":ai_history.duplicate(true),"max_output_tokens":int(sheet.ai_chat[0].max_output_tokens),"store":false}
-	ai_busy = true
-	ai_status = "Le client réfléchit…"
-	ai_generation += 1
-	var callback := finish_ai_reply.bind(ai_generation,actor_customer,fallback)
-	ai_http.request_completed.connect(callback,CONNECT_ONE_SHOT)
-	var error := ai_http.request(ai_endpoint,PackedStringArray(["Content-Type: application/json","Authorization: Bearer "+ai_key]),HTTPClient.METHOD_POST,JSON.stringify(payload))
-	if error!=OK:
-		ai_http.request_completed.disconnect(callback)
-		finish_ai_reply(HTTPRequest.RESULT_CANT_CONNECT,0,PackedStringArray(),PackedByteArray(),ai_generation,actor_customer,fallback)
-
-func parse_ai_reply(body: PackedByteArray) -> String:
-	var data = JSON.parse_string(body.get_string_from_utf8())
-	if not data is Dictionary or not data.get("output") is Array: return ""
-	var result := ""
-	for item in data.output:
-		if not item is Dictionary or not item.get("content") is Array: continue
-		for part in item.content:
-			if part is Dictionary and part.get("type")=="output_text" and part.get("text") is String:
-				result += part.text
-	return result.strip_edges().left(320)
-
-func finish_ai_reply(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray, generation: int, person: int, fallback: String) -> void:
-	if generation!=ai_generation or person!=actor_customer or customer_state!="waiting" or room!="restaurant": return
-	ai_busy = false
-	var reply := parse_ai_reply(body) if result==HTTPRequest.RESULT_SUCCESS and code==200 else ""
-	if reply.is_empty():
-		var reason := "service indisponible"
-		if code==401: reason="clé API refusée"
-		elif code==429: reason="quota ou limite API atteint"
-		elif result==HTTPRequest.RESULT_TIMEOUT: reason="délai dépassé"
-		ai_status = "Dialogue local : "+reason
-		reply=fallback
-	else:
-		ai_status = "Réponse IA · "+str(sheet.ai_chat[0].model)
-	ai_history.append({"role":"assistant","content":reply})
-	while ai_history.size()>int(sheet.ai_chat[0].history_messages): ai_history.pop_front()
-	append_customer_reply(reply)
-	if is_instance_valid(ui) and ui.page=="chat": ui.show_page("chat")
+func reset_customer_conversation() -> void:
+	chat_memory.clear()
 
 func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_colored_polygon(PackedVector2Array([at+Vector2(-9,-16),at+Vector2(9,-16),at+Vector2(6,3),at+Vector2(-6,3)]),Color("bacbd0"))

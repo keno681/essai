@@ -19,8 +19,9 @@ required = {
     "currency": {"id", "name", "plural", "logo"},
     "customer_variation": {"id", "size_min", "size_max", "head_min", "head_max", "hats", "glasses", "tentacle_counts", "tentacle_forms", "skin_colors", "clothing_colors", "pants_colors", "shoe_colors"},
     "progression": {"id", "name", "served", "bonus"},
-    "ai_chat": {"id", "model", "endpoint", "max_output_tokens", "history_messages", "timeout_seconds", "enabled_by_default", "persist_key", "fallback"},
-    "chat": {"id", "keywords", "reply"},
+    "local_chat": {"id", "engine", "network", "subscription", "memory_scope", "message_limit", "log_limit", "response_limit"},
+    "chat_personalities": {"id", "race_name", "origin", "preference", "hobby", "flavors"},
+    "chat_topics": {"id", "keywords", "responses", "explanation"},
     "dialogues": {"id", "greeting", "thanks"},
 }
 errors = []
@@ -35,6 +36,8 @@ for table, columns in required.items():
         ids.add(row["id"])
 ingredients = {row["id"] for row in data["ingredients"]}
 races = {row["id"] for row in data["races"]}
+if {row["id"] for row in data["chat_personalities"]} != races:
+    errors.append("personnalités du chat : races manquantes ou inconnues")
 for customer in data["customers"]:
     if customer["race"] not in races:
         errors.append(f"{customer['id']}: race inconnue")

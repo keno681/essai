@@ -23,16 +23,14 @@ func capture() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	var error := root.get_texture().get_image().save_png("/tmp/cosmo-gameplay.png")
-	game.chat_with_customer("bonjour")
+	game.chat_with_customer("Je m’appelle Keno")
+	game.chat_with_customer("D’où viens-tu ?")
+	game.chat_with_customer("Pourquoi ?")
 	game.chat_with_customer("ma commande ?")
 	game.ui.show_page("chat")
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("/tmp/cosmo-chat.png")
-	game.ui.show_page("ai")
-	await process_frame
-	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("/tmp/cosmo-ai.png")
 	game.ui.show_page("progress")
 	await process_frame
 	await RenderingServer.frame_post_draw

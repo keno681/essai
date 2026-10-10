@@ -216,59 +216,42 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"ai":"IA / CLIENTS","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","menu":"COSMO WRAP / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","menu":"COSMO WRAP / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	match name:
 		"chat":
 			box.add_child(label("Conversation avec le client au comptoir",16,CYAN))
-			box.add_child(label(game.ai_status,15,CYAN))
+			box.add_child(label("Chat autonome · Hors ligne · Gratuit",15,CYAN))
 			if game.chat_log.is_empty(): box.add_child(label("Écrivez bonjour, commande, planète…",16))
 			for entry in game.chat_log:
 				var text := label(entry,16)
 				text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 				text.custom_minimum_size.x=600
 				box.add_child(text)
+			var chat_scroller := box.get_parent() as ScrollContainer
+			chat_scroller.custom_minimum_size.y=260
+			var latest := box.get_child(box.get_child_count()-1) as Control
+			var composer := VBoxContainer.new()
+			composer.add_theme_constant_override("separation",10)
+			chat_scroller.get_parent().add_child(composer)
 			var input := LineEdit.new()
-			input.placeholder_text="Le client réfléchit…" if game.ai_busy else "Votre message au client…"
-			input.editable=not game.ai_busy
+			input.placeholder_text="Votre message au client…"
 			input.max_length=120
 			input.custom_minimum_size=Vector2(600,42)
-			box.add_child(input)
+			composer.add_child(input)
 			var send := func():
 				if game.chat_with_customer(input.text): show_page("chat")
 				else: input.placeholder_text="Le client doit attendre et être disponible."
 			input.text_submitted.connect(func(_text): send.call())
 			var send_button := button("TRANSMETTRE",send)
-			send_button.disabled=game.ai_busy
-			box.add_child(send_button)
-			box.add_child(label("IA configurable dans Options ; dialogues locaux en secours.",13))
+			composer.add_child(send_button)
+			composer.add_child(label("Dialogues contextuels locaux : aucune connexion ni clé nécessaire.",13))
 			var focus_input := func():
 				if is_instance_valid(input) and input.is_inside_tree():
 					input.grab_focus()
-					box.get_parent().ensure_control_visible(input)
+					if is_instance_valid(latest): chat_scroller.ensure_control_visible(latest)
 			focus_input.call_deferred()
-		"ai":
-			box.add_child(label("Réponses courtes avec gpt-4.1-mini",19,CYAN))
-			var notice := label("Connexion Internet et clé API OpenAI personnelle requises. Les appels sont facturés séparément de votre abonnement ChatGPT. Vos messages et le contexte du client sont transmis à OpenAI.",15)
-			notice.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-			notice.custom_minimum_size.x=600
-			box.add_child(notice)
-			var enabled := CheckButton.new()
-			enabled.text="Activer les réponses IA pour cette session"
-			enabled.button_pressed=game.ai_enabled
-			box.add_child(enabled)
-			var key := LineEdit.new()
-			key.secret=true
-			key.placeholder_text="Clé API personnelle (saisie masquée)"
-			key.text=game.ai_key
-			key.custom_minimum_size=Vector2(600,42)
-			box.add_child(key)
-			box.add_child(label("La clé reste en mémoire et n’est jamais sauvegardée.",15))
-			box.add_child(button("APPLIQUER",func(): game.configure_ai(key.text,enabled.button_pressed); show_page("ai")))
-			box.add_child(button("EFFACER LA CLÉ / MODE LOCAL",func(): game.configure_ai("",false); show_page("ai")))
-			box.add_child(label(game.ai_status,15,CYAN))
-			box.add_child(button("RETOUR AUX OPTIONS",func(): show_page("options")))
 		"progress":
 			var rank: int = game.restaurant_level()
 			box.add_child(label("RANG ACTUEL : "+game.sheet.progression[rank].name,20,CYAN))
@@ -368,7 +351,6 @@ func show_page(name: String) -> void:
 				var race: Dictionary = game.sheet.races[i]
 				box.add_child(button(("● " if game.player_race==race.id else "○ ")+race.name,func(): game.player_race=game.sheet.races[index].id; game.save_settings(); show_page("races")))
 		"options":
-			box.add_child(button("IA / CONVERSATIONS CLIENTS",func(): show_page("ai")))
 			var fullscreen := CheckButton.new()
 			fullscreen.text = "Plein écran"
 			fullscreen.button_pressed = game.fullscreen

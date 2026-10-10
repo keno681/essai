@@ -734,64 +734,448 @@
       "bonus": 5
     }
   ],
-  "chat": [
+  "local_chat": [
     {
-      "id": "hello",
+      "id": "autonomous",
+      "engine": "contextual_dialogue",
+      "network": false,
+      "subscription": false,
+      "memory_scope": "current_customer",
+      "message_limit": 120,
+      "log_limit": 20,
+      "response_limit": 320
+    }
+  ],
+  "chat_personalities": [
+    {
+      "id": "human",
+      "race_name": "Humain",
+      "origin": "la station Port-Cuillère",
+      "preference": "les wraps bien garnis",
+      "hobby": "réparer de vieux vaisseaux",
+      "flavors": [
+        "Après ma tournée, une bonne pause déjeuner, ça change tout.",
+        "Je traverse la galaxie, mais je reviens toujours aux bonnes tables."
+      ]
+    },
+    {
+      "id": "avian",
+      "race_name": "Avien",
+      "origin": "les falaises de Plumehaute",
+      "preference": "les saveurs légères et les fruits",
+      "hobby": "voler au-dessus des canyons",
+      "flavors": [
+        "Je garde les pieds au sol pendant le repas. Enfin, les serres !",
+        "Le bec reconnaît les bonnes adresses."
+      ]
+    },
+    {
+      "id": "apex",
+      "race_name": "Apex",
+      "origin": "la colonie Rochebrune",
+      "preference": "les champignons et les repas copieux",
+      "hobby": "observer les étoiles avec mon télescope",
+      "flavors": [
+        "Ma pause déjeuner est sacrée.",
+        "Un bon repas vaut tous les protocoles de ma station."
+      ]
+    },
+    {
+      "id": "floran",
+      "race_name": "Floran",
+      "origin": "les jardins de Racine-Verte",
+      "preference": "les goûts croquants et épicés",
+      "hobby": "faire pousser des plantes géantes",
+      "flavors": [
+        "Floran a faim, mais Floran sait attendre.",
+        "Floran aime votre jardin. Plantes sentent bon !"
+      ]
+    },
+    {
+      "id": "hylotl",
+      "race_name": "Hylotl",
+      "origin": "la cité sous-marine Onde-Claire",
+      "preference": "les saveurs équilibrées et les infusions",
+      "hobby": "composer des poèmes sur les océans",
+      "flavors": [
+        "Trois yeux pour admirer le plat, une bouche pour le savourer.",
+        "Une bonne cuisine demande autant de soin qu’un beau poème."
+      ]
+    },
+    {
+      "id": "glitch",
+      "race_name": "Glitch",
+      "origin": "la cité mécanique Boulonbourg",
+      "preference": "les recettes aux proportions précises",
+      "hobby": "collectionner les horloges",
+      "flavors": [
+        "Analyse : ambiance chaleureuse détectée.",
+        "Module gourmandise : opérationnel."
+      ]
+    },
+    {
+      "id": "novakid",
+      "race_name": "Novakid",
+      "origin": "les pistes stellaires de Braise-Rouge",
+      "preference": "les plats épicés et les boissons pétillantes",
+      "hobby": "jouer de l’harmonica dans les saloons",
+      "flavors": [
+        "Ça réchauffe le cœur, partenaire !",
+        "La route est longue ; autant bien manger avant de repartir."
+      ]
+    }
+  ],
+  "chat_topics": [
+    {
+      "id": "remember_name",
       "keywords": [
-        "bonjour",
-        "salut",
-        "coucou"
+        "comment je m appelle",
+        "tu te souviens de mon nom",
+        "c est quoi mon nom",
+        "qui suis je"
       ],
-      "reply": "Salut ! Votre restaurant sent merveilleusement bon."
+      "responses": [
+        "Vous êtes {player}. Je n’oublie pas la personne qui prépare mon repas !",
+        "Bien sûr, {player} ! Nous discutons depuis tout à l’heure."
+      ],
+      "explanation": "Je retiens votre nom pendant ma visite, {player}."
+    },
+    {
+      "id": "name",
+      "keywords": [
+        "ton nom",
+        "tu t appelles",
+        "qui es tu",
+        "t es qui",
+        "presente toi"
+      ],
+      "responses": [
+        "Je m’appelle {name}, je suis {race}. Et vous, comment vous appelez-vous ?",
+        "{name}, pour vous servir ! Enfin… aujourd’hui, c’est plutôt vous qui me servez."
+      ],
+      "explanation": "Je viens de {origin}. {flavor}"
+    },
+    {
+      "id": "price",
+      "keywords": [
+        "combien",
+        "prix",
+        "cher",
+        "argent",
+        "monnaie",
+        "wrapcoincoin",
+        "wrapcoincoins"
+      ],
+      "responses": [
+        "Ma commande vaut {price} wrapcoincoins au menu. Les bonus du restaurant vous rapportent {bonus} WCC de plus.",
+        "{price} wrapcoincoins pour {order}. Le petit canard sur la monnaie me fait toujours sourire."
+      ],
+      "explanation": "Les wrapcoincoins servent à acheter les ingrédients au PC et à ouvrir la terrasse."
+    },
+    {
+      "id": "ingredients",
+      "keywords": [
+        "ingredient",
+        "ingredients",
+        "composition",
+        "dedans",
+        "contient",
+        "recette"
+      ],
+      "responses": [
+        "Pour {order}, il faut {ingredients}. Ça promet !",
+        "Ma recette contient {ingredients}. Vous avez tout en réserve ?"
+      ],
+      "explanation": "Récoltez dans les bacs ; les ingrédients rares se trouvent sur la planète, au-delà de la serre."
+    },
+    {
+      "id": "drinks",
+      "keywords": [
+        "boisson",
+        "boissons",
+        "boire",
+        "soif",
+        "the",
+        "soda",
+        "jus"
+      ],
+      "responses": [
+        "Le thé lunaire se débloque après 3 clients ; le soda nébuleuse après 8. Les deux se préparent à la machine à boissons.",
+        "Un thé lunaire ou un soda nébuleuse ? Votre machine est juste à droite de la cuisine."
+      ],
+      "explanation": "Sélectionnez 6 ou 7, puis E devant la machine. Le soda exige aussi des ingrédients sauvages."
     },
     {
       "id": "order",
       "keywords": [
         "commande",
-        "boire",
+        "commander",
         "manger",
-        "recette"
+        "wrap",
+        "plat",
+        "menu",
+        "faim",
+        "tu veux quoi"
       ],
-      "reply": "Je voudrais {order}, s’il vous plaît !"
+      "responses": [
+        "Je voudrais {order}, s’il vous plaît. {flavor}",
+        "Pour moi, ce sera {order}. Je prends mon temps, ne vous inquiétez pas."
+      ],
+      "explanation": "Choisissez ma recette dans le HUD, préparez-la au bon poste puis servez-la au comptoir."
+    },
+    {
+      "id": "origin",
+      "keywords": [
+        "viens",
+        "origine",
+        "habites",
+        "habite",
+        "voyage",
+        "voyages",
+        "chez toi",
+        "d ou",
+        "ta maison"
+      ],
+      "responses": [
+        "Je viens de {origin}. J’ai entendu parler de votre snack pendant mon voyage.",
+        "Chez moi, à {origin}, les repas sont une affaire sérieuse. {flavor}"
+      ],
+      "explanation": "Quand je voyage, je cherche surtout de bonnes tables et des gens avec qui discuter."
     },
     {
       "id": "planet",
       "keywords": [
-        "planète",
-        "ingredient",
-        "ingrédient",
-        "explorer"
+        "planete",
+        "exploration",
+        "explorer",
+        "promener",
+        "aventure",
+        "decouverte",
+        "jardin",
+        "serre"
       ],
-      "reply": "La serre mène à la planète. Les fruits sauvages valent le détour !"
+      "responses": [
+        "Passez par la serre pour explorer la planète : citron stellaire, piment comète et riz cristal vous attendent.",
+        "Vos bacs sont pratiques, mais la planète cache des ingrédients pour de nouvelles recettes."
+      ],
+      "explanation": "Les plantes sauvages repoussent après la récolte. Pensez à faire un tour aux trois coins de la planète."
+    },
+    {
+      "id": "progress",
+      "keywords": [
+        "evolution",
+        "progres",
+        "niveau",
+        "rang",
+        "reputation",
+        "restaurant",
+        "agrandir",
+        "terrasse"
+      ],
+      "responses": [
+        "Votre établissement est au rang {rank}. Les étapes arrivent à 3, 8 et 15 clients servis.",
+        "Au rang {rank}, votre snack commence à faire parler de lui. Continuez les services et ouvrez la terrasse !"
+      ],
+      "explanation": "Les rangs donnent des bonus de vente et débloquent des boissons. La terrasse coûte 35 WCC et ajoute 5 WCC par vente."
+    },
+    {
+      "id": "hobby",
+      "keywords": [
+        "loisir",
+        "loisirs",
+        "passes le temps",
+        "temps libre",
+        "passion",
+        "aimes faire",
+        "metier"
+      ],
+      "responses": [
+        "Quand je ne voyage pas, j’aime {hobby}. Et vous, vous avez une passion ?",
+        "Mon passe-temps favori : {hobby}. Ça change des longues traversées spatiales."
+      ],
+      "explanation": "À {origin}, j’ai découvert que je pouvais passer des heures à {hobby}."
+    },
+    {
+      "id": "favorite",
+      "keywords": [
+        "preferes",
+        "prefere",
+        "favori",
+        "favorite",
+        "aimes",
+        "gout",
+        "gouts",
+        "delicieux",
+        "bon repas"
+      ],
+      "responses": [
+        "J’aime {preference}. Aujourd’hui, ma commande reste {order}.",
+        "Mes goûts ? {preference}. {flavor}"
+      ],
+      "explanation": "C’est une question de goût ; je découvre volontiers d’autres recettes lors de ma prochaine visite."
+    },
+    {
+      "id": "race",
+      "keywords": [
+        "race",
+        "espece",
+        "tentacule",
+        "tentacules",
+        "yeux",
+        "robot",
+        "oiseau",
+        "singe",
+        "plante"
+      ],
+      "responses": [
+        "Je suis {race}. On a tous nos habitudes, mais la bonne cuisine nous rassemble.",
+        "Un client {race} dans votre snack ! {flavor}"
+      ],
+      "explanation": "Ma taille, mes vêtements et mes accessoires changent d’une visite à l’autre ; mon peuple a aussi ses petites traditions."
+    },
+    {
+      "id": "joke",
+      "keywords": [
+        "blague",
+        "rire",
+        "drole",
+        "humour",
+        "rigolo",
+        "raconte une histoire"
+      ],
+      "responses": [
+        "Pourquoi le wrap a-t-il pris une fusée ? Pour aller se faire rouler dans les étoiles !",
+        "Un robot entre au snack : « Un wrap sans bug, s’il vous plaît ! »",
+        "Que dit un canard à la caisse ? « Gardez la monnaie, coin-coin ! »"
+      ],
+      "explanation": "J’en ai d’autres : le piment a rejoint l’équipage parce qu’il voulait mettre le feu à l’ambiance !"
+    },
+    {
+      "id": "feeling",
+      "keywords": [
+        "ca va",
+        "vas tu",
+        "comment allez",
+        "fatigue",
+        "content",
+        "heureux",
+        "triste",
+        "journee"
+      ],
+      "responses": [
+        "Ça va bien, {player}. Le voyage était long, mais votre snack me remet d’aplomb.",
+        "Un peu fatigué par la route, mais ravi de faire une pause. {flavor}"
+      ],
+      "explanation": "Je me détends en discutant avec vous. Une bonne pause vaut parfois mieux qu’un moteur neuf."
+    },
+    {
+      "id": "compliment",
+      "keywords": [
+        "super",
+        "magnifique",
+        "sympa",
+        "excellent",
+        "beau",
+        "belle",
+        "adorable"
+      ],
+      "responses": [
+        "Merci, {player} ! Votre accueil rend ce voyage beaucoup plus agréable.",
+        "C’est gentil ! {flavor}"
+      ],
+      "explanation": "Une bonne table et un accueil chaleureux : je n’en demande pas davantage."
+    },
+    {
+      "id": "insult",
+      "keywords": [
+        "idiot",
+        "imbecile",
+        "nul",
+        "degage",
+        "stupide",
+        "merde"
+      ],
+      "responses": [
+        "Restons courtois, {player}. Je suis venu manger et discuter tranquillement.",
+        "Un peu de calme : nous pouvons repartir sur de bonnes bases."
+      ],
+      "explanation": "Je préfère parler de cuisine ou de voyages que nous disputer."
     },
     {
       "id": "thanks",
       "keywords": [
         "merci",
-        "bon app",
-        "bienvenue"
+        "bienvenue",
+        "bon appetit",
+        "bon app"
       ],
-      "reply": "Merci à vous ! Je parlerai de votre snack dans toute la galaxie."
+      "responses": [
+        "Merci à vous, {player} ! Je recommande votre snack aux voyageurs.",
+        "Avec plaisir ! {flavor}"
+      ],
+      "explanation": "Les clients heureux reviennent volontiers dans une bonne adresse."
     },
     {
-      "id": "default",
+      "id": "farewell",
+      "keywords": [
+        "au revoir",
+        "a bientot",
+        "bye",
+        "bonne route",
+        "salut a plus"
+      ],
+      "responses": [
+        "À bientôt, {player} ! Je partirai après avoir reçu ma commande.",
+        "Bonne continuation ! Encore {order}, et je reprends la route."
+      ],
+      "explanation": "Je dois continuer mon voyage, mais je reviendrai sûrement faire une pause ici."
+    },
+    {
+      "id": "greeting",
+      "keywords": [
+        "bonjour",
+        "salut",
+        "coucou",
+        "bonsoir",
+        "hello",
+        "slt",
+        "cc"
+      ],
+      "responses": [
+        "Bonjour, {player} ! Je suis {name}. {flavor}",
+        "Salut ! Ravi de faire une pause dans votre snack. Comment se passe le service ?"
+      ],
+      "explanation": "Nous pouvons parler de ma commande, de mon voyage, de mes goûts ou de votre restaurant."
+    },
+    {
+      "id": "help",
+      "keywords": [
+        "aide",
+        "comment jouer",
+        "sauvegarde",
+        "sauver",
+        "charger",
+        "pc",
+        "ordinateur",
+        "livraison"
+      ],
+      "responses": [
+        "E sert à agir près des postes, I ouvre l’inventaire et le canapé du bureau permet de sauvegarder.",
+        "Le PC du bureau permet de commander les ingrédients découverts. Fermez-le pour recevoir la livraison."
+      ],
+      "explanation": "Depuis le snack, la porte BUREAU mène au PC et au canapé. Les achats sont livrés après 4 secondes de jeu."
+    },
+    {
+      "id": "unknown",
       "keywords": [
         "*"
       ],
-      "reply": "Je viens faire une pause entre deux voyages. Et vous, comment se passe le service ?"
-    }
-  ],
-  "ai_chat": [
-    {
-      "id": "openai",
-      "model": "gpt-4.1-mini",
-      "endpoint": "https://api.openai.com/v1/responses",
-      "max_output_tokens": 160,
-      "history_messages": 8,
-      "timeout_seconds": 20,
-      "enabled_by_default": false,
-      "persist_key": false,
-      "fallback": "local_dialogues"
+      "responses": [
+        "Je ne connais pas bien ce sujet. Vous pouvez me parler de cuisine, de voyages ou de votre restaurant.",
+        "Je ne suis pas sûr de comprendre. Vous parlez de ma commande, de mes goûts ou de mon voyage ?",
+        "J’ai surtout des histoires de voyage et de repas. Quel sujet vous intéresse ?"
+      ],
+      "explanation": "Je peux discuter du menu, de mes origines, de mes loisirs, de la planète et de votre progression."
     }
   ]
 }
