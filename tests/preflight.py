@@ -17,6 +17,7 @@ required = {
     "wild_nodes": {"id", "x", "ingredient", "room", "regrow_seconds"},
     "doors": {"id", "room", "x", "target", "arrival_x"},
     "currency": {"id", "name", "plural", "logo"},
+    "customer_variation": {"id", "size_min", "size_max", "head_min", "head_max", "hats", "glasses", "tentacle_counts", "tentacle_forms", "skin_colors", "clothing_colors", "pants_colors", "shoe_colors"},
     "dialogues": {"id", "greeting", "thanks"},
 }
 errors = []

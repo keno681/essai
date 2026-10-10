@@ -23,6 +23,7 @@ func run_tests() -> void:
 	game.update_customers(10)
 	assert(game.customer_state == "waiting")
 	for i in range(3):
+		game.order = i
 		game.selected = i
 		for id in game.recipe(i).ingredients: game.inventory[id] += 1
 		assert(game.cook(), "La recette doit réussir avec ses ingrédients")
@@ -42,8 +43,8 @@ func run_tests() -> void:
 	game.interact()
 	assert(game.upgraded)
 	assert(game.coins == 7)
-	game.selected = 1
-	for id in game.recipe(1).ingredients: game.inventory[id] += 1
+	game.selected = (game.order+1)%3
+	for id in game.recipe(game.selected).ingredients: game.inventory[id] += 1
 	assert(game.cook())
 	assert(not game.serve(), "Une mauvaise commande ne doit pas être vendue")
 	game.player.x = 130
@@ -113,6 +114,31 @@ func run_tests() -> void:
 	game.actor_customer = 0
 	game.speak_dialogue("greeting")
 	assert(not game.speech.is_empty() and game.speech_time>0)
+	var original = game.appearance.duplicate(true)
+	var pending = game.queued_appearance.duplicate(true)
+	var saved = game.snapshot()
+	game.appearance = game.roll_appearance()
+	game.apply_snapshot(saved)
+	assert(game.appearance == original and game.queued_appearance == pending)
+	var hats := {}
+	var races := {}
+	var forms := {}
+	var variations := {}
+	game.customer_rng.seed = 42
+	for iteration in range(500):
+		var previous = game.actor_customer
+		game.choose_customer()
+		assert(game.customer != previous)
+		game.actor_customer = game.customer
+		races[game.customer] = true
+		var look = game.queued_appearance
+		assert(look.size >= 0.9 and look.size <= 1.13)
+		hats[look.hats] = true
+		forms[look.tentacle_forms] = true
+		variations[JSON.stringify(look)] = true
+		game.next_order()
+		assert(game.recipe_unlocked(game.order))
+	assert(hats.size()==6 and races.size()==7 and forms.size()==3 and variations.size()==500)
 	game.new_service()
 	print("PASS : recettes, clients, inventaire, options, six bacs, exploration, trois découvertes, recettes débloquées, achat/livraison, solde insuffisant, sauvegarde remplacée et chargement complet, dialogues.")
 	quit(0)

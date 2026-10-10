@@ -130,3 +130,7 @@ La licence de diffusion et les autorisations de remix du projet restent à chois
 pour accorder des droits de réutilisation. Le dépôt et les archives sont fournis
 pour permettre le téléchargement du prototype ; aucune publication Melty
 n'a été effectuée.
+
+## Clients variés (v5)
+
+Chaque visite tire une race et une commande parmi les recettes débloquées, sans répéter immédiatement la race précédente. Taille (90 à 113 %), proportions de tête, couleurs, vêtements, pantalon, chaussures, lunettes et chapeaux sont aléatoires. Fez, fedora, casquette, casque, bonnet ou tête nue ; tentacules facultatifs ondulants, bouclés ou en zigzag. Les accessoires accompagnent les animations et les apparences du client actuel et du prochain client sont sauvegardées. Les dessins de base restent ceux des sept races redessinées.

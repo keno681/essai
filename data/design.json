@@ -221,7 +221,9 @@
       "spawn_x": 1250,
       "waiting_x": 946,
       "exit_x": 1270,
-      "speed": 105
+      "speed": 105,
+      "selection": "random_no_immediate_repeat",
+      "orders": "random_unlocked"
     },
     {
       "id": "manual_save",
@@ -599,6 +601,74 @@
       "id": "novakid",
       "greeting": "Bien cuit, partenaire.",
       "thanks": "Excellent, partenaire. À la prochaine."
+    }
+  ],
+  "customer_variation": [
+    {
+      "id": "appearance",
+      "size_min": 0.9,
+      "size_max": 1.13,
+      "head_min": 0.9,
+      "head_max": 1.12,
+      "hats": [
+        "none",
+        "fez",
+        "fedora",
+        "cap",
+        "helmet",
+        "beanie"
+      ],
+      "glasses": [
+        "none",
+        "round",
+        "dark",
+        "visor"
+      ],
+      "tentacle_counts": [
+        0,
+        0,
+        0,
+        2,
+        3,
+        4
+      ],
+      "tentacle_forms": [
+        "curled",
+        "flowing",
+        "zigzag"
+      ],
+      "tentacle_length_min": 12,
+      "tentacle_length_max": 26,
+      "skin_colors": [
+        "ffffff",
+        "efd5c5",
+        "c7e7d1",
+        "b9dfe8",
+        "e2c6ed",
+        "f5d9a3"
+      ],
+      "clothing_colors": [
+        "e2c6a5",
+        "c2d9ec",
+        "a9cfc3",
+        "e4b8a7",
+        "c4b3d8",
+        "d3d8c0"
+      ],
+      "pants_colors": [
+        "bbbcc9",
+        "d6bc9c",
+        "a4b8b0",
+        "c3b0c9",
+        "a4bccf"
+      ],
+      "shoe_colors": [
+        "736156",
+        "516879",
+        "ab7956",
+        "766376",
+        "6e8779"
+      ]
     }
   ]
 }

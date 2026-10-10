@@ -7,6 +7,10 @@ func capture() -> void:
 	var game = load("res://main.gd").new()
 	root.add_child(game)
 	game.ui.hide_page()
+	game.appearance = game.roll_appearance()
+	game.appearance.hats = "fez"
+	game.appearance.tentacle_counts = 3
+	game.appearance.glasses = "round"
 	game.actor_customer = 4
 	game.customer = 4
 	game.customer_x = 946

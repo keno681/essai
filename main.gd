@@ -30,6 +30,9 @@ var customer_state := "arriving"
 var customer_x := 1250.0
 var actor_customer := 0
 var npc_cycle := 0.0
+var appearance: Dictionary = {}
+var queued_appearance: Dictionary = {}
+var customer_rng := RandomNumberGenerator.new()
 var fullscreen := false
 var sound_enabled := true
 var brightness := 1.0
@@ -57,9 +60,13 @@ func _ready() -> void:
 	for row in sheet.beds + sheet.wild_nodes: node_cooldowns[row.id] = 0.0
 	for row in sheet.rooms:
 		room_textures[row.id] = load("res://"+row.asset)
+	customer_rng.randomize()
+	choose_customer()
+	actor_customer = customer
+	appearance = queued_appearance.duplicate(true)
+	next_order()
 	load_progress()
 	load_settings()
-	actor_customer = customer
 	race_texture = load("res://art/races.png")
 	sound_player = AudioStreamPlayer.new()
 	add_child(sound_player)
@@ -119,7 +126,7 @@ func serve() -> bool:
 	holding = -1
 	customer_state = "leaving"
 	play_sound(740)
-	customer = (customer + 1) % sheet.customers.size()
+	choose_customer()
 	next_order()
 	speak_dialogue("thanks")
 	if served == 3:
@@ -217,9 +224,10 @@ func new_service() -> void:
 	served = 0
 	upgraded = false
 	completed = false
-	customer = 0
-	actor_customer = 0
-	order = 0
+	choose_customer()
+	actor_customer = customer
+	appearance = queued_appearance.duplicate(true)
+	next_order()
 	holding = -1
 	customer_state = "arriving"
 	customer_x = 1250
@@ -243,6 +251,7 @@ func update_customers(delta: float) -> void:
 		npc_cycle += delta*float(animation("walk").frequency)
 		if is_equal_approx(customer_x,float(flow.exit_x)):
 			actor_customer = customer
+			appearance = queued_appearance.duplicate(true)
 			customer_x = float(flow.spawn_x)
 			customer_state = "arriving"
 
@@ -304,20 +313,27 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 	var foot := position+Vector2(0,39)
 	var cell := Vector2(float(sprite_row.source_width),race_texture.get_height())
 	var source_x := float(sprite_row.source_x)
-	var height := 152.0
+	var look: Dictionary = {} if chef else appearance
+	var height := 152.0*float(look.get("size",1.0))
 	var width := height*cell.x/cell.y
 	var cut := 0.76
 	draw_set_transform(foot,0,Vector2(1.6,0.28))
 	draw_circle(Vector2.ZERO,20,Color(0.03,0.02,0.01,0.35))
-	# Split the HD sheet into an upper body and two leg pieces for cutout motion.
 	for side in [0,1]:
 		var hip := Vector2((side-0.5)*width*0.5,-height*(1-cut)+bob)
 		var angle := stride*(-1 if side==0 else 1)
 		draw_set_transform(foot+Vector2(hip.x*direction,hip.y),angle*direction,Vector2(direction,1))
-		draw_texture_rect_region(race_texture,Rect2(-width*0.25,0,width*0.5,height*(1-cut)),Rect2(source_x+cell.x*side*0.5,cell.y*cut,cell.x*0.5,cell.y*(1-cut)))
+		for part in [[0.76,0.92,"pants_colors"],[0.92,1.0,"shoe_colors"]]:
+			var start := float(part[0])
+			var length := float(part[1])-start
+			draw_texture_rect_region(race_texture,Rect2(-width*0.25,height*(start-cut),width*0.5,height*length),Rect2(source_x+cell.x*side*0.5,cell.y*start,cell.x*0.5,cell.y*length),Color(look.get(part[2],"ffffff")))
 	var gesture := sin(action_time*22)*0.025 if chef and action_time>0 else 0.0
 	draw_set_transform(foot+Vector2(0,bob),gesture,Vector2(direction,1))
-	draw_texture_rect_region(race_texture,Rect2(-width*0.5,-height,width,height*cut),Rect2(source_x,0,cell.x,cell.y*cut))
+	draw_texture_rect_region(race_texture,Rect2(-width*0.5,-height*0.66,width,height*0.42),Rect2(source_x,cell.y*0.34,cell.x,cell.y*0.42),Color(look.get("clothing_colors","ffffff")))
+	var head_height := height*0.34*float(look.get("head",1.0))
+	var head_width := width*float(look.get("head_width",1.0))
+	draw_texture_rect_region(race_texture,Rect2(-head_width*0.5,-height*0.66-head_height,head_width,head_height),Rect2(source_x,0,cell.x,cell.y*0.34),Color(look.get("skin_colors","ffffff")))
+	if not chef and not look.is_empty(): draw_accessories(head_width,height*0.66+head_height,look)
 	if chef and holding>=0:
 		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
 		draw_line(Vector2(12,-62),Vector2(29,-62),Color("679958"),4,true)
@@ -426,10 +442,26 @@ func system(id: String) -> Dictionary:
 		if row.id==id: return row
 	return {}
 
+func roll_appearance() -> Dictionary:
+	var config: Dictionary = sheet.customer_variation[0]
+	var result := {"size":customer_rng.randf_range(config.size_min,config.size_max),"head":customer_rng.randf_range(config.head_min,config.head_max),"head_width":customer_rng.randf_range(0.9,1.12),"length":customer_rng.randf_range(config.tentacle_length_min,config.tentacle_length_max),"seed":customer_rng.randf_range(0,TAU)}
+	for key in ["hats","glasses","tentacle_counts","tentacle_forms","skin_colors","clothing_colors","pants_colors","shoe_colors"]:
+		var choices: Array = config[key]
+		result[key] = choices[customer_rng.randi_range(0,choices.size()-1)]
+	return result
+
+func choose_customer() -> void:
+	var choices: Array[int] = []
+	for index in range(sheet.customers.size()):
+		if index != actor_customer: choices.append(index)
+	customer = choices[customer_rng.randi_range(0,choices.size()-1)]
+	queued_appearance = roll_appearance()
+
 func next_order() -> void:
-	for _step in range(sheet.recipes.size()):
-		order = (order+1)%sheet.recipes.size()
-		if recipe_unlocked(order): return
+	var choices: Array[int] = []
+	for index in range(sheet.recipes.size()):
+		if recipe_unlocked(index): choices.append(index)
+	order = choices[customer_rng.randi_range(0,choices.size()-1)]
 
 func recipe_unlocked(index: int) -> bool:
 	for id in recipe(index).ingredients:
@@ -505,7 +537,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":2,"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"version":3,"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -542,6 +574,8 @@ func apply_snapshot(data: Dictionary) -> void:
 	upgraded = bool(data.get("upgraded",false))
 	customer = posmod(int(data.get("customer",0)),sheet.customers.size())
 	actor_customer = posmod(int(data.get("actor_customer",customer)),sheet.customers.size())
+	appearance = restore_appearance(data.get("appearance",{}))
+	queued_appearance = restore_appearance(data.get("queued_appearance",{}))
 	order = posmod(int(data.get("order",0)),sheet.recipes.size())
 	completed = served>=3
 	for id in inventory:
@@ -615,3 +649,60 @@ func draw_other_room() -> void:
 		label_at("DÉCOUVERTES : %d / 3" % (discovered.size()-3),Vector2(930,184),16,Color("bce9dc"))
 	alien(Vector2(player.x-camera_x,player.y),Color("bca2e9"),true)
 	draw_doors()
+
+func restore_appearance(saved: Variant) -> Dictionary:
+	var result := roll_appearance()
+	if not saved is Dictionary: return result
+	var config: Dictionary = sheet.customer_variation[0]
+	for key in ["hats","glasses","tentacle_counts","tentacle_forms","skin_colors","clothing_colors","pants_colors","shoe_colors"]:
+		if saved.get(key) in config[key]: result[key] = saved[key]
+	for key in ["size","head","head_width","length","seed"]:
+		if saved.get(key) is float or saved.get(key) is int:
+			var limits: Dictionary = {"size":[config.size_min,config.size_max],"head":[config.head_min,config.head_max],"head_width":[0.9,1.12],"length":[config.tentacle_length_min,config.tentacle_length_max],"seed":[0,TAU]}
+			result[key] = clampf(float(saved[key]),limits[key][0],limits[key][1])
+	return result
+
+func draw_accessories(width: float, height: float, look: Dictionary) -> void:
+	var head_top := -height
+	var face := Vector2(width*0.21,head_top+height*0.17)
+	var ink := Color("243340")
+	var skin := Color(look.skin_colors)
+	for index in range(int(look.tentacle_counts)):
+		var side := -1.0 if index%2==0 else 1.0
+		var start := Vector2(side*width*0.31,head_top+height*0.24+index*2)
+		var points := PackedVector2Array()
+		for step in range(17):
+			var t := step/16.0
+			var sway := sin(t*TAU+float(look.seed)+clock*2)*4
+			if look.tentacle_forms=="curled": sway = sin(t*TAU*1.4+clock)*8
+			elif look.tentacle_forms=="zigzag": sway = (absf(fmod(t*4,2)-1)-0.5)*12+sin(clock)*2
+			points.append(start+Vector2(side*(t*float(look.length)*0.65+sway),t*float(look.length)))
+		draw_polyline(points,ink,6,true)
+		draw_polyline(points,skin.darkened(0.18),4,true)
+		for step in [5,9,13]: draw_circle(points[step],1.3,skin.lightened(0.2))
+	var hat: String = look.hats
+	var top := Vector2(0,head_top+height*0.07)
+	if hat=="fez":
+		draw_colored_polygon(PackedVector2Array([top+Vector2(-12,0),top+Vector2(-9,-17),top+Vector2(9,-17),top+Vector2(12,0)]),Color("bc3448"))
+		draw_line(top+Vector2(0,-18),top+Vector2(11,-9),ink,2,true)
+		draw_line(top+Vector2(11,-9),top+Vector2(12,1+sin(clock)*2),Color("edc268"),3,true)
+	elif hat=="fedora":
+		panel(Rect2(top+Vector2(-12,-15),Vector2(24,16)),Color("8c7053"),4)
+		draw_line(top+Vector2(-12,-3),top+Vector2(12,-3),ink,4,true)
+		draw_line(top+Vector2(-19,1),top+Vector2(20,1),Color("ae9166"),5,true)
+	elif hat=="helmet":
+		draw_circle(top+Vector2(0,-3),16,Color("657f93"))
+		draw_arc(top+Vector2(0,-3),13,PI,TAU,20,Color("a1c8dc"),3,true)
+		draw_line(top+Vector2(3,3),top+Vector2(21,3),Color("73d9e4"),5,true)
+	elif hat=="cap" or hat=="beanie":
+		panel(Rect2(top+Vector2(-14,-12),Vector2(28,15)),Color(look.clothing_colors).darkened(0.3),7)
+		draw_line(top+Vector2(-14,2),top+Vector2(22 if hat=="cap" else 14,2),ink,4,true)
+		if hat=="beanie": draw_circle(top+Vector2(0,-15),4,Color(look.clothing_colors))
+	if look.glasses!="none":
+		for offset in [-9,3]:
+			var center := face+Vector2(offset,0)
+			if look.glasses=="round":
+				draw_circle(center,5,Color(0.5,0.9,1,0.3))
+				draw_arc(center,5,0,TAU,18,ink,1.5,true)
+			else: panel(Rect2(center-Vector2(5,4),Vector2(10,8)),Color("263447") if look.glasses=="dark" else Color("48aebf"),2)
+		draw_line(face+Vector2(-4,0),face+Vector2(-2,0),ink,2,true)
