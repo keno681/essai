@@ -19,6 +19,8 @@ required = {
     "currency": {"id", "name", "plural", "logo"},
     "customer_variation": {"id", "size_min", "size_max", "head_min", "head_max", "hats", "glasses", "tentacle_counts", "tentacle_forms", "skin_colors", "clothing_colors", "pants_colors", "shoe_colors"},
     "progression": {"id", "name", "served", "bonus"},
+    "interaction_ui": {"id", "enabled", "label", "arrival_distance", "manual_override"},
+    "ambience": {"id"},
     "local_chat": {"id", "engine", "network", "subscription", "memory_scope", "message_limit", "log_limit", "response_limit"},
     "chat_personalities": {"id", "race_name", "origin", "preference", "hobby", "flavors", "story", "customs", "dream"},
     "customer_reactions": {"id", "intent", "emotion", "state", "sale", "speed_multiplier"},
@@ -42,6 +44,9 @@ if {row["id"] for row in data["chat_personalities"]} != races:
 for customer in data["customers"]:
     if customer["race"] not in races:
         errors.append(f"{customer['id']}: race inconnue")
+for row in data["ambience"]:
+    if "asset" in row and not (Path(__file__).parents[1] / row["asset"]).is_file():
+        errors.append(f"{row['id']}: ambiance manquante")
 for visual in data["visuals"]:
     if not (Path(__file__).parents[1] / visual["asset"]).is_file():
         errors.append(f"{visual['id']}: illustration manquante")

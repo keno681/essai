@@ -1,0 +1,86 @@
+extends SceneTree
+
+func _initialize() -> void:
+	call_deferred("run_tests")
+
+func walk_until_done(game: Node) -> void:
+	for _step in range(180):
+		if game.move_goal<0: break
+		game._process(0.05)
+	assert(game.move_goal<0,"Le clic doit atteindre sa cible puis terminer l’action")
+
+func run_tests() -> void:
+	var game=load("res://main.gd").new()
+	root.add_child(game)
+	game.new_service()
+	game.ui.hide_page()
+	game.customer_state="waiting"
+	game.order=0
+	game.selected=0
+	assert(game.guide_step().target=="moonleaf")
+	assert(game.start_click_action(Vector2(130,445)))
+	var before=game.player.x
+	game._process(0.1)
+	assert(game.player.x<before)
+	walk_until_done(game)
+	assert(game.inventory.moonleaf==1)
+	assert(game.guide_step().target=="sunfruit")
+	assert(game.start_click_action(Vector2(270,445)))
+	walk_until_done(game)
+	assert(game.inventory.sunfruit==1 and game.guide_step().target=="kitchen")
+	assert(game.start_click_action(Vector2(650,450)))
+	walk_until_done(game)
+	assert(game.holding==0 and game.guide_step().target=="counter")
+	assert(game.start_click_action(Vector2(845,500)))
+	walk_until_done(game)
+	assert(game.served==1 and game.coins==12)
+	assert(game.start_click_action(Vector2(550,560)))
+	walk_until_done(game)
+	assert(game.room=="office")
+	assert(game.start_click_action(Vector2(910,370)))
+	walk_until_done(game)
+	assert(game.ui.page=="shop" and game.menu)
+	assert(not game.start_click_action(Vector2(440,430)),"Un menu doit bloquer les clics du décor")
+	game.ui.hide_page()
+	assert(game.start_click_action(Vector2(590,450)))
+	walk_until_done(game)
+	assert(game.ui.page=="save")
+	game.ui.hide_page()
+	assert(game.start_click_action(Vector2(100,300)))
+	walk_until_done(game)
+	assert(game.room=="restaurant")
+	assert(game.start_click_action(Vector2(42,560)))
+	walk_until_done(game)
+	assert(game.room=="garden")
+	assert(game.start_click_action(Vector2(140,470)))
+	walk_until_done(game)
+	assert(game.inventory.moonleaf==2)
+	game.travel("planet",850)
+	game.camera_x=250
+	var target=game.clicked_target(Vector2(830,480))
+	assert(is_equal_approx(target.x,1080),"Le clic doit tenir compte du défilement de la planète")
+	assert(game.start_click_action(Vector2(830,480)))
+	walk_until_done(game)
+	assert("firepepper" in game.discovered)
+	game.travel("restaurant",565)
+	game.customer_state="waiting"
+	game.customer_x=946
+	assert(game.start_click_action(Vector2(946,445)))
+	walk_until_done(game)
+	assert(game.ui.page=="chat")
+	game.ui.hide_page()
+	assert(game.music_player.stream is AudioStreamWAV)
+	assert(game.music_player.stream.loop_mode==AudioStreamWAV.LOOP_FORWARD)
+	game.set_ambience(false)
+	assert(game.music_player.stream_paused)
+	game.set_ambience(true)
+	assert(not game.music_player.stream_paused)
+	var old_clock=game.ambient_clock
+	game.menu=true
+	game._process(0.5)
+	assert(game.ambient_clock>old_clock,"Le décor doit rester vivant dans les menus")
+	game.new_service()
+	game.queue_free()
+	await process_frame
+	print("PASS interactions : clics, déplacement, récolte, guidage, cuisine, vente, portes, canapé, PC, blocage des menus, défilement, conversation et ambiance en boucle désactivable.")
+	quit(0)

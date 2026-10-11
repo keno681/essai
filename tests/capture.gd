@@ -19,6 +19,8 @@ func capture() -> void:
 	game.discovered.append_array(["starlime","firepepper"])
 	game.player.x = 715
 	game.holding = 0
+	game.order=0
+	game.selected=0
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw

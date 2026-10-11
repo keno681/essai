@@ -1437,5 +1437,29 @@
       "sale": false,
       "speed_multiplier": 1.4
     }
+  ],
+  "interaction_ui": [
+    {
+      "id": "click_walk",
+      "enabled": true,
+      "label": "Cliquer : se déplacer et agir",
+      "arrival_distance": 7,
+      "manual_override": true
+    }
+  ],
+  "ambience": [
+    {
+      "id": "music",
+      "asset": "art/orbital-lounge.wav",
+      "volume_db": -17,
+      "loop": true
+    },
+    {
+      "id": "decor",
+      "stars": 22,
+      "fireflies": 16,
+      "ship_period": 24,
+      "enabled": true
+    }
   ]
 }

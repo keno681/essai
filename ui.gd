@@ -3,6 +3,7 @@ extends CanvasLayer
 var game: Node2D
 var header: PanelContainer
 var hotbar: HBoxContainer
+var guidance: Label
 var status: Label
 var credits: Label
 var task: Label
@@ -159,13 +160,17 @@ func _ready() -> void:
 	var footer := PanelContainer.new()
 	footer.position = Vector2(16,634)
 	footer.size = Vector2(1168,70)
-	footer.add_theme_stylebox_override("panel",skin(Color("111d2e")))
+	var footer_skin:=skin(Color("111d2e"))
+	footer_skin.set_content_margin_all(8)
+	footer.add_theme_stylebox_override("panel",footer_skin)
 	root.add_child(footer)
 	var text_column := VBoxContainer.new()
 	footer.add_child(text_column)
-	status = label("",17,Color("efd37d"))
+	guidance=label("",14,CYAN)
+	text_column.add_child(guidance)
+	status = label("",14,Color("efd37d"))
 	text_column.add_child(status)
-	text_column.add_child(label("← → / Q D : marcher   E : agir   1–7 : recette   Espace : sauter   R : ranger   I : inventaire   T : discuter",13,Color("9fb9cb")))
+	text_column.add_child(label("Cliquez sur les lieux pour agir • Q/D ou flèches : marcher • E : agir • I : inventaire • T : discuter",13,Color("9fb9cb")))
 	overlay = Control.new()
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(overlay)
@@ -363,6 +368,11 @@ func show_page(name: String) -> void:
 				var race: Dictionary = game.sheet.races[i]
 				box.add_child(button(("● " if game.player_race==race.id else "○ ")+race.name,func(): game.player_race=game.sheet.races[index].id; game.save_settings(); show_page("races")))
 		"options":
+			var ambience := CheckButton.new()
+			ambience.text="Musique d’ambiance"
+			ambience.button_pressed=game.ambience_enabled
+			ambience.toggled.connect(game.set_ambience)
+			box.add_child(ambience)
 			var fullscreen := CheckButton.new()
 			fullscreen.text = "Plein écran"
 			fullscreen.button_pressed = game.fullscreen
@@ -400,6 +410,7 @@ func _process(_delta: float) -> void:
 	var rank: int = game.restaurant_level()
 	var target: String = str(int(game.sheet.progression[rank+1].served)) if rank+1<game.sheet.progression.size() else "∞"
 	task.text = "%s · %d / %s" % [game.sheet.progression[rank].name,game.served,target]
+	guidance.text="PROCHAINE ÉTAPE · "+str(game.guide_step().text)
 	status.text = game.message if game.message_time>0 else "E : agir près d'un poste. I : inventaire. Les clients prennent leur temps."
 	for i in range(slots.size()):
 		slots[i].text = "%d  %s\n%d WCC" % [i+1,game.recipe(i).name,game.recipe(i).price]
@@ -409,7 +420,7 @@ func _process(_delta: float) -> void:
 			for ingredient in game.sheet.ingredients:
 				if ingredient.id==id: names.append("%s (%d)" % [ingredient.name,game.inventory[id]])
 		slots[i].tooltip_text = " + ".join(names)
-		slots[i].add_theme_stylebox_override("normal",skin(Color("31506b") if game.selected==i else Color("142237"),CYAN if game.selected==i else Color("496881")))
+		slots[i].add_theme_stylebox_override("normal",skin(Color("31506b") if game.selected==i else Color("142237"),Color("e9c875") if i==game.order and game.customer_state=="waiting" else (CYAN if game.selected==i else Color("496881"))))
 
 class SpaceButtonTrim extends Control:
 	func _draw() -> void:

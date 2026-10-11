@@ -124,7 +124,7 @@ Le prototype utilise un décor généré, des dessins vectoriels et du code cré
 Il n'inclut aucun fichier extrait de Starbound ou de Wrap House.
 Les races de Starbound sont représentées par des illustrations redessinées.
 Il ne nécessite aucun de ces jeux et n'est donc pas destiné à Melty.
-Il n'a pas encore de voyage entre plusieurs planètes, de campagne, de musique ou de multijoueur.
+Il n'a pas encore de voyage entre plusieurs planètes, de campagne ou de multijoueur.
 Le moteur est Godot (https://godotengine.org), sous licence MIT.
 La licence de diffusion et les autorisations de remix du projet restent à choisir
 pour accorder des droits de réutilisation. Le dépôt et les archives sont fournis
@@ -158,3 +158,13 @@ Validation : `godot --headless --audio-driver Dummy --path . --script tests/offl
 Le moteur donne un score aux mots et expressions reconnus pour identifier la question, puis combine le sujet, la personnalité et la mémoire du client. Sept histoires originales en trois parties, des traditions et des projets personnels complètent les réponses détaillées sur le menu, les ingrédients, les voyages et le restaurant. « Raconte la suite », « et ensuite ? » ou « dis-m’en plus » poursuivent le sujet actuel. Des boutons suggèrent une histoire, sa suite et les traditions. Le journal complet et la progression des histoires restent dans la sauvegarde, avec des réponses jusqu’à 1 000 caractères. Un aperçu court évite que les sous-titres débordent dans le décor.
 
 « Casse-toi », « va-t’en » ou « dégage » fait partir le client en colère, plus rapidement, sans vente ni récompense. Un nouveau client entre après son départ. La commande déjà portée est conservée et peut être rangée avec R. La colère et le départ sont sauvegardés. Ce sont des réactions locales codées ; aucun modèle de langage ou service externe n’est utilisé.
+
+## Interactions guidées et ambiance (v10)
+
+Cliquez directement sur les plantes, les postes, les portes, le canapé, le PC ou leurs petites étiquettes : le personnage marche jusqu’à la cible puis agit. Cliquez sur un client pour discuter. Les commandes au clavier restent disponibles ; Q/D ou les flèches reprennent la main sur le déplacement. Les menus bloquent les clics dans le décor.
+
+Le bas du HUD indique la prochaine étape selon la commande : choix de recette, récolte, préparation ou service. Une flèche dorée désigne la cible utile ; le survol dessine un contour et change le curseur. Les ingrédients rares renvoient vers le bureau ou la serre.
+
+Une composition synthétique originale accompagne le snack à faible volume et peut être coupée dans Options → Musique d’ambiance. Les fenêtres accueillent des étoiles scintillantes et un petit vaisseau, les lampes et la vapeur bougent, le moniteur du bureau s’anime, des lucioles traversent la serre et des particules/comètes passent sur la planète. Ces animations continuent dans les menus, tandis que le gameplay reste en pause.
+
+Validation supplémentaire : `godot --headless --audio-driver Dummy --path . --script tests/interaction_test.gd` avec un répertoire XDG temporaire.
