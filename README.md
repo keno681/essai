@@ -137,7 +137,7 @@ Chaque visite tire une race et une commande parmi les recettes débloquées, san
 
 ## Restaurant spatial (v6)
 
-Accessoires avec textures ombrées de tissu, métal et verre, et boutons de HUD à contours lumineux. Une Poké Ball décorative est cachée dans le restaurant sans collision ni interaction.
+Accessoires avec textures ombrées de tissu, métal et verre, et boutons de HUD à contours lumineux. Une Poké Ball est cachée dans le restaurant ; cliquer dessus ouvre maintenant le créateur OpenAI.
 
 La réputation progresse aux seuils 3, 8 et 15 clients servis, avec des bonus permanents de vente de 1, 3 puis 5 WCC. Le menu « Évolution du restaurant » affiche les étapes. Le thé lunaire (touche 6) se débloque à 3 clients ; le soda nébuleuse (7) à 8 clients après découverte de ses ingrédients. Sélectionner une boisson puis appuyer sur E devant la machine, à droite de la cuisine ; servir au comptoir comme les wraps.
 
@@ -168,3 +168,30 @@ Le bas du HUD indique la prochaine étape selon la commande : choix de recette, 
 Une composition synthétique originale accompagne le snack à faible volume et peut être coupée dans Options → Musique d’ambiance. Les fenêtres accueillent des étoiles scintillantes et un petit vaisseau, les lampes et la vapeur bougent, le moniteur du bureau s’anime, des lucioles traversent la serre et des particules/comètes passent sur la planète. Ces animations continuent dans les menus, tandis que le gameplay reste en pause.
 
 Validation supplémentaire : `godot --headless --audio-driver Dummy --path . --script tests/interaction_test.gd` avec un répertoire XDG temporaire.
+
+
+## Créateur OpenAI (v11)
+
+Cliquer sur la Pokéball de l'étagère, ou ouvrir MENU → CRÉATEUR IA.
+Saisir une clé dans le champ masqué (mémoire seulement), ou définir
+`OPENAI_API_KEY` avant de lancer le jeu. La clé n'est incluse ni dans
+l'archive ni dans les sauvegardes. Ne pas partager sa clé. Les appels API
+sont facturés séparément de ChatGPT, selon les crédits du compte OpenAI.
+Le modèle par défaut est `gpt-4.1-mini`, modifiable dans le panneau.
+
+Décrire le changement, demander un aperçu, puis appliquer la proposition.
+L'IA peut changer le titre du menu, la couleur d'accent du HUD/menus,
+les noms et races des clients, les noms/prix des recettes, des décorations
+simples de la planète et des destinations avec une couleur et un nom.
+Les destinations reprennent la carte et les ingrédients existants : ce
+système ne génère pas encore des cartes, illustrations, nouvelles mécaniques
+ou structures de menus. Les réponses JSON sont filtrées ; aucun code généré
+n'est exécuté. Le bouton Annuler restaure la dernière modification
+(jusqu'à 20 étapes pendant la session). Les données sont sauvegardées
+localement dans `user://creator-world.json` et rechargées au prochain lancement.
+La conversation de création reste en mémoire (10 messages maximum).
+Les conversations habituelles des clients restent locales et gratuites.
+Les noms/actions des objets apparaissent maintenant au survol uniquement.
+
+Validation hors ligne : `godot --headless --audio-driver Dummy --path . --script tests/creator_test.gd`.
+Le test simule une réponse API : un appel réel nécessite une clé avec quota/crédits.

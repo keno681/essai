@@ -13,7 +13,7 @@ var window: PanelContainer
 var page := "menu"
 var race_buttons: Array[Button] = []
 
-const CYAN = Color("edc478")
+var CYAN = Color("edc478")
 const TEXT = Color("dfecf5")
 
 class DuckIcon extends Control:
@@ -218,13 +218,16 @@ func hide_page() -> void:
 	game.save_settings()
 
 func show_page(name: String) -> void:
+	CYAN=Color(game.creator.config.accent)
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","menu":"COSMO WRAP / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","creator":"CRÉATEUR OPENAI","menu":game.creator.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	match name:
+		"creator":
+			build_creator(box)
 		"chat":
 			box.add_child(label("Conversation avec le client au comptoir",16,CYAN))
 			box.add_child(label("Chat autonome · Hors ligne · Gratuit",15,CYAN))
@@ -310,6 +313,7 @@ func show_page(name: String) -> void:
 			box.add_child(button("ÉVOLUTION DU RESTAURANT",func(): show_page("progress")))
 			box.add_child(button("INVENTAIRE",func(): show_page("inventory")))
 			box.add_child(button("PERSONNAGE ET RACES",func(): show_page("races")))
+			box.add_child(button("CRÉATEUR IA",func(): show_page("creator")))
 			box.add_child(button("OPTIONS",func(): show_page("options")))
 			box.add_child(button("NOUVEAU SERVICE",func(): show_page("confirm")))
 			box.add_child(button("QUITTER LE JEU",func(): game.save_progress(); get_tree().quit()))
@@ -406,6 +410,8 @@ func show_page(name: String) -> void:
 			box.add_child(button("RETOUR AU MENU",func(): show_page("menu")))
 
 func _process(_delta: float) -> void:
+	CYAN=Color(game.creator.config.accent)
+	header.add_theme_stylebox_override("panel",skin(Color("101d2e"),CYAN))
 	credits.text = "%d wrapcoincoins" % game.coins
 	var rank: int = game.restaurant_level()
 	var target: String = str(int(game.sheet.progression[rank+1].served)) if rank+1<game.sheet.progression.size() else "∞"
@@ -430,3 +436,37 @@ class SpaceButtonTrim extends Control:
 		draw_line(Vector2(size.x-12,size.y-4),Vector2(size.x-4,size.y-12),tint,2,true)
 		for index in range(3):
 			draw_circle(Vector2(size.x-8-index*4,9),0.8,tint)
+
+func build_creator(box: VBoxContainer) -> void:
+	box.add_child(label("Clé privée : mémoire uniquement, jamais sauvegardée dans le jeu.",14))
+	var key_input:=LineEdit.new()
+	key_input.secret=true
+	key_input.placeholder_text="Clé OpenAI (ou variable OPENAI_API_KEY)"
+	key_input.text=game.creator.key
+	key_input.text_changed.connect(func(value): game.creator.key=value)
+	box.add_child(key_input)
+	var model_input:=LineEdit.new()
+	model_input.text=game.creator.model
+	model_input.placeholder_text="Modèle OpenAI"
+	model_input.text_changed.connect(func(value): game.creator.model=value)
+	box.add_child(model_input)
+	box.add_child(label("API facturée séparément de ChatGPT. Une demande = un appel.",14))
+	var prompt:=TextEdit.new()
+	prompt.custom_minimum_size=Vector2(0,80)
+	prompt.placeholder_text="Ex. : une planète violette, des cristaux et des noms de clients amusants"
+	box.add_child(prompt)
+	var output:=Label.new()
+	output.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	output.text=game.creator.status
+	box.add_child(output)
+	var refresh:=func():
+		if is_instance_valid(output): output.text=game.creator.status
+	game.creator.changed.connect(refresh)
+	output.tree_exiting.connect(func():
+		if game.creator.changed.is_connected(refresh): game.creator.changed.disconnect(refresh))
+	box.add_child(button("DEMANDER UN APERÇU",func(): game.creator.ask(prompt.text)))
+	box.add_child(button("APPLIQUER LA PROPOSITION",func(): game.creator.apply_pending(); show_page("creator")))
+	box.add_child(button("ANNULER LA DERNIÈRE MODIFICATION",func(): game.creator.undo(); show_page("creator")))
+	box.add_child(label("Destinations créées : carte existante, couleur personnalisée.",14))
+	for planet in game.creator.config.planets:
+		box.add_child(button("EXPLORER : "+planet.name,func(): game.creator.visit(planet)))

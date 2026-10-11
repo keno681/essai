@@ -59,6 +59,7 @@ var click_target: Dictionary = {}
 var ambient_clock := 0.0
 var ambience_enabled := true
 var music_player: AudioStreamPlayer
+var creator: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
 func _ready() -> void:
@@ -83,6 +84,8 @@ func _ready() -> void:
 	sound_player = AudioStreamPlayer.new()
 	add_child(sound_player)
 	setup_ambience()
+	creator = load("res://creator.gd").new()
+	add_child(creator)
 	ui = load("res://ui.gd").new()
 	add_child(ui)
 	var art_path: String = "res://" + sheet.visuals[0].asset
@@ -412,19 +415,6 @@ func _draw() -> void:
 		if cooldowns[item.id] > 0:
 			panel(Rect2(x-23,455,46,22),Color("332f29"),6)
 			label_at("%ds" % ceili(cooldowns[item.id]),Vector2(x-11,471),14,Color("e4c69b"))
-		if absf(player.x-x)<58 and not menu:
-			panel(Rect2(x-64,393,128,30),Color("302b27"),6)
-			label_at("E · Récolter",Vector2(x-47,413),17,Color("f9d47b"))
-		label_at(item.name,Vector2(x-64,594),14,Color("edd8b7"))
-	for station in sheet.stations:
-		if station.room!=room: continue
-		var x := float(station.x)
-		if absf(player.x-x)<65 and not menu:
-			panel(Rect2(x-62,383,124,29),Color("302b27"),6)
-			label_at("E · "+station.name,Vector2(x-53,403),16,Color("f9d47b"))
-	label_at("CUISINE",Vector2(615,594),14,Color("edd8b7"))
-	label_at("COMPTOIR",Vector2(809,594),14,Color("edd8b7"))
-	label_at("TERRASSE OUVERTE" if upgraded else "TERRASSE · 35 WCC",Vector2(1030,594),13,Color("edd8b7"))
 	# Heat drifting from the grill, with gentle ambient light movement.
 	for i in range(5):
 		var rise := fmod(clock*22+i*17,78)
@@ -682,18 +672,18 @@ func draw_doors() -> void:
 		panel(Rect2(x-29,488,58,56),Color(0.08,0.17,0.2,0.8),4)
 		draw_rect(Rect2(x-18,502,36,28),Color("597888"),false,2)
 		label_at("→",Vector2(x-9,526),22,Color("efcb82"))
-		label_at(names[door.target],Vector2(clampf(x-33,5,1100),569),12,Color("f4d59a"))
-		if absf(player.x-float(door.x))<30 and not menu:
-			panel(Rect2(clampf(x-65,5,1060),443,130,28),Color("152433"),3)
-			label_at("E · "+names[door.target],Vector2(clampf(x-55,15,1070),462),15)
 
 func draw_other_room() -> void:
 	var texture: Texture2D = room_textures.get(room)
 	if texture:
 		if room=="planet":
-			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness))
+			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness)*Color(creator.config.planet_color))
 		else: draw_texture_rect(texture,Rect2(0,0,1200,768),false,Color(brightness,brightness,brightness))
 	draw_ambient_decor()
+	if room=="planet":
+		label_at(creator.config.planet_name,Vector2(25,165),24)
+		for prop in creator.config.decor:
+			draw_circle(Vector2(prop.x-camera_x,prop.y),prop.size,Color(prop.color))
 	var nodes: Array = sheet.wild_nodes if room=="planet" else (sheet.beds if room=="garden" else [])
 	for node in nodes:
 		var x := float(node.x)-camera_x
@@ -704,19 +694,6 @@ func draw_other_room() -> void:
 			for j in range(5): draw_circle(Vector2(x+sin(j*1.5)*19,482+cos(j*1.5)*15),10,Color(item.color).darkened(0.4 if node_cooldowns[node.id]>0 else 0))
 			if node.ingredient=="crystalrice":
 				for j in range(4): draw_line(Vector2(x+j*8-12,530),Vector2(x+j*8-12,480-j*4),Color("a7edef"),5,true)
-		var known: bool = node.ingredient in discovered
-		label_at(item.name if known else "Plante inconnue",Vector2(x-66,594),13,Color("c6efdc"))
-		if absf(player.x-float(node.x))<62 and not menu:
-			panel(Rect2(x-65,414,138,28),Color("142630"),4)
-			label_at("E · Récolter" if node_cooldowns[node.id]<=0 else "%ds · Repousse" % ceili(node_cooldowns[node.id]),Vector2(x-56,433),15)
-	if room=="office":
-		for station in sheet.stations:
-			if station.room!="office": continue
-			var x := float(station.x)
-			label_at("CANAPÉ / SAUVEGARDE" if station.id=="couch" else "PC / COMMANDES",Vector2(x-92,594),13,Color("f4d59a"))
-			if absf(player.x-x)<80:
-				panel(Rect2(x-84,363,176,31),Color("152433"),4)
-				label_at("E · Sauver / charger" if station.id=="couch" else "E · Commander",Vector2(x-75,384),15)
 	if room=="planet":
 		label_at("VALLÉE DES COMÈTES · %d m" % int(player.x/10),Vector2(32,184),16,Color("bce9dc"))
 		label_at("DÉCOUVERTES : %d / 3" % (discovered.size()-3),Vector2(930,184),16,Color("bce9dc"))
@@ -807,7 +784,7 @@ func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_line(at+Vector2(3,-8),at+Vector2(6,-25),Color("e8c599"),2,true)
 
 func draw_restaurant_details() -> void:
-	# Tiny decorative ball tucked on a shelf; intentionally has no hitbox.
+	# Hidden creator-chat shortcut on the shelf.
 	var ball := Vector2(1045,377)
 	draw_circle(ball+Vector2(1,2),6,Color(0,0,0,0.45))
 	draw_circle(ball,5,Color("dad8ce"))
@@ -822,7 +799,6 @@ func draw_restaurant_details() -> void:
 	draw_line(Vector2(736,435),Vector2(750,435),Color("81c7c5"),2,true)
 	draw_line(Vector2(743,451),Vector2(743,462),Color("b8bab5"),4,true)
 	for offset in range(5): draw_line(Vector2(729+offset*6,473),Vector2(729+offset*6,478),Color("87949a"),2,true)
-	label_at("BOISSONS",Vector2(709,612),12,Color("d5d8cd"))
 	if restaurant_level()>=1:
 		label_at("★".repeat(restaurant_level()),Vector2(1006,340),22,Color("e7c078"))
 
@@ -857,15 +833,18 @@ func interaction_targets() -> Array[Dictionary]:
 	return result
 
 func clicked_target(at: Vector2) -> Dictionary:
+	if room=="restaurant" and Rect2(1032,364,26,26).has_point(at):
+		return {"id":"creator","label":"CRÉATEUR IA","rect":Rect2(1032,364,26,26),"x":1045.0,"action":"creator"}
 	var world := at+Vector2(camera_x,0)
 	for target in interaction_targets():
-		var chip := Rect2(float(target.x)-43,551,86,26)
-		if target.id=="client": chip=Rect2(customer_x-43,551,86,26)
-		if target.rect.has_point(world) or chip.has_point(world): return target
+		if target.rect.has_point(world): return target
 	return {}
 
 func start_click_action(at: Vector2) -> bool:
 	if menu: return false
+	if clicked_target(at).get("action", "")=="creator":
+		ui.show_page("creator")
+		return true
 	click_target=clicked_target(at)
 	if not click_target.is_empty():
 		move_goal=float(click_target.x)
@@ -912,23 +891,16 @@ func draw_interaction_markers() -> void:
 	if menu: return
 	var hover:=clicked_target(get_global_mouse_position())
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if not hover.is_empty() else Input.CURSOR_ARROW)
-	var guide:=guide_step()
-	for target in interaction_targets():
-		var x := float(target.x)-camera_x
-		if target.id=="client": x=customer_x-camera_x
-		if x<5 or x>1195: continue
-		var highlighted: bool=target.id==hover.get("id","") or target.id==guide.target
-		var tint:=Color("e9c875") if target.id==guide.target else (Color("8edce5") if highlighted else Color("92bec7"))
-		panel(Rect2(x-43,551,86,26),Color("172b35"),4)
-		draw_rect(Rect2(x-43,551,86,26),tint,false,1.5)
-		label_at(target.label,Vector2(x-37,568),10,tint)
-		if target.id==hover.get("id",""):
-			var rect: Rect2=target.rect
-			rect.position.x-=camera_x
-			draw_rect(rect,tint,false,2)
-		if target.id==guide.target:
-			var y:=540+sin(ambient_clock*4)*3
-			draw_colored_polygon(PackedVector2Array([Vector2(x-6,y-7),Vector2(x+6,y-7),Vector2(x,y)]),tint)
+	if not hover.is_empty():
+		var rect: Rect2=hover.rect
+		rect.position.x-=camera_x
+		draw_rect(rect,Color("8edce5"),false,2)
+		var at:=get_global_mouse_position()
+		at.x=clampf(at.x+15,10,970)
+		at.y=clampf(at.y-52,90,630)
+		panel(Rect2(at,Vector2(220,46)),Color("172b35"),4)
+		label_at(hover.label,at+Vector2(8,18),14,Color("8edce5"))
+		label_at("Cliquer pour agir",at+Vector2(8,36),12)
 	if move_goal>=0:
 		var x:=move_goal-camera_x
 		draw_arc(Vector2(x,540),12,0,TAU,24,Color("8ed4d5"),2,true)
