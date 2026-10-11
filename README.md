@@ -2,13 +2,13 @@
 
 Jeu solo de gestion en 2D : restaurant spatial, wraps et boissons à composer, clients extraterrestres, serre, exploration et wrapcoincoins. Ce dépôt contient les sources complètes et les images de la version aux graphismes harmonisés.
 
-## Jouer sous Windows
+## Alerte Windows Defender — téléchargement suspendu
 
-Télécharger [CosmoWrapBall.zip](https://github.com/keno681/essai/raw/refs/heads/master/downloads/CosmoWrapBall.zip), choisir **Extraire tout**, puis lancer **JOUER.cmd** dans le dossier extrait `CosmoWrapBall`.
+Un utilisateur a signalé une détection Wacatac dans le pack Windows. Le ZIP contenant l'exécutable a été retiré de la version courante du dépôt en attendant la vérification. Ne pas lancer, restaurer ou exclure de l'antivirus le fichier signalé. Les anciens liens vers un commit peuvent encore être accessibles : ne pas les utiliser.
 
-Le ZIP complet contient un seul exécutable : **Godot.exe**, nécessaire pour lancer le jeu depuis ses sources et appliquer les changements de la Pokéball. Conserver les dossiers `game` et `launcher` à côté de ce fichier. Le jeu fonctionne hors ligne, sans clé API ni abonnement.
+Les sources et les images du jeu restent disponibles. Aucune conclusion sur un éventuel faux positif n'est établie à ce stade. Le fichier précisément détecté doit encore être identifié.
 
-Pour mettre à jour une installation existante, fermer le jeu puis copier les dossiers `game` et `launcher` du ZIP dans l'ancien dossier `CosmoWrapBall`, en acceptant le remplacement des fichiers. Les sauvegardes se trouvent dans le profil utilisateur Windows et restent au même emplacement.
+Pour un environnement de développement, obtenir Godot uniquement depuis son site officiel https://godotengine.org/download/windows/ et respecter les alertes de sécurité du système. Aucun moteur Windows n'est actuellement redistribué ici.
 
 ## Commandes et interactions
 
@@ -59,4 +59,4 @@ Pour reproduire le pack Windows avec le moteur officiel et ses licences :
 python3 tools/package_windows.py --runtime /chemin/Godot.exe --license-dir /chemin/licences
 ```
 
-Le pack contient les ressources nécessaires au jeu, sans anciens exports, vidéos de démonstration, captures obsolètes ni caches d'import. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; le démarrage sous Windows reste à vérifier sur un PC Windows.
+La génération du pack Windows est conservée comme outil de développement, mais sa redistribution est suspendue après le signalement antivirus. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; le démarrage sous Windows reste à vérifier sur un PC Windows.
