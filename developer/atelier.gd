@@ -2,6 +2,10 @@ extends Control
 
 const ENDPOINT="https://api.groq.com/openai/v1/chat/completions"
 const EXTENSIONS=["gd","tscn","tres","godot","json","cfg","svg","md","txt"]
+var provider := "ollama"
+var provider_select: OptionButton
+var provider_models := {"ollama":"qwen3:8b","groq":"openai/gpt-oss-20b"}
+var tool_names: Dictionary={}
 var game_root: String
 var key_input: LineEdit
 var model_input: LineEdit
@@ -31,21 +35,39 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation",8)
 	margin.add_child(box)
 	var title:=Label.new()
-	title.text="ATELIER GROQ v16 · APPELS DE FONCTIONS"
+	title.text="ATELIER IA v17 · OLLAMA LOCAL / GROQ"
 	title.add_theme_font_size_override("font_size",24)
 	box.add_child(title)
 	var note:=Label.new()
 	note.text="Clé en mémoire. Aperçu avant écriture. Sauvegarde des fichiers. Relancer le jeu après modification."
 	box.add_child(note)
+	provider_select=OptionButton.new()
+	provider_select.add_item("Ollama · local · sans clé ni quota")
+	provider_select.add_item("Groq · API")
+	provider_select.item_selected.connect(func(index):
+		if running or validating:
+			provider_select.selected=0 if provider=="ollama" else 1
+			return
+		provider_models[provider]=model_input.text
+		provider="ollama" if index==0 else "groq"
+		model_input.text=provider_models[provider]
+		key_input.editable=provider=="groq"
+		messages.clear()
+		staged.clear()
+		baseline.clear()
+		tool_names.clear()
+		log_message("Fournisseur : "+provider+". Recommence la demande."))
+	box.add_child(provider_select)
 	key_input=LineEdit.new()
 	key_input.secret=true
-	key_input.placeholder_text="Clé Groq privée"
+	key_input.editable=false
+	key_input.placeholder_text="Clé Groq seulement — inutile avec Ollama"
 	key_input.text=OS.get_environment("GROQ_API_KEY")
 	box.add_child(key_input)
 	model_input=LineEdit.new()
-	model_input.text="llama-3.3-70b-versatile"
+	model_input.text="qwen3:8b"
 	box.add_child(model_input)
-	make_button(box,"CHARGER LES MODÈLES GROQ",load_models)
+	make_button(box,"CHARGER LES MODÈLES DISPONIBLES",load_models)
 	prompt=TextEdit.new()
 	prompt.custom_minimum_size.y=90
 	prompt.placeholder_text="Ex. : remplace les cadres de survol par une lueur cyan animée."
@@ -63,7 +85,7 @@ func _ready() -> void:
 	console.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	box.add_child(console)
 	http=HTTPRequest.new()
-	http.timeout=90
+	http.timeout=240
 	add_child(http)
 	http.request_completed.connect(received)
 	log_message("Projet : "+game_root+"\nLes scripts peuvent exécuter du code sur ton PC. Examine les changements proposés avant de les appliquer.\nL'atelier ne crée pas de nouvelles images HD ; il peut créer des SVG et modifier tous les fichiers texte du jeu.")
@@ -115,20 +137,21 @@ func source(relative: String) -> String:
 	return FileAccess.get_file_as_string(safe_path(relative))
 
 func load_models() -> void:
-	if running or validating or key_input.text.strip_edges().is_empty(): return
+	if running or validating or (provider=="groq" and key_input.text.strip_edges().is_empty()): return
 	running=true
 	loading_models=true
-	var error=http.request("https://api.groq.com/openai/v1/models",["Authorization: Bearer "+key_input.text.strip_edges()],HTTPClient.METHOD_GET)
+	var error=http.request("http://127.0.0.1:11434/api/tags" if provider=="ollama" else "https://api.groq.com/openai/v1/models",headers(),HTTPClient.METHOD_GET)
 	if error!=OK: running=false; loading_models=false; log_message("Impossible de charger les modèles.")
 
 func prepare() -> void:
 	if running or validating: return
-	if key_input.text.strip_edges().is_empty() or prompt.text.strip_edges().is_empty(): log_message("Renseigne la clé et la demande."); return
+	if prompt.text.strip_edges().is_empty() or (provider=="groq" and key_input.text.strip_edges().is_empty()): log_message("Renseigne la demande et, pour Groq, sa clé."); return
 	staged.clear()
 	baseline.clear()
 	steps=0
 	requests_sent=0
 	format_retries=0
+	tool_names.clear()
 	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot4.6. Utilise les fonctions fournies pour lire et modifier les vrais fichiers, jamais des chemins inventés. Les couleurs/cadres du HUD sont dans ui.gd (skin, CYAN), les cadres de survol des objets dans main.gd (draw_interaction_markers), les paramètres de couleur dans creator.gd (config.accent). Recherche puis lis le fichier avant de remplacer. Copie old exactement depuis la lecture. Fais des changements petits et ciblés, jamais la réécriture complète de design.json pour une couleur. Chaque changement est préparé en mémoire et nécessite une validation humaine. Ne génère pas de réseau, shell ou accès à des fichiers hors du jeu. Appelle finish pour expliquer le résultat en français quand la proposition est prête. Fichiers : "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
 	log_message("Toi : "+prompt.text)
 	send_next()
@@ -142,9 +165,43 @@ func send_next() -> void:
 	running=true
 	loading_models=false
 	requests_sent+=1
-	var body=JSON.stringify({"model":model_input.text.strip_edges(),"messages":messages,"tools":tool_definitions(),"tool_choice":"auto","temperature":0.1,"max_tokens":3000})
-	var error=http.request(ENDPOINT,["Authorization: Bearer "+key_input.text.strip_edges(),"Content-Type: application/json"],HTTPClient.METHOD_POST,body)
+	var body=JSON.stringify(chat_payload())
+	var error=http.request("http://127.0.0.1:11434/api/chat" if provider=="ollama" else ENDPOINT,headers(),HTTPClient.METHOD_POST,body)
 	if error!=OK: running=false; log_message("Requête impossible : "+str(error))
+
+func headers() -> PackedStringArray:
+	if provider=="ollama": return PackedStringArray(["Content-Type: application/json"])
+	return PackedStringArray(["Authorization: Bearer "+key_input.text.strip_edges(),"Content-Type: application/json"])
+
+func chat_payload() -> Dictionary:
+	if provider=="groq":
+		return {"model":model_input.text.strip_edges(),"messages":messages,"tools":tool_definitions(),"tool_choice":"auto","temperature":0.1,"max_tokens":3000}
+	var local_messages: Array=[]
+	for original in messages:
+		var entry: Dictionary=original.duplicate(true)
+		if entry.get("tool_calls") is Array:
+			for call in entry.tool_calls:
+				if call.function.arguments is String: call.function.arguments=parse_action(call.function.arguments)
+				call.erase("id")
+				call.erase("type")
+		if entry.get("role")=="tool":
+			entry.tool_name=tool_names.get(entry.get("tool_call_id",""),"")
+			entry.erase("tool_call_id")
+		local_messages.append(entry)
+	return {"model":model_input.text.strip_edges(),"messages":local_messages,"tools":tool_definitions(),"stream":false,"think":false,"options":{"temperature":0.1,"num_ctx":8192,"num_predict":3000}}
+
+func normalize_local(response: Dictionary) -> Dictionary:
+	if not response.get("message") is Dictionary: return response
+	var message: Dictionary=response.message.duplicate(true)
+	if message.get("tool_calls") is Array:
+		for i in message.tool_calls.size():
+			var call=message.tool_calls[i]
+			if not call is Dictionary or not call.get("function") is Dictionary: continue
+			call.id="local_%d_%d" % [requests_sent,i]
+			call.type="function"
+			tool_names[call.id]=call.function.get("name","")
+			if call.function.get("arguments") is Dictionary: call.function.arguments=JSON.stringify(call.function.arguments)
+	return {"choices":[{"message":message,"finish_reason":"length" if response.get("done_reason","")=="length" else "stop"}]}
 
 func tool_definitions() -> Array:
 	var paths: Array=file_list()
@@ -193,7 +250,7 @@ func execute_tool_calls(message: Dictionary) -> bool:
 			if action.action=="done":
 				finished=true
 				feedback="Proposition terminée."
-				log_message("Groq : "+str(action.get("explanation","Terminé"))+"\nFichiers préparés : "+JSON.stringify(staged.keys())+"\nApplique la proposition puis relance le jeu.")
+				log_message(("Ollama" if provider=="ollama" else "Groq")+" : "+str(action.get("explanation","Terminé"))+"\nFichiers préparés : "+JSON.stringify(staged.keys())+"\nApplique la proposition puis relance le jeu.")
 			else:
 				feedback=perform(action)
 				steps+=1
@@ -205,12 +262,18 @@ func execute_tool_calls(message: Dictionary) -> bool:
 
 func received(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	running=false
+	if result!=HTTPRequest.RESULT_SUCCESS and provider=="ollama":
+		log_message("Ollama ne répond pas sur ce PC. Lance Ollama, puis exécute ollama pull qwen3:8b. Le premier chargement peut prendre du temps. Clique ensuite RÉESSAYER.")
+		return
 	if result!=HTTPRequest.RESULT_SUCCESS or code!=200:
+		if provider=="ollama":
+			log_message("Ollama HTTP %d : %s\nVérifie que le modèle est installé avec ollama list." % [code,body.get_string_from_utf8().left(900)])
+			return
 		var error_parser=JSON.new()
 		if not loading_models and code==400 and error_parser.parse(body.get_string_from_utf8())==OK and error_parser.data is Dictionary:
 			var detail=error_parser.data.get("error",{})
 			if detail is Dictionary and detail.get("code","") in ["json_validate_failed","tool_use_failed"]:
-				recover_format("Groq a refusé le format de l'appel de fonction.")
+				recover_format("Le fournisseur a refusé le format de l'appel de fonction.")
 				return
 		log_message("API %d : %s\nEn cas de 429, attends puis clique RÉESSAYER. Aucun fichier écrit." % [code,body.get_string_from_utf8().left(1200)])
 		return
@@ -218,6 +281,9 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 	if loading_models:
 		loading_models=false
 		var ids: Array[String]=[]
+		if provider=="ollama" and response is Dictionary and response.get("models") is Array:
+			for entry in response.models:
+				if entry is Dictionary and entry.get("name") is String: ids.append(entry.name)
 		if response is Dictionary and response.get("data") is Array:
 			for entry in response.data:
 				if entry is Dictionary and entry.get("id") is String and entry.get("active",true) and not ("whisper" in entry.id or "tts" in entry.id or "guard" in entry.id): ids.append(entry.id)
@@ -225,6 +291,7 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 		log_message("Modèles disponibles : "+", ".join(ids))
 		if not ids.is_empty() and model_input.text not in ids: model_input.text=ids[0]
 		return
+	if provider=="ollama" and response is Dictionary: response=normalize_local(response)
 	if not response is Dictionary or not response.get("choices") is Array or response.choices.is_empty(): log_message("Réponse API inattendue."); return
 	var message=response.choices[0].get("message",{})
 	var finish_reason=str(response.choices[0].get("finish_reason",""))
@@ -242,7 +309,7 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 	steps+=1
 	messages.append({"role":"assistant","content":content})
 	if action.get("action")=="done":
-		log_message("Groq : "+str(action.get("explanation","Terminé"))+"\nFichiers préparés : "+JSON.stringify(staged.keys())+"\nLis les changements ci-dessus puis clique APPLIQUER + VÉRIFIER.")
+		log_message(("Ollama" if provider=="ollama" else "Groq")+" : "+str(action.get("explanation","Terminé"))+"\nFichiers préparés : "+JSON.stringify(staged.keys())+"\nLis les changements ci-dessus puis clique APPLIQUER + VÉRIFIER.")
 		return
 	var feedback=perform(action)
 	messages.append({"role":"user","content":feedback})

@@ -291,3 +291,24 @@ vérifiés avant toute modification. Une erreur de génération de fonction
 peut déclencher jusqu’à deux corrections dans le budget global de 20 appels.
 Utiliser un modèle Groq compatible avec les appels de fonctions. Le titre
 « ATELIER GROQ v16 · APPELS DE FONCTIONS » permet de vérifier la version ouverte.
+
+## Atelier v17 : Ollama local
+
+Le pack contient désormais ATELIER-IA.cmd et INSTALLER-MODELE.cmd.
+Installer [Ollama pour Windows](https://ollama.com/download/windows),
+puis lancer INSTALLER-MODELE.cmd (équivalent à `ollama pull qwen3:8b`).
+Pour 16 Go de RAM et une RTX4060 de 8 Go, commencer par ce modèle de 8 milliards
+de paramètres, environ 5 Go à télécharger. Les performances réelles dépendent
+de la mémoire occupée et de la longueur du contexte. Le modèle n’est pas inclus.
+
+Ouvrir ATELIER-IA.cmd, laisser Ollama sélectionné et le modèle qwen3:8b.
+La clé est désactivée et aucune authentification n’est envoyée. Les requêtes
+utilisent exclusivement `http://127.0.0.1:11434/api/chat` et `/api/tags`.
+La génération locale utilise les outils, sans streaming et avec think=false,
+une fenêtre de contexte de 8192 tokens et un délai maximal de 240 secondes.
+Les identifiants et arguments sont adaptés au format des fonctions Ollama.
+Après téléchargement du modèle, aucun quota API ni coût par appel ;
+le traitement utilise les ressources du PC. Groq reste optionnel.
+Changer de fournisseur efface la proposition en attente et la conversation.
+La vérification Godot, l’aperçu et le retour arrière restent disponibles.
+L’inférence réelle sur le GPU utilisateur et le lancement Windows sont à vérifier.

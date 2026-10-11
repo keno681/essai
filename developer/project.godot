@@ -1,6 +1,6 @@
 config_version=5
 [application]
-config/name="Cosmo Wrap — Atelier Groq"
+config/name="Cosmo Wrap — Atelier IA"
 run/main_scene="res://atelier.tscn"
 [display]
 window/size/viewport_width=1100

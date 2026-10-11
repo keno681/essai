@@ -12,10 +12,11 @@ with zipfile.ZipFile(out.with_suffix('.tmp'), 'w', zipfile.ZIP_DEFLATED, compres
     bundle.writestr(base + 'Godot.exe', runtime)
     for name, content in licenses.items():
         bundle.writestr(base + name, content)
-    for filename, path in [('ATELIER-GROQ.cmd', 'atelier'), ('JOUER.cmd', 'game'), ('OUVRIR-GODOT.cmd', 'game')]:
+    for filename, path in [('ATELIER-IA.cmd', 'atelier'), ('ATELIER-GROQ.cmd', 'atelier'), ('JOUER.cmd', 'game'), ('OUVRIR-GODOT.cmd', 'game')]:
         editor = ' --editor' if filename == 'OUVRIR-GODOT.cmd' else ''
         first_import = '"%~dp0Godot.exe" --headless --audio-driver Dummy --path "%~dp0game" --editor --quit\r\n' if filename == 'JOUER.cmd' else ''
         bundle.writestr(base + filename, f'@echo off\r\n{first_import}"%~dp0Godot.exe" --path "%~dp0{path}"{editor}\r\n'.encode())
+    bundle.writestr(base + 'INSTALLER-MODELE.cmd', b'@echo off\r\nwhere ollama >nul 2>&1\r\nif errorlevel 1 (\r\n echo Installe Ollama pour Windows, puis relance ce fichier.\r\n start "" "https://ollama.com/download/windows"\r\n pause\r\n exit /b 1\r\n)\r\nollama pull qwen3:8b\r\nif errorlevel 1 (\r\n echo Telechargement echoue. Verifie que Ollama fonctionne et que Internet est disponible.\r\n) else (\r\n echo Modele installe. Ouvre ATELIER-IA.cmd et laisse Ollama selectionne.\r\n)\r\npause\r\n')
     for path in root.rglob('*'):
         if not path.is_file():
             continue
@@ -27,12 +28,13 @@ with zipfile.ZipFile(out.with_suffix('.tmp'), 'w', zipfile.ZIP_DEFLATED, compres
         path = root / 'developer' / name
         if path.exists():
             bundle.write(path, base + 'atelier/' + name)
-    bundle.writestr(base + 'LIRE-MOI.txt', '''COSMO WRAP - ATELIER GROQ (SOURCES ET GODOT INCLUS)
+    bundle.writestr(base + 'LIRE-MOI.txt', '''COSMO WRAP - ATELIER IA v17 (OLLAMA LOCAL / GROQ)
 1. Clic droit sur le ZIP > Extraire tout. Garder tous les dossiers ensemble.
-2. Double-cliquer ATELIER-GROQ.cmd.
-3. Coller sa cle Groq dans le champ masque, choisir le modele accessible au compte.
-   CHARGER LES MODELES GROQ affiche les identifiants disponibles.
-4. Decrire un changement et cliquer PREPARER. Plusieurs appels Groq peuvent etre necessaires (20 maximum).
+2. Installer Ollama pour Windows : https://ollama.com/download/windows
+3. Double-cliquer INSTALLER-MODELE.cmd pour telecharger qwen3:8b (environ 5 Go).
+   Garder Ollama lance. Ouvrir ATELIER-IA.cmd : Ollama est selectionne par defaut, aucune cle requise.
+   Groq reste une alternative dans le selecteur et utilise sa propre cle et ses quotas.
+4. Decrire un changement et cliquer PREPARER. Plusieurs etapes IA peuvent etre necessaires (20 maximum).
    En cas de 429, attendre puis REESSAYER. La cle reste en memoire.
 5. Lire les extraits AVANT / APRES dans la console, puis APPLIQUER + VERIFIER.
 6. Si Godot trouve une erreur de script, les fichiers precedents sont restaures.
@@ -47,7 +49,9 @@ Il ne genere pas de nouvelles images HD et ne transforme pas tout instantanement
 La verification detecte les erreurs de scripts ; elle ne garantit pas le bon fonctionnement en jeu.
 Les scripts generes peuvent executer du code sur le PC : examiner la proposition avant application.
 Les operations d'edition de l'atelier sont limitees au dossier game ; ce n'est pas un bac a sable pour le code du jeu.
-Groq gratuit selon quotas du compte. Aucun appel reel sans une cle valide avec quota disponible.
+Ollama fonctionne localement sans cle ni quota API. Le modele n est pas inclus dans le ZIP.
+Le premier chargement peut durer. Internet necessaire au telechargement initial du modele.
+Groq reste soumis aux quotas du compte lorsque selectionne.
 L'archive est verifiee ; le lancement sous Windows reste a tester sur votre PC.
 '''.encode())
 with zipfile.ZipFile(out.with_suffix('.tmp')) as check:

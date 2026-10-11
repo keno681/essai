@@ -6,6 +6,7 @@ func _initialize() -> void:
 func run() -> void:
 	var tool=load("res://atelier.gd").new()
 	root.add_child(tool)
+	tool.provider="groq"
 	assert(tool.parse_action('{"action":"done","explanation":"prêt"}').action=="done")
 	assert(tool.parse_action('```json\n{"action":"read","path":"ui.gd"}\n```').path=="ui.gd")
 	assert(tool.parse_action('Voici : {"action":"done","explanation":"ok"} Merci').action=="done")
@@ -26,6 +27,20 @@ func run() -> void:
 	file=FileAccess.open(tool.game_root+"/sample.gd",FileAccess.WRITE)
 	file.store_string("extends Node\nvar answer: int = 1\n")
 	file.close()
+	tool.provider="ollama"
+	tool.key_input.text="fake-private-key"
+	var local_payload=tool.chat_payload()
+	assert(local_payload.think==false and local_payload.stream==false)
+	assert(not JSON.stringify(local_payload).contains(tool.key_input.text))
+	assert(not "Authorization" in str(tool.headers()))
+	var local=tool.normalize_local({"message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"finish","arguments":{"explanation":"Local prêt"}}}]},"done":true,"done_reason":"stop"})
+	assert(local.choices[0].message.tool_calls[0].function.arguments is String)
+	assert(local.choices[0].message.tool_calls[0].id.begins_with("local_"))
+	var tool_id=local.choices[0].message.tool_calls[0].id
+	tool.messages.append({"role":"tool","tool_call_id":tool_id,"content":"ok"})
+	assert(tool.chat_payload().messages[-1].tool_name=="finish")
+	tool.messages.pop_back()
+	tool.provider="groq"
 	var definitions=tool.tool_definitions()
 	assert(definitions.size()==5)
 	assert("sample.gd" in definitions[0].function.parameters.properties.path.enum)
@@ -44,7 +59,7 @@ func run() -> void:
 	tool.baseline.clear()
 	tool.requests_sent=20
 	tool.received(HTTPRequest.RESULT_SUCCESS,400,[],JSON.stringify({"error":{"code":"json_validate_failed","message":"Failed to generate JSON"}}).to_utf8_buffer())
-	assert(tool.console.text.contains("Groq a refusé"))
+	assert(tool.console.text.contains("Le fournisseur a refusé"))
 	assert(tool.safe_path("../../outside.gd").is_empty())
 	assert(tool.safe_path("/tmp/outside.gd").is_empty())
 	assert(tool.safe_path(".git/config").is_empty())
