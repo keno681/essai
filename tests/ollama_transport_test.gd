@@ -14,7 +14,8 @@ func run() -> void:
 	tool.key_input.text="fake-private-key"
 	tool.prompt.text="Cadre vert"
 	tool.prepare()
-	while tool.running: await process_frame
+	var deadline=Time.get_ticks_msec()+15000
+	while not tool.console.text.contains("Ollama : Cadre vert") and Time.get_ticks_msec()<deadline: await process_frame
 	assert(tool.staged.has("ui.gd") and tool.staged["ui.gd"].contains("55cc77"))
 	assert(tool.console.text.contains("Ollama : Cadre vert"))
 	assert(tool.messages[-1].role=="tool")

@@ -35,7 +35,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation",8)
 	margin.add_child(box)
 	var title:=Label.new()
-	title.text="ATELIER IA v17 · OLLAMA LOCAL / GROQ"
+	title.text="ATELIER IA v18 · OLLAMA LOCAL / GROQ"
 	title.add_theme_font_size_override("font_size",24)
 	box.add_child(title)
 	var note:=Label.new()
@@ -184,6 +184,9 @@ func chat_payload() -> Dictionary:
 				if call.function.arguments is String: call.function.arguments=parse_action(call.function.arguments)
 				call.erase("id")
 				call.erase("type")
+				# Response indices are optional metadata, not needed in request history.
+				call.function.erase("index")
+				call.erase("index")
 		if entry.get("role")=="tool":
 			entry.tool_name=tool_names.get(entry.get("tool_call_id",""),"")
 			entry.erase("tool_call_id")
@@ -197,6 +200,8 @@ func normalize_local(response: Dictionary) -> Dictionary:
 		for i in message.tool_calls.size():
 			var call=message.tool_calls[i]
 			if not call is Dictionary or not call.get("function") is Dictionary: continue
+			call.function.erase("index")
+			call.erase("index")
 			call.id="local_%d_%d" % [requests_sent,i]
 			call.type="function"
 			tool_names[call.id]=call.function.get("name","")
@@ -267,7 +272,7 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 		return
 	if result!=HTTPRequest.RESULT_SUCCESS or code!=200:
 		if provider=="ollama":
-			log_message("Ollama HTTP %d : %s\nVérifie que le modèle est installé avec ollama list." % [code,body.get_string_from_utf8().left(900)])
+			log_message("Ollama HTTP %d : %s\n%s" % [code,body.get_string_from_utf8().left(900),"Modèle introuvable : vérifie ollama list." if code==404 else "Requête refusée par Ollama. Le détail ci-dessus indique la cause."])
 			return
 		var error_parser=JSON.new()
 		if not loading_models and code==400 and error_parser.parse(body.get_string_from_utf8())==OK and error_parser.data is Dictionary:

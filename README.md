@@ -312,3 +312,12 @@ le traitement utilise les ressources du PC. Groq reste optionnel.
 Changer de fournisseur efface la proposition en attente et la conversation.
 La vérification Godot, l’aperçu et le retour arrière restent disponibles.
 L’inférence réelle sur le GPU utilisateur et le lancement Windows sont à vérifier.
+
+### Atelier v18 : historique Ollama
+
+Les indices de fonction renvoyés par Ollama sont retirés de l’historique
+envoyé au serveur. Godot lit les nombres JSON comme des flottants ; renvoyer
+un indice `0.0` à un champ entier du serveur provoquait une erreur HTTP400
+au deuxième appel. Les noms, arguments et réponses des outils sont conservés.
+Le test HTTP utilise désormais deux appels avec indices numériques pour
+vérifier le retour de l’historique au serveur, puis l’application et l’annulation.

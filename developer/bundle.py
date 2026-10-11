@@ -28,7 +28,7 @@ with zipfile.ZipFile(out.with_suffix('.tmp'), 'w', zipfile.ZIP_DEFLATED, compres
         path = root / 'developer' / name
         if path.exists():
             bundle.write(path, base + 'atelier/' + name)
-    bundle.writestr(base + 'LIRE-MOI.txt', '''COSMO WRAP - ATELIER IA v17 (OLLAMA LOCAL / GROQ)
+    bundle.writestr(base + 'LIRE-MOI.txt', '''COSMO WRAP - ATELIER IA v18 (OLLAMA LOCAL / GROQ)
 1. Clic droit sur le ZIP > Extraire tout. Garder tous les dossiers ensemble.
 2. Installer Ollama pour Windows : https://ollama.com/download/windows
 3. Double-cliquer INSTALLER-MODELE.cmd pour telecharger qwen3:8b (environ 5 Go).
@@ -63,3 +63,24 @@ with zipfile.ZipFile(out.with_suffix('.tmp')) as check:
 out.with_suffix('.tmp').replace(out)
 assert out.stat().st_size < 100 * 1024 * 1024
 print(out.name, out.stat().st_size, 'bytes: source files, runtime and archive verified')
+
+patch = root / 'downloads/CosmoWrap-Atelier-Correctif.zip'
+with zipfile.ZipFile(patch.with_suffix('.tmp'), 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as update:
+    for name in ['project.godot', 'atelier.tscn', 'atelier.gd', 'atelier.gd.uid']:
+        path = root / 'developer' / name
+        if path.exists():
+            update.write(path, 'atelier/' + name)
+    update.writestr('LIRE-MOI-CORRECTIF.txt', '''CORRECTIF ATELIER v18
+1. Fermer l'atelier ouvert.
+2. Extraire ce ZIP.
+3. Copier le dossier atelier obtenu dans votre dossier CosmoWrap-Atelier,
+   a cote de Godot.exe et du dossier game. Accepter de remplacer les fichiers.
+4. Relancer ATELIER-IA.cmd. Le titre doit afficher ATELIER IA v18.
+Le jeu, ses sources modifiees et le modele Ollama ne sont pas remplaces.
+Ce correctif retire les indices de fonctions Ollama qui provoquaient HTTP 400.
+'''.encode())
+with zipfile.ZipFile(patch.with_suffix('.tmp')) as update:
+    assert update.testzip() is None
+    assert update.read('atelier/atelier.gd') == (root / 'developer/atelier.gd').read_bytes()
+patch.with_suffix('.tmp').replace(patch)
+print(patch.name, patch.stat().st_size, 'bytes: workshop-only update verified')

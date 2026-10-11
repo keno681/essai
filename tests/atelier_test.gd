@@ -33,9 +33,14 @@ func run() -> void:
 	assert(local_payload.think==false and local_payload.stream==false)
 	assert(not JSON.stringify(local_payload).contains(tool.key_input.text))
 	assert(not "Authorization" in str(tool.headers()))
-	var local=tool.normalize_local({"message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"finish","arguments":{"explanation":"Local prêt"}}}]},"done":true,"done_reason":"stop"})
+	var local=tool.normalize_local({"message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"finish","index":0.0,"arguments":{"explanation":"Local prêt"}}}]},"done":true,"done_reason":"stop"})
 	assert(local.choices[0].message.tool_calls[0].function.arguments is String)
 	assert(local.choices[0].message.tool_calls[0].id.begins_with("local_"))
+	assert(not local.choices[0].message.tool_calls[0].function.has("index"))
+	# Also sanitize legacy history from the previous version.
+	tool.messages.append({"role":"assistant","tool_calls":[{"id":"old","type":"function","function":{"name":"finish","index":0.0,"arguments":"{\"explanation\":\"ok\"}"}}]})
+	assert(not tool.chat_payload().messages[-1].tool_calls[0].function.has("index"))
+	tool.messages.pop_back()
 	var tool_id=local.choices[0].message.tool_calls[0].id
 	tool.messages.append({"role":"tool","tool_call_id":tool_id,"content":"ok"})
 	assert(tool.chat_payload().messages[-1].tool_name=="finish")
