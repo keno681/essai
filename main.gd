@@ -243,7 +243,7 @@ func serve() -> bool:
 	return true
 
 func interact() -> void:
-	if room=="restaurant" and absf(player.x-1007)<25:
+	if room=="restaurant" and absf(player.x-780)<25:
 		discard_order(true)
 		return
 	if room=="restaurant" and absf(player.x-845)<45:
@@ -925,7 +925,7 @@ func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_texture_rect(ART.object(11 if tint.g > tint.r else 12),Rect2(at+Vector2(-10,-25),Vector2(20,30)),false)
 
 func draw_restaurant_details() -> void:
-	draw_texture_rect(preload("res://art/kitchen_trash.svg"),Rect2(986,464,42,82),false,Color(brightness,brightness,brightness))
+	draw_texture_rect(preload("res://art/kitchen_trash.svg"),Rect2(759,464,42,82),false,Color(brightness,brightness,brightness))
 	for i in range(counter_items.size()):
 		var dish: Dictionary=counter_items[i]
 		var at:=Vector2(800+(i%4)*26,425-floori(i/4.0)*35)
@@ -955,7 +955,7 @@ func interaction_targets() -> Array[Dictionary]:
 		var rect:=door_hitbox(door)
 		result.append({"id":door.id,"x":float(door.x),"label":destinations[door.target],"rect":rect,"action":"interact"})
 	if room=="restaurant":
-		result.append({"id":"trash","x":1007.0,"label":"POUBELLE","rect":Rect2(986,464,42,82),"action":"trash"})
+		result.append({"id":"trash","x":780.0,"label":"POUBELLE","rect":Rect2(759,464,42,82),"action":"trash"})
 		for item in sheet.ingredients:
 			if item.starter: result.append({"id":item.id,"x":float(item.x),"label":"RÉCOLTER","rect":Rect2(float(item.x)-55,400,110,146),"action":"interact"})
 	var bounds := {"kitchen":Rect2(595,320,108,224),"counter":Rect2(795,435,114,110),"drinks":Rect2(712,333,69,111),"upgrade":Rect2(1030,400,130,146),"couch":Rect2(344,390,300,155),"computer":Rect2(755,325,260,220)}

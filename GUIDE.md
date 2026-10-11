@@ -121,4 +121,4 @@ L’eau est prête à l’emploi. Les stocks déjà possédés dans les ancienne
 
 Applique `Table-Travail-Pokeball.json` hors ligne sur les deux PC : cette version utilise le protocole coop 6.
 
-Une poubelle métallique est placée à droite du comptoir dans le restaurant. Clique dessus : ton personnage s’approche et jette directement la commande portée, wrap ou boisson, sans menu et sans remboursement. E à proximité fonctionne aussi. Pour installer `Poubelle-Pokeball.json`, applique le correctif hors ligne sur les deux PC : le retour réseau est ajusté pour ne pas rouvrir la cuisine après avoir jeté une commande.
+Une poubelle métallique est placée à gauche du comptoir dans le restaurant. Clique dessus : ton personnage s’approche et jette directement la commande portée, wrap ou boisson, sans menu et sans remboursement. E à proximité fonctionne aussi. Pour installer `Poubelle-Pokeball.json`, applique le correctif hors ligne sur les deux PC : le retour réseau est ajusté pour ne pas rouvrir la cuisine après avoir jeté une commande.

@@ -308,7 +308,7 @@ func handle_action(data: Dictionary) -> void:
 			if game.room=="restaurant" and absf(game.player.x-station)<100 and args.get("ingredients") is Array: ok=game.discard_preparation(kind,args.ingredients)
 		"discard_order":
 			var at_trash:=bool(args.get("trash",false))
-			if not at_trash or (game.room=="restaurant" and absf(game.player.x-1007)<80): ok=game.discard_order(at_trash)
+			if not at_trash or (game.room=="restaurant" and absf(game.player.x-780)<80): ok=game.discard_order(at_trash)
 		"serve":
 			if game.room=="restaurant" and absf(game.player.x-game.customer_x)<110: ok=game.serve()
 		"return": game.return_wrap(); ok=true

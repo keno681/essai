@@ -8,9 +8,9 @@ func run() -> void:
 	var host=load("res://main.gd").new(); root.add_child(host)
 	host.new_service(); host.ui.hide_page(); host.holding=0
 	var stocks: Dictionary=host.inventory.duplicate()
-	var target: Dictionary=host.clicked_target(Vector2(1007,500))
+	var target: Dictionary=host.clicked_target(Vector2(780,500))
 	assert(target.action=="trash" and host.object_hover_name(target)=="Poubelle")
-	assert(host.start_click_action(Vector2(1007,500)))
+	assert(host.start_click_action(Vector2(780,500)))
 	host.finish_click_action()
 	assert(host.holding==-1 and not host.menu and host.inventory==stocks)
 	assert(not host.discard_order(true))
@@ -25,7 +25,7 @@ func run() -> void:
 	guest.player.x=650; guest.discard_order(true)
 	await wait_for(func(): return not guest.online.pending)
 	assert(guest.holding==5)
-	guest.player.x=1007; guest.discard_order(true)
+	guest.player.x=780; guest.discard_order(true)
 	await wait_for(func(): return not guest.online.pending and guest.holding==-1)
 	assert(host.holding==1 and host.online.partner.holding==-1 and not guest.menu and host.inventory==stocks)
 	host.online.leave(); guest.online.leave(); host.queue_free(); guest.queue_free(); await process_frame
