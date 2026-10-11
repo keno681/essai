@@ -111,7 +111,7 @@ Les bacs se récoltent directement au clic : une plante mûre donne 3 ingrédien
 
 ### Table de travail : récoltes brutes et ingrédients préparés
 
-La récolte fournit désormais des ingrédients bruts : 3 par plante cultivée, 2 par récolte sauvage. Depuis la cuisine ou les boissons, clique sur **TABLE DE TRAVAIL · TRAITER LES RÉCOLTES**. Glisse un ingrédient sur la planche, puis le bon ustensile dessus, puis le résultat dans le saladier. Chaque geste est instantané : aucun compte à rebours. Une unité brute devient une unité préparée, utilisable dans les recettes.
+La récolte fournit désormais des ingrédients bruts : 3 par plante cultivée, 2 par récolte sauvage. La cuisine et le poste de boissons ouvrent une seule fenêtre : **traitement des récoltes à gauche**, **composition à droite**. Glisse un ingrédient sur la planche, puis le bon ustensile dessus, puis le résultat dans le saladier. Chaque geste est instantané : aucun compte à rebours. Une unité brute devient une unité préparée, utilisable dans les recettes.
 
 - Couteau : salade, tomate, champignon et piment.
 - Presse-agrumes : citron et baies pour les boissons.
@@ -122,3 +122,5 @@ L’eau est prête à l’emploi. Les stocks déjà possédés dans les ancienne
 Applique `Table-Travail-Pokeball.json` hors ligne sur les deux PC : cette version utilise le protocole coop 6.
 
 Une poubelle métallique est placée à gauche du comptoir dans le restaurant. Clique dessus : ton personnage s’approche et jette directement la commande portée, wrap ou boisson, sans menu et sans remboursement. E à proximité fonctionne aussi. Pour installer `Poubelle-Pokeball.json`, applique le correctif hors ligne sur les deux PC : le retour réseau est ajusté pour ne pas rouvrir la cuisine après avoir jeté une commande.
+
+Les huit récoltes restent visibles à gauche, même avec zéro ingrédient préparé ou avant leur découverte. Chaque case indique le stock brut et le stock prêt. Les quantités et les ingrédients utilisables dans la composition se mettent à jour immédiatement après le dépôt dans le saladier, sans fermer la fenêtre.

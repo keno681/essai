@@ -1,4 +1,5 @@
 extends SceneTree
+const KITCHEN=preload("res://kitchen_dragdrop.gd")
 const PREP=preload("res://ingredient_prep.gd")
 func _initialize() -> void: run.call_deferred()
 func wait_for(condition: Callable) -> void:
@@ -10,10 +11,14 @@ func run() -> void:
 	game.new_service(); game.ui.hide_page()
 	game.planters.open("sunfruit")
 	assert(game.inventory.raw_sunfruit==3 and game.inventory.sunfruit==0)
-	game.ui.show_page("prep"); await process_frame
+	game.ui.show_page("cookwrap"); await process_frame
 	var bench: Node
 	bench=find_bench(game.ui)
-	assert(bench!=null)
+	assert(bench!=null and bench.compact and bench.cells.size()==8)
+	assert(bench.cells.sunfruit.food.visible and game.inventory.sunfruit==0)
+	game.inventory.raw_crystalrice=2
+	await process_frame
+	assert(bench.cells.crystalrice.food.visible and "2 bruts" in bench.cells.crystalrice.label.text)
 	var board: Control=bench.board
 	var raw={"bench":bench,"type":"raw","id":"sunfruit"}
 	assert(board._can_drop_data(Vector2.ZERO,raw)); board._drop_data(Vector2.ZERO,raw)
@@ -27,6 +32,11 @@ func run() -> void:
 	assert(bowl._can_drop_data(Vector2.ZERO,result)); bowl._drop_data(Vector2.ZERO,result)
 	assert(game.inventory.sunfruit==1 and game.inventory.raw_sunfruit==2 and bench.crop=="")
 	assert(not bowl._can_drop_data(Vector2.ZERO,result))
+	await process_frame
+	assert("1 prêts" in bench.cells.sunfruit.label.text and game.ui.page=="cookwrap")
+	var kitchen=find_kitchen(game.ui)
+	assert(kitchen!=null and kitchen.compact)
+	assert(kitchen.stocks[1].text=="TOMATE × 1" and kitchen.icons[1].modulate.a==1.0)
 	for id in PREP.TOOLS:
 		game.inventory["raw_"+id]=1
 		assert(game.prepare_crop(id)); assert(game.inventory["raw_"+id]==0)
@@ -49,5 +59,12 @@ func find_bench(node: Node) -> Node:
 	if node is PREP.Bench: return node
 	for child in node.get_children():
 		var found=find_bench(child)
+		if found: return found
+	return null
+
+func find_kitchen(node: Node) -> Node:
+	if node is KITCHEN.Kitchen: return node
+	for child in node.get_children():
+		var found=find_kitchen(child)
 		if found: return found
 	return null

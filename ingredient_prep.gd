@@ -50,6 +50,8 @@ class Bowl extends TextureRect:
 		elif bench.game.online.pending: bench.busy=true
 		bench.refresh(); bench.board.queue_redraw()
 class Bench extends VBoxContainer:
+	var compact=false
+	var cells: Dictionary={}
 	var ui: Node
 	var game: Node
 	var crop=""
@@ -70,36 +72,44 @@ class Bench extends VBoxContainer:
 	func tool_icon(index: int) -> AtlasTexture:
 		var a=AtlasTexture.new(); a.atlas=preload("res://art/prep_tools.svg"); a.region=Rect2(index*160,0,160,160); return a
 	func _ready() -> void:
-		game=ui.game; add_theme_constant_override("separation",10)
-		add_child(ui.label("1 · Récolte sur la planche   2 · Bon ustensile dessus   3 · Résultat dans le saladier",15))
-		var row=HBoxContainer.new(); row.add_theme_constant_override("separation",12); add_child(row)
+		game=ui.game; add_theme_constant_override("separation",6 if compact else 10)
+		var help=ui.label("Récolte → planche → ustensile → saladier",14)
+		help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		add_child(help)
+		var row=GridContainer.new(); row.columns=4 if compact else 8; row.add_theme_constant_override("h_separation",8); add_child(row)
 		for item in game.sheet.ingredients:
-			if item.get("pantry",false) or item.id not in game.discovered: continue
+			if item.get("pantry",false): continue
 			var cell=VBoxContainer.new(); row.add_child(cell)
 			var food=Item.new(); food.bench=self; food.id=item.id; food.type="raw"; food.texture=raw_texture(item.id)
-			food.custom_minimum_size=Vector2(85,72); food.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; food.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			food.custom_minimum_size=Vector2(88,40) if compact else Vector2(85,72); food.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; food.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			if item.id=="nebulasyrup": food.modulate=Color("cd95e8")
-			food.tooltip_text=item.name+" · récolte brute"; cell.add_child(food); cell.add_child(ui.label(item.short_name,12))
+			food.tooltip_text=item.name+" · récolte brute"; cell.add_child(food)
+			var count=ui.label("",12); cell.add_child(count); cells[item.id]={"label":count,"food":food}
 		stock=ui.label("",13); stock.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART; add_child(stock)
 		var work=HBoxContainer.new(); add_child(work)
-		board=Board.new(); board.bench=self; board.custom_minimum_size=Vector2(565,240); work.add_child(board)
-		var bowl=Bowl.new(); bowl.bench=self; bowl.texture=tool_icon(3); bowl.custom_minimum_size=Vector2(220,220)
+		board=Board.new(); board.bench=self; board.custom_minimum_size=Vector2(260,140) if compact else Vector2(565,240); work.add_child(board)
+		var bowl=Bowl.new(); bowl.bench=self; bowl.texture=tool_icon(3); bowl.custom_minimum_size=Vector2(140,140) if compact else Vector2(220,220)
 		bowl.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; bowl.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED; bowl.tooltip_text="Saladier · ingrédients préparés"; work.add_child(bowl)
 		var tools=HBoxContainer.new(); add_child(tools)
 		var index=0
 		for id in ["knife","press","sieve"]:
 			var column=VBoxContainer.new(); tools.add_child(column)
 			var tool=Item.new(); tool.bench=self; tool.id=id; tool.type="tool"; tool.texture=tool_icon(index); index+=1
-			tool.custom_minimum_size=Vector2(120,64); tool.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; tool.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			tool.custom_minimum_size=Vector2(115,40) if compact else Vector2(120,64); tool.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; tool.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			tool.tooltip_text=NAMES[id]; column.add_child(tool); column.add_child(ui.label(NAMES[id],13))
 		caption=ui.label("",16); add_child(caption)
-		add_child(ui.button("RETOUR À LA CUISINE",func(): ui.show_page(str(ui.get_meta("prep_return","cookwrap")))))
+		if not compact: add_child(ui.button("RETOUR À LA CUISINE",func(): ui.show_page(str(ui.get_meta("prep_return","cookwrap")))))
 		refresh()
 	func refresh() -> void:
 		var counts: Array[String]=[]
 		for item in game.sheet.ingredients:
 			if not item.get("pantry",false) and item.id in game.discovered: counts.append("%s : %d bruts / %d prêts" % [item.short_name,game.inventory.get("raw_"+item.id,0),game.inventory[item.id]])
-		stock.text=" · ".join(counts)
+		stock.text="" if compact else " · ".join(counts)
+		stock.visible=not compact
+		for id in cells:
+			var raw: int=int(game.inventory.get("raw_"+id,0))
+			cells[id].label.text="%s\n%d bruts · %d prêts" % [game.ingredient(id).short_name,raw,game.inventory[id]]
+			cells[id].food.modulate=Color(1,1,1,1 if raw>0 else 0.45) if id!="nebulasyrup" else Color(0.80,0.58,0.91,1 if raw>0 else 0.45)
 		caption.text="Glisse une récolte brute sur la planche." if crop.is_empty() else "Glisse le résultat dans le saladier." if processed else "Utilise : "+NAMES[TOOLS.get(crop,"")]
 		if busy: caption.text="Validation de la préparation…"
 	func _process(_delta: float) -> void:

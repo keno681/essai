@@ -17,6 +17,6 @@ func run() -> void:
 	game.room="restaurant"; game.player.x=650
 	for id in game.discovered:
 		if not game.ingredient(id).get("pantry",false): game.inventory["raw_"+id]=3
-	game.ui.show_page("prep")
-	await capture("table-travail")
+	game.ui.show_page("cookwrap")
+	await capture("cuisine-unifiee")
 	game.queue_free(); await process_frame; quit()
