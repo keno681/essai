@@ -20,7 +20,8 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
     for name in ['JOUER.cmd', 'OUVRIR-EDITEUR.cmd', 'TROUVER-GODOT.cmd', 'INSTALLER-GODOT.cmd', 'VERIFIER-GODOT.cmd']:
         text = (root / 'tools' / 'windows' / name).read_text()
         z.writestr(base + name, text.replace('\r\n', '\n').replace('\n', '\r\n'))
-    z.writestr(base + 'LIRE-MOI.txt', (root / 'README.md').read_text())
+    guide = root / 'GUIDE.md'
+    z.writestr(base + 'LIRE-MOI.txt', (guide if guide.exists() else root / 'README.md').read_text())
     z.writestr(base + 'SECURITE.txt', (root / 'SECURITE.md').read_text())
     for p in sorted(root.rglob('*')):
         rel = p.relative_to(root)
