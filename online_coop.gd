@@ -1,6 +1,6 @@
 extends Node
 const VERSION := "cosmo-coop-1"
-const PORT := 24567
+const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
 var hosting := false
@@ -111,7 +111,7 @@ func _process(delta: float) -> void:
 	if not authenticated and timeout>15:
 		if hosting:
 			if partner_id!=0: peer.disconnect_peer(partner_id,true); remove_partner()
-		else: leave("Connexion expirée : vérifie IP, mot de passe et port UDP 24567.")
+		else: leave("Connexion expirée : vérifie IP, mot de passe et port UDP 16383.")
 		return
 	var count := 0
 	while peer and peer.get_available_packet_count()>0 and count<32:

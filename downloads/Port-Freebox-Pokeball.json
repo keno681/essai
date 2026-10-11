@@ -1,0 +1,21 @@
+{
+  "format": "cosmowrap-patch-v1",
+  "title": "Coop : port compatible Freebox 16383",
+  "files": [
+    {
+      "path": "online_coop.gd",
+      "old": "const PORT := 24567",
+      "new": "const PORT := 16383"
+    },
+    {
+      "path": "online_coop.gd",
+      "old": "Connexion expirée : vérifie IP, mot de passe et port UDP 24567.",
+      "new": "Connexion expirée : vérifie IP, mot de passe et port UDP 16383."
+    },
+    {
+      "path": "ui.gd",
+      "old": "IP publique et redirection du port UDP 24567 vers son PC.",
+      "new": "IP publique et redirection du port UDP 16383 vers son PC."
+    }
+  ]
+}

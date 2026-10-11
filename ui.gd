@@ -324,7 +324,7 @@ func show_page(name: String) -> void:
 				secret.custom_minimum_size=Vector2(590,40)
 				box.add_child(secret)
 				box.add_child(button("REJOINDRE MON AMI",func(): game.online.join(ip.text,secret.text); show_page("online")))
-			var instructions := label("Même version du jeu des deux côtés. Sur le même réseau : IP locale de l'hôte. À distance : IP publique et redirection du port UDP 24567 vers son PC. Autoriser Godot dans le pare-feu Windows pour ce réseau. Une connexion avec CGNAT nécessite un VPN privé adapté ou une IP publique accessible. Aucun compte ni serveur payant.",14)
+			var instructions := label("Même version du jeu des deux côtés. Sur le même réseau : IP locale de l'hôte. À distance : IP publique et redirection du port UDP 16383 vers son PC. Autoriser Godot dans le pare-feu Windows pour ce réseau. Une connexion avec CGNAT nécessite un VPN privé adapté ou une IP publique accessible. Aucun compte ni serveur payant.",14)
 			instructions.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 			instructions.custom_minimum_size.x=590
 			box.add_child(instructions)
