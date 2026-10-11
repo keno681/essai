@@ -4,6 +4,7 @@ var role := ""
 var shared := ""
 var fail_apply := false
 var drinks := false
+var seeds := false
 var test_root := ""
 var was_resume := false
 var injected := false
@@ -14,6 +15,7 @@ func _initialize() -> void:
 		if value.begins_with("--shared="): shared=value.trim_prefix("--shared=")
 		if value=="--fail-apply": fail_apply=true
 		if value=="--drinks": drinks=true
+		if value=="--seeds": seeds=true
 		if value.begins_with("--test-root="): test_root=value.trim_prefix("--test-root=")
 	process_frame.connect(inject_failure)
 	run.call_deferred()
@@ -52,7 +54,7 @@ func run() -> void:
 			game.online.send_world()
 			await wait_for(func(): return FileAccess.file_exists(shared+"/guest-ready"))
 			var patch := {"format":"cosmowrap-patch-v1","title":"Couleur commune","files":[{"path":"ui.gd","old":"var CYAN = Color(\"edc478\")","new":"var CYAN = Color(\"63b8ad\")"}]}
-			game.console_node.draft=FileAccess.get_file_as_string(test_root+"/downloads/Ingredients-Boissons-Pokeball.json") if drinks else JSON.stringify(patch)
+			game.console_node.draft=FileAccess.get_file_as_string(test_root+"/downloads/Graines-Pokeball.json") if seeds else FileAccess.get_file_as_string(test_root+"/downloads/Ingredients-Boissons-Pokeball.json") if drinks else JSON.stringify(patch)
 			game.console_node.send_and_restart()
 			print("SYNC BEGIN : "+game.online.updates.state+" · "+game.console_node.status)
 			if game.online.updates.state.is_empty(): push_error(game.console_node.status); quit(1); return
@@ -67,9 +69,12 @@ func run() -> void:
 			push_error("Guest did not restart"); quit(1)
 		return
 	await wait_for(func(): return game.online.authenticated and game.online.updates.state.is_empty())
-	var expected := "edc478" if fail_apply or drinks else "63b8ad"
+	var expected := "edc478" if fail_apply or drinks or seeds else "63b8ad"
 	assert(FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://ui.gd")).contains('var CYAN = Color("'+expected+'")'))
 	assert(game.coins==123)
+	if seeds:
+		assert(game.inventory.has("seed_moonleaf") and game.seed_count("moonleaf")==3)
+		assert(game.ingredient("moonleaf").has("seed_price"))
 	if drinks:
 		assert(game.inventory.has("mineralwater"))
 		assert(game.recipe(6).ingredients==["mineralwater","nebulasyrup","starlime"])

@@ -36,19 +36,25 @@ func empty(id: String) -> void:
 	open(id)
 func plant(id: String, crop: String) -> void:
 	if game.online and game.online.request("plant",{"id":id,"crop":crop}): return
-	if not plants[id].is_empty() or crop not in game.discovered or game.ingredient(crop).get("pantry",false): return
+	if not plants.has(id) or not plants[id].is_empty() or crop not in game.discovered or game.ingredient(crop).get("pantry",false): return
+	if game.seed_count(crop)<1:
+		game.say("Il manque une graine : commande-la sur le PC du bureau.")
+		return
+	game.inventory["seed_"+crop]-=1
 	plants[id]=crop
 	set_timer(id,float(game.ingredient(crop).regrow_seconds))
 	game.save_progress()
 	open(id)
 func harvest(id: String) -> void:
 	if game.online and game.online.request("harvest",{"id":id}): return
+	if not plants.has(id): return
 	var crop: String=plants[id]
 	if crop.is_empty() or timer(id)>0: return
-	game.inventory[crop]+=1 if game.cooldowns.has(id) else 2
-	set_timer(id,float(game.ingredient(crop).regrow_seconds))
+	game.inventory[crop]+=3
+	plants[id]=""
+	set_timer(id,0)
 	game.play_sound(620)
-	game.say("Récolte : "+str(game.ingredient(crop).name))
+	game.say("Récolte : +3 "+str(game.ingredient(crop).name)+". Le bac est vide.")
 	game.save_progress()
 	open(id)
 func build(box: VBoxContainer) -> void:
@@ -63,11 +69,13 @@ func build(box: VBoxContainer) -> void:
 		box.add_child(harvest_button)
 		box.add_child(ui.button("VIDER LE BAC",func(): empty(id)))
 	else:
-		box.add_child(ui.label("Choisis une plante découverte. Les semences sont gratuites.",15))
+		box.add_child(ui.label("Une graine donne 3 ingrédients, puis le bac devient vide.",15))
 		for item in game.sheet.ingredients:
 			if item.id not in game.discovered or item.get("pantry",false): continue
 			var crop: String=item.id
-			box.add_child(ui.button("PLANTER · "+item.name,func(): plant(id,crop)))
+			var seed_button=ui.button("PLANTER · "+item.name+" · graines : "+str(game.seed_count(crop)),func(): plant(id,crop))
+			seed_button.disabled=game.seed_count(crop)<1
+			box.add_child(seed_button)
 func paint() -> void:
 	if game.room not in ["restaurant","garden"]: return
 	var locations: Array=[]

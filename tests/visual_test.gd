@@ -46,12 +46,12 @@ func run() -> void:
 	var before: int = int(game.inventory.mushroom)
 	game.planters.set_timer("moonleaf",0)
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.mushroom == before+1)
+	assert(game.inventory.mushroom == before+3)
 	game.planters.popup.hide()
 	var state: Dictionary = game.snapshot()
 	game.planters.plants.moonleaf = "sunfruit"
 	game.apply_snapshot(state)
-	assert(game.planters.plants.moonleaf == "mushroom")
+	assert(game.planters.plants.moonleaf == "")
 	game.room = "garden"
 	game.player = Vector2(590,505)
 	game.camera_x = 0

@@ -179,7 +179,7 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	if name in ["cookwrap","cookdrink"]:
@@ -261,11 +261,12 @@ func show_page(name: String) -> void:
 			box.add_child(label("Inventaire, découvertes, livraisons, race et progression.",15,Color("9fb9cb")))
 		"shop":
 			box.add_child(label("Solde : %d wrapcoincoins" % game.coins,21,CYAN))
-			box.add_child(label("Commandez par lots de 3. Fermez le PC : livraison en 4 s.",15,Color("a8bec5")))
+			box.add_child(label("3 graines par lot · 1 graine = 3 ingrédients. Livraison en 4 s.",15,Color("a8bec5")))
 			for item in game.sheet.ingredients:
+				if item.get("pantry",false): continue
 				var id: String = item.id
-				var price := int(item.buy_price)*3
-				var item_button := button("3 × "+item.name+"  /  %d WCC" % price,func(): game.purchase(id); show_page("shop"))
+				var price := int(item.get("seed_price",item.buy_price))*3
+				var item_button := button("3 graines · "+item.name+"  /  %d WCC" % price,func(): game.purchase(id); show_page("shop"))
 				if not id in game.discovered:
 					item_button.text = "À découvrir sur la planète : "+item.name
 					item_button.disabled = true
@@ -363,6 +364,9 @@ func show_page(name: String) -> void:
 				elif i==game.sheet.ingredients.size() and game.holding>=0:
 					slot.add_child(label(("BOISSON" if game.recipe(game.holding).get("kind","wrap")=="drink" else "WRAP")+"\n× 1",12,Color("efd37d")))
 					slot.tooltip_text = game.recipe(game.holding).name
+			box.add_child(label("GRAINES / 1 graine = 3 ingrédients",18,CYAN))
+			for item in game.sheet.ingredients:
+				if not item.get("pantry",false) and item.id in game.discovered: box.add_child(label(item.name+" · "+str(game.seed_count(item.id))+" graines",13))
 			box.add_child(label("RECETTES / choisir pour la cuisine",18,CYAN))
 			for i in range(game.sheet.recipes.size()):
 				var index := i

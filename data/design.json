@@ -8,7 +8,9 @@
       "regrow_seconds": 8,
       "short_name": "SALADE",
       "buy_price": 2,
-      "starter": true
+      "starter": true,
+      "seed_price": 2,
+      "crop_visual": 0
     },
     {
       "id": "sunfruit",
@@ -18,7 +20,9 @@
       "regrow_seconds": 10,
       "short_name": "TOMATE",
       "buy_price": 3,
-      "starter": true
+      "starter": true,
+      "seed_price": 3,
+      "crop_visual": 1
     },
     {
       "id": "mushroom",
@@ -28,7 +32,9 @@
       "regrow_seconds": 12,
       "short_name": "CHAMPI",
       "buy_price": 4,
-      "starter": true
+      "starter": true,
+      "seed_price": 4,
+      "crop_visual": 2
     },
     {
       "id": "starlime",
@@ -38,7 +44,9 @@
       "x": 0,
       "regrow_seconds": 16,
       "buy_price": 5,
-      "starter": false
+      "starter": false,
+      "seed_price": 5,
+      "crop_visual": 3
     },
     {
       "id": "firepepper",
@@ -48,7 +56,9 @@
       "x": 0,
       "regrow_seconds": 18,
       "buy_price": 6,
-      "starter": false
+      "starter": false,
+      "seed_price": 6,
+      "crop_visual": 4
     },
     {
       "id": "crystalrice",
@@ -58,7 +68,9 @@
       "x": 0,
       "regrow_seconds": 20,
       "buy_price": 7,
-      "starter": false
+      "starter": false,
+      "seed_price": 7,
+      "crop_visual": 5
     },
     {
       "id": "mineralwater",
@@ -73,25 +85,29 @@
     },
     {
       "id": "lunartea",
-      "name": "Thé lunaire séché",
+      "name": "Feuilles de thé lunaire",
       "short_name": "THÉ",
       "color": "afc18a",
       "x": 0,
-      "regrow_seconds": 0,
+      "regrow_seconds": 16,
       "buy_price": 3,
       "starter": false,
-      "pantry": true
+      "pantry": false,
+      "seed_price": 3,
+      "crop_visual": 0
     },
     {
       "id": "nebulasyrup",
-      "name": "Sirop de baies nébuleuses",
-      "short_name": "SIROP",
+      "name": "Baies nébuleuses",
+      "short_name": "BAIES",
       "color": "ca91e1",
       "x": 0,
-      "regrow_seconds": 0,
+      "regrow_seconds": 18,
       "buy_price": 4,
       "starter": false,
-      "pantry": true
+      "pantry": false,
+      "seed_price": 4,
+      "crop_visual": 1
     }
   ],
   "recipes": [

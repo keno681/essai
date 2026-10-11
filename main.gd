@@ -72,6 +72,7 @@ func _ready() -> void:
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
 	for item in sheet.ingredients:
 		inventory[item.id] = 0
+		if not item.get("pantry",false): inventory["seed_"+item.id]=3 if item.starter else 0
 		cooldowns[item.id] = 0.0
 	for row in sheet.beds + sheet.wild_nodes: node_cooldowns[row.id] = 0.0
 	for row in sheet.rooms:
@@ -289,6 +290,9 @@ func new_service() -> void:
 	for id in inventory:
 		inventory[id] = 0
 		cooldowns[id] = 0.0
+	for item in sheet.ingredients:
+		if not item.get("pantry",false): inventory["seed_"+item.id]=3 if item.starter else 0
+	inventory.mineralwater=3
 	save_progress()
 	say("Nouveau service !")
 
@@ -315,6 +319,7 @@ func update_customers(delta: float) -> void:
 			customer_state = "arriving"
 
 func _process(delta: float) -> void:
+	if not online or not online.active or online.hosting: inventory.mineralwater=maxi(3,int(inventory.get("mineralwater",0)))
 	ambient_clock+=delta
 	if is_instance_valid(music_player): music_player.volume_db=float(sheet.ambience[0].volume_db)-(6 if menu else 0)
 	var connected: bool = online != null and online.active
@@ -508,6 +513,9 @@ func play_sound(frequency: float) -> void:
 	sound_player.stream = stream
 	sound_player.play()
 
+func seed_count(id: String) -> int:
+	return int(inventory.get("seed_"+id,0))
+
 func ingredient(id: String) -> Dictionary:
 	for row in sheet.ingredients:
 		if row.id==id: return row
@@ -557,7 +565,7 @@ func travel(destination: String, arrival_x: float) -> void:
 	camera_x = 0
 	speech_time = 0
 	if OS.get_name()=="Windows": DisplayServer.tts_stop()
-	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des ingrédients.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
+	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des graines.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
 
 func harvest_node(node: Dictionary) -> bool:
 	if online and online.request("wild",{"id":node.id}): return false
@@ -578,17 +586,17 @@ func harvest_node(node: Dictionary) -> bool:
 func purchase(id: String) -> bool:
 	if online and online.request("purchase",{"id":id}): return false
 	var item := ingredient(id)
-	if item.is_empty() or not id in discovered:
+	if item.is_empty() or item.get("pantry",false) or not id in discovered:
 		say("Explorez la planète pour découvrir cet ingrédient d'abord.")
 		return false
 	var batch := int(system("shopping").batch_size)
-	var cost := int(item.buy_price)*batch
+	var cost := int(item.get("seed_price",item.buy_price))*batch
 	if coins<cost:
 		say("Il manque des wrapcoincoins pour cette commande.")
 		return false
 	coins -= cost
-	deliveries.append({"ingredient":id,"quantity":batch,"remaining":float(system("shopping").delivery_seconds)})
-	say("Commande passée : 3 "+item.name+". Livraison dans 4 secondes de jeu.")
+	deliveries.append({"ingredient":id,"kind":"seed","quantity":batch,"remaining":float(system("shopping").delivery_seconds)})
+	say("Commande passée : 3 graines · "+item.name+". Livraison dans 4 secondes de jeu.")
 	play_sound(580)
 	return true
 
@@ -597,8 +605,8 @@ func update_deliveries(delta: float) -> void:
 		deliveries[i].remaining -= delta
 		if deliveries[i].remaining<=0:
 			var row: Dictionary = deliveries[i]
-			inventory[row.ingredient] += int(row.quantity)
-			say("Livraison reçue : +%d %s." % [row.quantity,ingredient(row.ingredient).name])
+			inventory["seed_"+row.ingredient] = seed_count(row.ingredient)+int(row.quantity)
+			say("Livraison reçue : +%d graines · %s." % [row.quantity,ingredient(row.ingredient).name])
 			deliveries.remove_at(i)
 			play_sound(880)
 
@@ -621,7 +629,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"waiting_queue":customer_queue.snapshot(),"version":8,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"waiting_queue":customer_queue.snapshot(),"version":9,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	if online and online.active and (not online.hosting or online.executing_remote): return false
@@ -678,7 +686,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	order = posmod(int(data.get("order",0)),sheet.recipes.size())
 	completed = served>=3
 	for id in inventory:
-		inventory[id] = maxi(0,int(data.get("inventory",{}).get(id,0)))
+		inventory[id] = maxi(0,int(data.get("inventory",{}).get(id,3 if id.begins_with("seed_") and ingredient(id.trim_prefix("seed_")).get("starter",false) else 0)))
 		cooldowns[id] = maxf(0,float(data.get("cooldowns",{}).get(id,0)))
 	var coop_carried := int(data.get("coop_carried",-1))
 	if coop_carried>=0 and coop_carried<sheet.recipes.size():
@@ -702,8 +710,8 @@ func apply_snapshot(data: Dictionary) -> void:
 		if row.id==data.get("player_race",player_race): player_race=row.id
 	deliveries.clear()
 	for row in data.get("deliveries",[]):
-		if row is Dictionary and row.get("ingredient") in discovered:
-			deliveries.append({"ingredient":row.ingredient,"quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
+		if row is Dictionary and row.get("ingredient") in discovered and not ingredient(row.ingredient).get("pantry",false):
+			deliveries.append({"ingredient":row.ingredient,"kind":"seed","quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
 	customer_queue.restore(data.get("waiting_queue",{}))
 	speech_time = 0
 	vertical = 0
@@ -918,9 +926,9 @@ func guide_step() -> Dictionary:
 		return {"text":"Commande prête ! Clique sur le client pour lui donner.","target":"client"}
 	for id in recipe(order).ingredients:
 		if inventory[id]<1:
-			if ingredient(id).starter: return {"text":"Il manque "+ingredient(id).name+" : cliquez sur le bac pour récolter.","target":id}
-			if coins>=int(ingredient(id).buy_price)*3: return {"text":"Il manque "+ingredient(id).name+" : ouvrez le BUREAU puis le PC pour commander.","target":"snack_office"}
-			return {"text":"Il manque "+ingredient(id).name+" : passez par la SERRE pour récolter sur la planète.","target":"snack_garden"}
+			if ingredient(id).starter and not planters.plants.get(id,"").is_empty(): return {"text":"Il manque "+ingredient(id).name+" : cliquez sur le bac pour récolter.","target":id}
+			if coins>=int(ingredient(id).buy_price)*3: return {"text":"Il manque "+ingredient(id).name+" : achetez ses graines au PC, puis plantez-les dans un bac vide.","target":"snack_office"}
+			return {"text":"Il manque "+ingredient(id).name+" : plantez une graine dans un bac vide ou explorez la planète.","target":"snack_garden"}
 	return {"text":"Ingrédients prêts ! Cliquez sur "+("BOISSONS." if recipe(order).get("kind","wrap")=="drink" else "CUISINER."),"target":"drinks" if recipe(order).get("kind","wrap")=="drink" else "kitchen"}
 
 func draw_interaction_markers() -> void:

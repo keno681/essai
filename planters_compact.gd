@@ -22,7 +22,7 @@ func open(id: String) -> void:
 	box.add_child(title)
 	if str(plants[id]) != "":
 		var seconds := ceili(timer(id))
-		var take := small_button("Récolter" if seconds == 0 else "Pousse : %d s" % seconds, func(): harvest(id))
+		var take := small_button("Récolter × 3" if seconds == 0 else "Pousse : %d s" % seconds, func(): harvest(id))
 		take.disabled = seconds > 0
 		box.add_child(take)
 		box.add_child(small_button("Vider", func(): empty(id)))
@@ -30,7 +30,9 @@ func open(id: String) -> void:
 		for item in game.sheet.ingredients:
 			if item.id not in game.discovered or item.get("pantry",false): continue
 			var crop: String = str(item.id)
-			box.add_child(small_button(str(item.name), func(): plant(id, crop)))
+			var seed_button := small_button(str(item.short_name)+" · graines : "+str(game.seed_count(crop)), func(): plant(id, crop))
+			seed_button.disabled=game.seed_count(crop)<1
+			box.add_child(seed_button)
 	game.menu = true
 	popup.popup_hide.connect(func(): game.menu = false)
 	var cursor: Vector2 = game.get_viewport().get_mouse_position()
@@ -67,6 +69,7 @@ func paint() -> void:
 		for i in range(game.sheet.ingredients.size()):
 			if str(game.sheet.ingredients[i].id) == str(plants[id]): index = i
 		var item: Dictionary = game.ingredient(str(plants[id]))
+		index=int(item.get("crop_visual",index))
 		var progress: float = clampf(1.0 - timer(id) / float(item.regrow_seconds), 0.0, 1.0)
 		var growth: float = lerpf(0.25, 1.0, progress)
 		var x: float = float(location.x) - game.camera_x

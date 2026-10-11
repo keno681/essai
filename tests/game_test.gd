@@ -53,9 +53,9 @@ func run_tests() -> void:
 	game.interact()
 	assert(game.inventory.moonleaf == before, "Cliquer ouvre le choix, sans récolter automatiquement")
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf == before + 1)
+	assert(game.inventory.moonleaf == before + 3)
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf == before + 1, "Repousse respectée")
+	assert(game.inventory.moonleaf == before + 3, "Repousse respectée")
 	game.planters.popup.hide()
 	game.ui.show_page("inventory")
 	assert(game.menu)
@@ -80,7 +80,7 @@ func run_tests() -> void:
 	game.interact()
 	game.planters.harvest("bed1")
 	game.planters.popup.hide()
-	assert(game.inventory.moonleaf == 2)
+	assert(game.inventory.moonleaf == 3)
 	game.travel("planet",420)
 	game.interact()
 	assert("starlime" in game.discovered)
@@ -95,12 +95,12 @@ func run_tests() -> void:
 	assert(game.discovered.size() == 9)
 	game.travel("office",830)
 	game.coins = 60
-	var old = game.inventory.starlime
+	var old = game.seed_count("starlime")
 	assert(game.purchase("starlime"))
 	assert(game.coins == 45)
-	assert(game.inventory.starlime == old, "La livraison ne doit pas être instantanée")
+	assert(game.seed_count("starlime") == old, "La livraison ne doit pas être instantanée")
 	game.update_deliveries(4.1)
-	assert(game.inventory.starlime == old+3)
+	assert(game.seed_count("starlime") == old+3)
 	game.coins = 0
 	assert(not game.purchase("moonleaf"), "Achat refusé sans argent")
 	game.coins = 29
@@ -112,7 +112,7 @@ func run_tests() -> void:
 	game.inventory.starlime = 0
 	game.discovered = ["moonleaf","sunfruit","mushroom"]
 	assert(game.load_at_sofa())
-	assert(game.coins == 23 and game.inventory.starlime == old+3)
+	assert(game.coins == 23 and game.seed_count("starlime") == old+3)
 	assert(game.deliveries.size() == 1, "Les livraisons en attente doivent être restaurées")
 	assert(game.discovered.size() == 9)
 	assert(game.room == "office" and game.player.x == 440)

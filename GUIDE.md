@@ -25,7 +25,7 @@ Ce nouveau conditionnement évite la redistribution de l'exécutable ; **il ne c
 - Cliquer sur un bac ouvre un petit choix près du curseur : récolter, vider ou planter une variété découverte.
 - Cliquer sur la cuisine ou le distributeur ouvre la préparation. Glisser les ingrédients de la table dans la galette ou le verre, puis fabriquer la commande. Ramener un ingrédient sur la table permet de le retirer.
 - Cliquer sur le client lui remet la commande préparée ; le chat reste accessible avec T et le bouton du HUD. Trois clients attendent derrière lui, avec des apparences aléatoires. Ils avancent dans l’ordre après son départ ; la file est conservée dans les sauvegardes.
-- Le canapé du bureau sert à sauvegarder et charger ; le PC permet de commander les ingrédients.
+- Le canapé du bureau sert à sauvegarder et charger ; le PC permet de commander uniquement des graines, par lots de 3. Une graine produit 3 ingrédients en une récolte, puis le bac devient vide. Vider un plant avant sa récolte ne rend pas la graine. Trois graines de chaque variété de départ sont offertes ; les plants déjà présents restent utilisables. Les semences sont conservées dans les sauvegardes et partagées en coop.
 
 Les objets se mettent en surbrillance au passage du curseur. L'infobulle affiche leur nom. Le jeu démarre dans une fenêtre maximisée.
 
@@ -45,7 +45,7 @@ Pour installer la synchronisation sur une version précédente compatible avec l
 
 Les modifications envoyées par la Pokéball de l'hôte se synchronisent si l'option correspondante est cochée dans le menu coop. Les fichiers concernés doivent être identiques avant la modification. Chaque PC vérifie le bloc dans une copie temporaire avant application. La progression et les commandes portées sont conservées ; si une application échoue, les deux PC tentent de restaurer la version précédente. Les modifications externes aux fichiers ne sont pas surveillées. Seuls les fichiers texte et SVG passent par ce système : les PNG et les sons demandent une distribution séparée. Les scripts de coordination (`coop_updates.gd`, `online_coop.gd`, `console.gd`, `patch_engine.gd`) doivent être mis à jour hors coop, sur les deux PC.
 
-Les boissons disposent de leurs ingrédients : eau minérale, thé lunaire séché et sirop de baies nébuleuses, disponibles au PC du bureau. Le thé utilise eau et thé ; le soda utilise eau, sirop et citron astral. Le citron peut aussi entrer dans les wraps. Les ingrédients du garde-manger ne se plantent pas ; les tables de préparation affichent uniquement les ingrédients de leur catégorie.
+Les boissons utilisent de l’eau minérale, des feuilles de thé lunaire, des baies nébuleuses et du citron astral. Le distributeur fournit l’eau ; les autres ingrédients se cultivent à partir de graines. Le thé utilise eau et feuilles ; le soda utilise eau, baies et citron. Les tables de préparation affichent uniquement les ingrédients de leur catégorie. Les anciennes livraisons de variétés cultivables deviennent des livraisons de graines.
 
 Les tests automatisés sous Linux utilisent deux vrais lanceurs et vérifient la transmission du bloc, la relance, la reconnexion, les stocks, les commandes portées et le retour arrière après un échec. Cette relance coordonnée reste à essayer sur deux PC Windows.
 
@@ -79,6 +79,7 @@ godot --headless --audio-driver Dummy --path . --script tests/console_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/customer_queue_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/online_coop_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/drink_ingredients_test.gd
+godot --headless --audio-driver Dummy --path . --script tests/seeds_test.gd
 python3 tests/run_coop_sync.py
 ```
 

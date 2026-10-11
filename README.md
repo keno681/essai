@@ -23,9 +23,9 @@ Seul ou avec un ami, sers des extraterrestres qui ont du caractère.
 
 | 🌯 Cuisiner | 🥤 Préparer des boissons | 👽 Accueillir les clients |
 | :--- | :--- | :--- |
-| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. | Eau minérale, thé lunaire, sirop de baies et citron astral : chaque boisson a ses ingrédients. | Des apparences aléatoires, des conversations et une file d’attente qui avance au rythme du service. |
+| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. | Eau minérale, thé lunaire, baies nébuleuses et citron astral : chaque boisson a ses ingrédients. | Des apparences aléatoires, des conversations et une file d’attente qui avance au rythme du service. |
 | **🌱 Cultiver** | **🪐 Explorer** | **🦆 Développer le restaurant** |
-| Récolte, vide tes bacs et replante les variétés découvertes. | Pars sur la planète pour trouver de nouveaux ingrédients et débloquer des recettes. | Gagne des wrapcoincoins, commande tes stocks au PC et sauvegarde depuis le canapé. |
+| Achète tes graines au PC : une graine donne 3 ingrédients, puis le bac devient vide. | Pars sur la planète pour trouver de nouveaux ingrédients et débloquer des recettes. | Gagne des wrapcoincoins, commande tes graines au PC et sauvegarde depuis le canapé. |
 
 ## Un univers à découvrir
 
@@ -63,6 +63,7 @@ En coop, les blocs envoyés par l’hôte peuvent être appliqués sur les deux 
 | :--- | :--- |
 | Installer la synchronisation, hors coop, sur **les deux PC** | [Synchronisation Coop](https://raw.githubusercontent.com/keno681/essai/master/downloads/Synchronisation-Coop-Pokeball.json) |
 | Séparer les ingrédients des wraps et des boissons, après installation de la synchronisation | [Ingrédients Boissons](https://raw.githubusercontent.com/keno681/essai/master/downloads/Ingredients-Boissons-Pokeball.json) |
+| Planter avec des graines, récolter 3 ingrédients et acheter uniquement des semences au PC | [Système de graines](https://raw.githubusercontent.com/keno681/essai/master/downloads/Graines-Pokeball.json) |
 
 **Le ZIP actuel inclut déjà ces mises à jour.** La synchronisation porte sur les fichiers texte et SVG ; les PNG et les sons nécessitent un transfert séparé. [Fonctionnement et limites →](GUIDE.md#console-pokéball)
 

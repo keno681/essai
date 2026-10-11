@@ -1,10 +1,11 @@
 """Exercise two real supervisors, including coordinated restart and failure rollback."""
 from pathlib import Path
-import subprocess, tempfile, os, time, signal, json
+import subprocess, tempfile, os, time, signal, json, sys
 root=Path(__file__).resolve().parents[1]
 allowed={'.gd','.godot','.tscn','.tres','.json','.svg','.png','.wav','.cfg','.gdshader','.uid'}
 skip={'downloads','build','developer','tools','tests','launcher'}
-for failure,drinks in [(False,False),(True,False),(False,True)]:
+modes=[(False,False,True)] if "--seeds-only" in sys.argv else [(False,False,False),(True,False,False),(False,True,False),(False,False,True)]
+for failure,drinks,seeds in modes:
  fixture=Path(tempfile.mkdtemp(prefix='cosmo-sync-e2e-'))
  children=[]; handles=[]
  try:
@@ -14,8 +15,11 @@ for failure,drinks in [(False,False),(True,False),(False,True)]:
     rel=src.relative_to(root)
     if not src.is_file() or rel.parts[0] in skip or any(x.startswith('.') for x in rel.parts) or src.suffix not in allowed: continue
     dst=pack/'game'/rel; dst.parent.mkdir(parents=True,exist_ok=True);dst.write_bytes(src.read_bytes())
-   if drinks:
-    update=json.loads((root/'downloads'/'Ingredients-Boissons-Pokeball.json').read_text())
+   updates=[]
+   if drinks or seeds: updates.append('Graines-Pokeball.json')
+   if drinks: updates.append('Ingredients-Boissons-Pokeball.json')
+   for name in updates:
+    update=json.loads((root/'downloads'/name).read_text())
     for operation in reversed(update['files']):
      dst=pack/'game'/operation['path']
      if 'create' in operation: dst.unlink()
@@ -33,6 +37,7 @@ for failure,drinks in [(False,False),(True,False),(False,True)]:
    cmd=['godot','--headless','--audio-driver','Dummy','--path',str(pack/'launcher'),'--','--role='+role,'--shared='+str(fixture),'--test-root='+str(root)]
    if failure: cmd+=['--fail-apply']
    if drinks: cmd+=['--drinks']
+   if seeds: cmd+=['--seeds']
    children.append(subprocess.Popen(cmd,env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True))
    if role=='host': time.sleep(.3)
   deadline=time.monotonic()+160
@@ -47,7 +52,7 @@ for failure,drinks in [(False,False),(True,False),(False,True)]:
   for role in ['host','guest']:
    text=(fixture/(role+'.log')).read_text()
    assert 'SCRIPT ERROR' not in text and 'PASS sync '+role in text,text[-5000:]
-  print('PASS: two real launchers, '+('both files rolled back' if failure else 'full drinks update transmitted and applied' if drinks else 'both files updated')+', reconnect, inventories and solo save restored',flush=True)
+  print('PASS: two real launchers, '+('both files rolled back' if failure else 'full seeds update transmitted and applied' if seeds else 'full drinks update transmitted and applied' if drinks else 'both files updated')+', reconnect, inventories and solo save restored',flush=True)
  finally:
   for p in children:
    if p.poll() is None:
