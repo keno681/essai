@@ -20,6 +20,8 @@ Cette égalité établit la provenance du moteur ; elle ne prouve pas l’absenc
 
 ## Nouveau pack sans moteur embarqué
 
-`downloads/CosmoWrapBall-Sources.zip` ne contient aucun `.exe`, `.dll`, `.msi` ou `.pck`. Le moteur doit être téléchargé séparément depuis le site officiel. Les trois lanceurs `.cmd` sont des fichiers texte lisibles ; ils recherchent un Godot standard Windows x64 placé par l’utilisateur à côté d’eux, puis le lancent avec les dossiers du jeu. Ils ne téléchargent aucun fichier, ne demandent pas de droits administrateur et ne modifient pas Defender.
+`downloads/CosmoWrapBall-Sources.zip` ne contient aucun `.exe`, `.dll`, `.msi` ou `.pck`. Les cinq lanceurs `.cmd` sont lisibles. Au premier lancement, `INSTALLER-GODOT.cmd` télécharge la version officielle fixe ci-dessus par HTTPS, vérifie son SHA512, extrait l'archive avec `Expand-Archive`, puis vérifie le SHA256 du moteur. Seul le moteur standard est conservé dans `.godot-runtime`. Chaque lancement vérifie de nouveau son empreinte avant de l'exécuter.
+
+Ces scripts ne demandent pas de droits administrateur, ne modifient ni Defender ni la politique d'exécution PowerShell et ne restaurent aucun fichier en quarantaine. Un échec crée `installation-bloquee.txt` et arrête les installations suivantes pour permettre le diagnostic. Ils ne contournent pas un blocage antivirus. Les empreintes confirment uniquement la provenance et l'intégrité, pas l'absence de malware. L'installation Windows n'a pas été exécutée depuis cet environnement Linux.
 
 Les contrôles du nouveau pack vérifient sa liste de fichiers, son intégrité et le fonctionnement du projet. Ils ne remplacent pas une analyse antivirus. Le signalement initial reste ouvert tant que le chemin de l’élément affecté n’a pas été communiqué.

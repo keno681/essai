@@ -17,7 +17,7 @@ output = root / 'downloads' / 'CosmoWrapBall-Sources.zip'
 output.parent.mkdir(exist_ok=True)
 base = 'CosmoWrapBall/'
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
-    for name in ['JOUER.cmd', 'OUVRIR-EDITEUR.cmd', 'TROUVER-GODOT.cmd']:
+    for name in ['JOUER.cmd', 'OUVRIR-EDITEUR.cmd', 'TROUVER-GODOT.cmd', 'INSTALLER-GODOT.cmd', 'VERIFIER-GODOT.cmd']:
         text = (root / 'tools' / 'windows' / name).read_text()
         z.writestr(base + name, text.replace('\r\n', '\n').replace('\n', '\r\n'))
     z.writestr(base + 'LIRE-MOI.txt', (root / 'README.md').read_text())

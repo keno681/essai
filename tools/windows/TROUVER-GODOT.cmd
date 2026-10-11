@@ -1,14 +1,18 @@
 @echo off
-set "COSMO_GODOT="
-for %%G in ("%~dp0Godot_v*-stable_win64.exe") do if exist "%%~fG" if not defined COSMO_GODOT set "COSMO_GODOT=%%~fG"
-if defined COSMO_GODOT exit /b 0
-echo.
-echo Godot n'est pas fourni dans ce pack.
-echo Telecharge la version Windows standard x64 depuis :
-echo https://godotengine.org/download/windows/
-echo Extrais son ZIP et place Godot_v...-stable_win64.exe ici,
-echo a cote de JOUER.cmd, sans le renommer.
-echo Ne restaure pas l'ancien fichier signale par l'antivirus.
-echo Si Defender signale le nouveau fichier, ne le lance pas.
-echo.
-exit /b 1
+set "COSMO_GODOT=%~dp0.godot-runtime\Godot_v4.6.3-stable_win64.exe"
+if exist "%~dp0.godot-runtime\installation-bloquee.txt" (
+ echo Installation precedente bloquee. Voir .godot-runtime\installation-bloquee.txt.
+ echo Ne restaure pas un fichier mis en quarantaine et ne desactive pas Defender.
+ exit /b 1
+)
+if exist "%COSMO_GODOT%" goto verifier
+call "%~dp0INSTALLER-GODOT.cmd"
+if errorlevel 1 exit /b 1
+:verifier
+call "%~dp0VERIFIER-GODOT.cmd" "%COSMO_GODOT%"
+if errorlevel 1 (
+ echo Verification du moteur refusee. Aucun lancement.
+ echo Moteur absent, bloque ou empreinte incorrecte. > "%~dp0.godot-runtime\installation-bloquee.txt"
+ exit /b 1
+)
+exit /b 0
