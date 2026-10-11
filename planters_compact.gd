@@ -3,6 +3,7 @@ extends "res://planters.gd"
 var popup: PopupPanel
 
 func open(id: String) -> void:
+	if game.online and game.online.executing_remote: return
 	if not plants.has(id): return
 	if is_instance_valid(popup):
 		popup.hide()

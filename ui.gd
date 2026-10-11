@@ -175,11 +175,14 @@ func hide_page() -> void:
 	game.save_settings()
 
 func show_page(name: String) -> void:
+	if name=="console" and game.online and game.online.active:
+		game.say("Quitte la coop avant de modifier les fichiers du jeu.")
+		name="online"
 	CYAN=Color(game.console_node.config.accent)
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	if name in ["cookwrap","cookdrink"]:
@@ -277,14 +280,54 @@ func show_page(name: String) -> void:
 		"menu":
 			box.add_child(label("Snack orbital • Solo • Clients patients",16,Color("9fb9cb")))
 			box.add_child(button("JOUER / REPRENDRE",hide_page))
+			box.add_child(button("COOP EN LIGNE · 2 JOUEURS",func(): show_page("online")))
 			box.add_child(button("ÉVOLUTION DU RESTAURANT",func(): show_page("progress")))
 			box.add_child(button("INVENTAIRE",func(): show_page("inventory")))
 			box.add_child(button("PERSONNAGE ET RACES",func(): show_page("races")))
 			box.add_child(button("CONSOLE POKÉBALL",func(): show_page("console")))
 			box.add_child(button("OPTIONS",func(): show_page("options")))
 			box.add_child(button("NOUVEAU SERVICE",func(): show_page("confirm")))
-			box.add_child(button("QUITTER LE JEU",func(): game.save_progress(); get_tree().quit()))
+			box.add_child(button("QUITTER LE JEU",func():
+				if game.online and game.online.active: game.online.leave()
+				game.save_progress()
+				get_tree().quit()))
 			box.add_child(label("E devant une porte : bureau, serre ou planète.",14,Color("9fb9cb")))
+		"online":
+			box.add_child(label("COOP PRIVÉE · 2 JOUEURS",21,CYAN))
+			var connection_status := label(game.online.status,15)
+			connection_status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+			connection_status.custom_minimum_size.x=590
+			box.add_child(connection_status)
+			var refresh_status := Timer.new()
+			refresh_status.wait_time=0.3
+			refresh_status.autostart=true
+			box.add_child(refresh_status)
+			refresh_status.timeout.connect(func(): connection_status.text=game.online.status)
+			if game.online.active:
+				if game.online.hosting:
+					box.add_child(label("IP LOCALE : "+game.online.local_addresses(),15))
+					box.add_child(label("MOT DE PASSE : "+game.online.password,15,CYAN))
+				box.add_child(button("REVENIR AU RESTAURANT",hide_page))
+				box.add_child(button("DONNER MA COMMANDE AU COÉQUIPIER",func(): game.online.handoff()))
+				box.add_child(button("QUITTER LA COOP",func(): game.online.leave(); show_page("online")))
+			else:
+				box.add_child(label("L'hôte conserve le restaurant. L'invité retrouve ensuite sa partie solo.",14))
+				box.add_child(label("TON MOT DE PASSE DE SALON : "+game.online.password,17,CYAN))
+				box.add_child(button("HÉBERGER UN RESTAURANT",func(): game.online.host(); if not game.online.active: show_page("online")))
+				var ip := LineEdit.new()
+				ip.placeholder_text="Adresse IP de l'hôte"
+				ip.text=game.online.address
+				ip.custom_minimum_size=Vector2(590,40)
+				box.add_child(ip)
+				var secret := LineEdit.new()
+				secret.placeholder_text="Mot de passe fourni par l'hôte"
+				secret.custom_minimum_size=Vector2(590,40)
+				box.add_child(secret)
+				box.add_child(button("REJOINDRE MON AMI",func(): game.online.join(ip.text,secret.text); show_page("online")))
+			var instructions := label("Même version du jeu des deux côtés. Sur le même réseau : IP locale de l'hôte. À distance : IP publique et redirection du port UDP 24567 vers son PC. Autoriser Godot dans le pare-feu Windows pour ce réseau. Une connexion avec CGNAT nécessite un VPN privé adapté ou une IP publique accessible. Aucun compte ni serveur payant.",14)
+			instructions.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+			instructions.custom_minimum_size.x=590
+			box.add_child(instructions)
 		"confirm":
 			box.add_child(label("Recommencer remet les wrapcoincoins et la terrasse à zéro.",17))
 			box.add_child(button("RECOMMENCER",func(): game.new_service(); hide_page()))

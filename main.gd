@@ -35,6 +35,7 @@ var npc_cycle := 0.0
 var appearance: Dictionary = {}
 var queued_appearance: Dictionary = {}
 var customer_queue: RefCounted
+var online: Node
 var customer_rng := RandomNumberGenerator.new()
 var fullscreen := false
 var sound_enabled := true
@@ -99,6 +100,8 @@ func _ready() -> void:
 	add_child(load("res://hover_highlight.gd").new())
 	ui = load("res://ui.gd").new()
 	add_child(ui)
+	online=load("res://online_coop.gd").new()
+	add_child(online)
 	var art_path: String = "res://" + sheet.visuals[0].asset
 	if ResourceLoader.exists(art_path):
 		backdrop = load(art_path)
@@ -111,6 +114,7 @@ func animation(id: String) -> Dictionary:
 
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
+		if online and online.active: online.leave()
 		save_progress()
 		if OS.get_name()=="Windows": DisplayServer.tts_stop()
 		get_tree().quit()
@@ -123,6 +127,7 @@ func say(words: String) -> void:
 	message_time = 5.0
 
 func cook() -> bool:
+	if online and online.request("cook",{"recipe":selected}): return false
 	if holding >= 0:
 		say("Vous portez déjà une commande. Servez-le au comptoir !")
 		return false
@@ -142,6 +147,7 @@ func cook() -> bool:
 	return true
 
 func serve() -> bool:
+	if online and online.request("serve"): return false
 	if customer_state != "waiting":
 		say("Le prochain client arrive. Attendez-le au comptoir.")
 		return false
@@ -202,6 +208,7 @@ func interact() -> void:
 		ui.set_meta("wrap_composition",[])
 		ui.show_page("cookwrap")
 	elif absf(player.x - 1090) < 65:
+		if online and online.request("upgrade"): return
 		if upgraded:
 			say("Votre terrasse est déjà ouverte ! +5 wrapcoincoins par commande.")
 		elif coins >= 35:
@@ -246,12 +253,16 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_N: ui.show_page("confirm")
 
 func return_wrap() -> void:
+	if online and online.request("return"): return
 	if holding >= 0:
 		for ingredient in recipe(holding).ingredients: inventory[ingredient] += 1
 		holding = -1
 		say("Ingrédients rangés : rien n'est perdu.")
 
 func new_service() -> void:
+	if online and online.active:
+		say("Quitte la coop avant de recommencer un service.")
+		return
 	move_goal=-1
 	click_target.clear()
 	customer_emotion="calm"
@@ -306,34 +317,39 @@ func update_customers(delta: float) -> void:
 func _process(delta: float) -> void:
 	ambient_clock+=delta
 	if is_instance_valid(music_player): music_player.volume_db=float(sheet.ambience[0].volume_db)-(6 if menu else 0)
-	if not menu:
+	var connected: bool = online != null and online.active
+	var authority: bool = not connected or online.hosting
+	if not menu or connected:
 		clock += delta
-		if room=="restaurant": update_customers(delta)
+		if authority and (room=="restaurant" or connected): update_customers(delta)
 		speech_time = maxf(0.0,speech_time-delta)
 		speech_elapsed += delta
-		update_deliveries(delta)
-		var axis := float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_Q) or Input.is_physical_key_pressed(KEY_LEFT))
-		if absf(axis)>0:
-			move_goal=-1
-			click_target.clear()
-		elif move_goal>=0:
-			axis=signf(move_goal-player.x)
-		walking = absf(axis) > 0
-		if walking:
-			facing = signf(axis)
-			walk_cycle += delta * float(animation("walk").frequency)
-		action_time = maxf(0.0, action_time - delta)
-		if move_goal>=0:
-			player.x=move_toward(player.x,move_goal,[180,240,310][speed_setting]*delta)
-			if absf(player.x-move_goal)<float(sheet.interaction_ui[0].arrival_distance): finish_click_action()
-		else:
-			player.x = clampf(player.x + axis * [180,240,310][speed_setting] * delta, 40, 3560 if room=="planet" else 1160)
-		camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
-		vertical += 1100 * delta
-		player.y = minf(505, player.y + vertical * delta)
-		if player.y >= 505: vertical = 0
-		for id in cooldowns: cooldowns[id] = maxf(0, cooldowns[id] - delta)
-		for id in node_cooldowns: node_cooldowns[id] = maxf(0,node_cooldowns[id]-delta)
+		if authority: update_deliveries(delta)
+		if not menu:
+			var axis := float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_Q) or Input.is_physical_key_pressed(KEY_LEFT))
+			if absf(axis)>0:
+				move_goal=-1
+				click_target.clear()
+			elif move_goal>=0:
+				axis=signf(move_goal-player.x)
+			walking = absf(axis) > 0
+			if walking:
+				facing = signf(axis)
+				walk_cycle += delta * float(animation("walk").frequency)
+			action_time = maxf(0.0, action_time - delta)
+			if move_goal>=0:
+				player.x=move_toward(player.x,move_goal,[180,240,310][speed_setting]*delta)
+				if absf(player.x-move_goal)<float(sheet.interaction_ui[0].arrival_distance): finish_click_action()
+			else:
+				player.x = clampf(player.x + axis * [180,240,310][speed_setting] * delta, 40, 3560 if room=="planet" else 1160)
+			camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
+			vertical += 1100 * delta
+			player.y = minf(505, player.y + vertical * delta)
+			if player.y >= 505: vertical = 0
+		else: walking=false
+		if authority:
+			for id in cooldowns: cooldowns[id] = maxf(0, cooldowns[id] - delta)
+			for id in node_cooldowns: node_cooldowns[id] = maxf(0,node_cooldowns[id]-delta)
 		message_time -= delta
 	queue_redraw()
 
@@ -357,17 +373,17 @@ func panel(rect: Rect2, color: Color, radius: int = 14) -> void:
 func alien(position: Vector2, color: Color, chef: bool = false, queued: Dictionary = {}) -> void:
 	if not race_texture: return
 	var person_id: int = int(queued.get("customer",actor_customer))
-	var race_id: String = player_race if chef else sheet.customers[person_id].race
+	var race_id: String = str(queued.get("race",player_race)) if chef else sheet.customers[person_id].race
 	var race_index := 0
 	var sprite_row: Dictionary = sheet.races[0]
 	for row in sheet.races:
 		if row.id == race_id:
 			race_index = int(row.sprite_index)
 			sprite_row = row
-	var moving: bool = walking if chef else bool(queued.get("moving",customer_state != "waiting"))
-	var phase: float = walk_cycle if chef else float(queued.get("phase",npc_cycle))
+	var moving: bool = bool(queued.get("moving",walking)) if chef else bool(queued.get("moving",customer_state != "waiting"))
+	var phase: float = float(queued.get("phase",walk_cycle)) if chef else float(queued.get("phase",npc_cycle))
 	var stride := sin(phase)*0.2 if moving else 0.0
-	var direction := facing if chef else (1.0 if queued.is_empty() and customer_state=="leaving" else -1.0)
+	var direction: float = float(queued.get("facing",facing)) if chef else (1.0 if queued.is_empty() and customer_state=="leaving" else -1.0)
 	var breathe := sin(clock*2.0)*1.2
 	var bob := absf(cos(phase))*2 if moving else breathe
 	var foot := position+Vector2(0,39)
@@ -394,9 +410,10 @@ func alien(position: Vector2, color: Color, chef: bool = false, queued: Dictiona
 	var head_width := width*float(look.get("head_width",1.0))
 	draw_texture_rect_region(race_texture,Rect2(-head_width*0.5,-height*0.66-head_height,head_width,head_height),Rect2(source_x,0,cell.x,cell.y*0.34),Color(look.get("skin_colors","ffffff")))
 	if not chef and not look.is_empty(): draw_accessories(head_width,height*0.66+head_height,look)
-	if chef and holding>=0 and recipe(holding).get("kind","wrap")=="drink":
-		draw_drink(Vector2(20,-57),Color("a5d5b7") if holding==5 else Color("d08bea"))
-	elif chef and holding>=0:
+	var displayed_holding: int = int(queued.get("holding",holding))
+	if chef and displayed_holding>=0 and recipe(displayed_holding).get("kind","wrap")=="drink":
+		draw_drink(Vector2(20,-57),Color("a5d5b7") if displayed_holding==5 else Color("d08bea"))
+	elif chef and displayed_holding>=0:
 		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
 	if not chef and queued.is_empty() and customer_state=="leaving" and customer_emotion!="angry":
 		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
@@ -406,6 +423,7 @@ func _draw() -> void:
 	if sheet.is_empty(): return
 	if room!="restaurant":
 		draw_other_room()
+		if online: online.draw_partner()
 		return
 	if backdrop:
 		draw_texture_rect(backdrop,Rect2(0,0,float(sheet.visuals[0].width),float(sheet.visuals[0].height)),false,Color(brightness,brightness,brightness))
@@ -450,6 +468,8 @@ func _draw() -> void:
 	body_text.draw(get_canvas_item(),Vector2(781,247),Color("e1d8c6"))
 	draw_doors()
 	draw_interaction_markers()
+
+	if online: online.draw_partner()
 
 func save_settings() -> void:
 	var file := FileAccess.open("user://settings.json",FileAccess.WRITE)
@@ -540,6 +560,7 @@ func travel(destination: String, arrival_x: float) -> void:
 	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des ingrédients.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
 
 func harvest_node(node: Dictionary) -> bool:
+	if online and online.request("wild",{"id":node.id}): return false
 	if float(node_cooldowns[node.id])>0:
 		say("Cette plante repousse. Revenez dans %d secondes." % ceili(node_cooldowns[node.id]))
 		return false
@@ -555,6 +576,7 @@ func harvest_node(node: Dictionary) -> bool:
 	return true
 
 func purchase(id: String) -> bool:
+	if online and online.request("purchase",{"id":id}): return false
 	var item := ingredient(id)
 	if item.is_empty() or not id in discovered:
 		say("Explorez la planète pour découvrir cet ingrédient d'abord.")
@@ -599,9 +621,10 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"waiting_queue":customer_queue.snapshot(),"version":8,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"waiting_queue":customer_queue.snapshot(),"version":8,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
+	if online and online.active and (not online.hosting or online.executing_remote): return false
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
 	if not file: return false
 	file.store_string(JSON.stringify(snapshot()))
@@ -609,6 +632,9 @@ func write_snapshot(path: String) -> bool:
 	return DirAccess.rename_absolute(path+".tmp",path)==OK
 
 func save_at_sofa() -> bool:
+	if online and online.active and not online.hosting:
+		saving_notice="En coop, seul l’hôte sauvegarde le restaurant."
+		return false
 	if room!="office": return false
 	if not write_snapshot("user://sofa-save.json"):
 		saving_notice = "Échec de sauvegarde. Votre ancienne partie est conservée."
@@ -618,6 +644,9 @@ func save_at_sofa() -> bool:
 	return true
 
 func load_at_sofa() -> bool:
+	if online and online.active:
+		saving_notice="Quitte la coop avant de charger une autre sauvegarde."
+		return false
 	if room!="office" or not FileAccess.file_exists("user://sofa-save.json"):
 		saving_notice = "Aucune sauvegarde sur ce canapé."
 		return false
@@ -651,6 +680,9 @@ func apply_snapshot(data: Dictionary) -> void:
 	for id in inventory:
 		inventory[id] = maxi(0,int(data.get("inventory",{}).get(id,0)))
 		cooldowns[id] = maxf(0,float(data.get("cooldowns",{}).get(id,0)))
+	var coop_carried := int(data.get("coop_carried",-1))
+	if coop_carried>=0 and coop_carried<sheet.recipes.size():
+		for id in recipe(coop_carried).ingredients: inventory[id]+=1
 	for id in node_cooldowns: node_cooldowns[id] = maxf(0,float(data.get("node_cooldowns",{}).get(id,0)))
 	discovered = ["moonleaf","sunfruit","mushroom"]
 	for id in data.get("discovered",[]):
@@ -766,6 +798,7 @@ func restaurant_level() -> int:
 	return result
 
 func chat_with_customer(words: String) -> bool:
+	if online and online.request("chat",{"text":words}): return false
 	words = words.strip_edges().left(int(sheet.local_chat[0].message_limit))
 	if words.is_empty(): return false
 	if room!="restaurant" or customer_state!="waiting":

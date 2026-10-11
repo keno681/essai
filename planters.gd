@@ -29,17 +29,20 @@ func open(id: String) -> void:
 	game.ui.set_meta("active_planter",id)
 	game.ui.show_page("planter")
 func empty(id: String) -> void:
+	if game.online and game.online.request("empty",{"id":id}): return
 	plants[id]=""
 	set_timer(id,0)
 	game.save_progress()
 	open(id)
 func plant(id: String, crop: String) -> void:
+	if game.online and game.online.request("plant",{"id":id,"crop":crop}): return
 	if not plants[id].is_empty() or crop not in game.discovered: return
 	plants[id]=crop
 	set_timer(id,float(game.ingredient(crop).regrow_seconds))
 	game.save_progress()
 	open(id)
 func harvest(id: String) -> void:
+	if game.online and game.online.request("harvest",{"id":id}): return
 	var crop: String=plants[id]
 	if crop.is_empty() or timer(id)>0: return
 	game.inventory[crop]+=1 if game.cooldowns.has(id) else 2
