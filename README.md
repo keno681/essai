@@ -231,3 +231,39 @@ et les entrées inactives sont filtrés. La liste reste en mémoire.
 Les erreurs 400/404 affichent le fournisseur, le modèle et le message API
 avec les clés masquées, pour distinguer les causes. Aucun nouvel appel
 de génération n’est lancé automatiquement.
+
+## Atelier de modification du code (pack sources Windows)
+
+[Télécharger l’atelier, les sources et Godot](https://github.com/keno681/essai/raw/refs/heads/master/downloads/CosmoWrap-Atelier-Windows.zip).
+Extraire tout, puis double-cliquer **ATELIER-GROQ.cmd**. Aucun Python ni
+installation de Godot requis : le runtime éditeur officiel déjà vérifié est inclus.
+
+Entrer la clé Groq dans le champ masqué. Choisir un modèle accessible au compte
+(le bouton CHARGER LES MODÈLES GROQ affiche la liste). Décrire une modification
+de code et cliquer PRÉPARER. L’agent explore les fichiers, lit des extraits,
+cherche du texte et prépare des remplacements ou de nouveaux fichiers texte.
+Chaque demande peut utiliser jusqu’à 20 appels ; les quotas Groq s’appliquent.
+En cas de 429, attendre puis RÉESSAYER ; pas de relance automatique après erreur.
+
+Lire les extraits AVANT/APRÈS dans la console, puis APPLIQUER + VÉRIFIER.
+Une copie des fichiers est enregistrée dans `game/.atelier-backups/` avant
+écriture. Godot importe le projet puis vérifie chaque script avec `--check-only`.
+Une erreur provoque la restauration des fichiers précédents. Les modifications
+concurrentes sont détectées avant application. ANNULER restaure la dernière
+application pendant la session, y compris la suppression des nouveaux fichiers.
+Fermer le jeu ouvert puis utiliser LANCER LE JEU / JOUER.cmd pour voir le résultat.
+OUVRIR-GODOT.cmd ouvre le projet source dans l’éditeur.
+
+L’atelier est distinct du créateur intégré à la Pokéball. Il peut éditer le code,
+les menus, scènes, données et SVG et créer des fichiers texte. Il ne génère pas
+de nouvelles images HD. Les changements de code nécessitent un redémarrage ;
+la vérification de syntaxe ne remplace pas une vérification du comportement
+en jouant. Le moteur d’édition refuse chemins hors du projet, liens symboliques
+et fichiers binaires. Le code produit peut néanmoins exécuter du code avec
+les droits de l’utilisateur : ce n’est pas un bac à sable d’exécution.
+La clé reste en mémoire et n’est ni incluse dans le projet envoyé à Groq
+ni enregistrée dans les sauvegardes.
+
+Construire le pack : `python3 developer/bundle.py`.
+Test de l’atelier : `godot --headless --audio-driver Dummy --path developer --script /chemin/essai/tests/atelier_test.gd`.
+Les appels API réels et le lancement Windows restent à vérifier sur le PC utilisateur.

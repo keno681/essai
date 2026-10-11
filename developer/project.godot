@@ -1,0 +1,10 @@
+config_version=5
+[application]
+config/name="Cosmo Wrap — Atelier Groq"
+run/main_scene="res://atelier.tscn"
+[display]
+window/size/viewport_width=1100
+window/size/viewport_height=780
+window/stretch/mode="canvas_items"
+[rendering]
+renderer/rendering_method="gl_compatibility"
