@@ -333,3 +333,14 @@ vérification Godot restent nécessaires. Les tests HTTP simulés couvrent
 le cycle en trois requêtes : lecture, remplacement préparé, fin de proposition.
 La qualité du code et le support du schéma par la version réelle d’Ollama
 restent à vérifier avec le modèle de l’utilisateur.
+
+### Atelier v20 : relancer le jeu
+
+Le bouton RELANCER LE JEU ferme la partie lancée par l’atelier en lui
+demandant d’enregistrer la progression, attend sa fermeture puis redémarre
+les sources. L’atelier suit uniquement le processus qu’il a lancé dans cette
+session ; une partie lancée ailleurs doit être fermée manuellement.
+Une proposition non appliquée bloque la relance pour éviter la confusion.
+Un lanceur temporaire dans `game/.atelier-runtime/` transmet la demande
+de fermeture et appelle `save_progress()` si la scène expose cette méthode.
+Le code source du jeu n’est pas modifié pour installer ce mécanisme.

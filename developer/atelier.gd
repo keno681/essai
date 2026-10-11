@@ -23,6 +23,9 @@ var format_retries:=0
 var loading_models:=false
 var running:=false
 var validating:=false
+var game_pid := -1
+var restarting := false
+var stop_file := ""
 var worker: Thread
 var controls: Array[Button]=[]
 
@@ -36,7 +39,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation",8)
 	margin.add_child(box)
 	var title:=Label.new()
-	title.text="ATELIER IA v19 · OLLAMA LOCAL / GROQ"
+	title.text="ATELIER IA v20 · OLLAMA LOCAL / GROQ"
 	title.add_theme_font_size_override("font_size",24)
 	box.add_child(title)
 	var note:=Label.new()
@@ -79,8 +82,11 @@ func _ready() -> void:
 	make_button(row,"RÉESSAYER",retry)
 	make_button(row,"APPLIQUER + VÉRIFIER",apply_changes)
 	make_button(row,"ANNULER",undo)
-	make_button(row,"LANCER LE JEU",launch_game)
-	make_button(row,"OUVRIR GODOT",open_editor)
+	var game_row:=HBoxContainer.new()
+	box.add_child(game_row)
+	make_button(game_row,"LANCER LE JEU",launch_game)
+	make_button(game_row,"RELANCER LE JEU",restart_game)
+	make_button(game_row,"OUVRIR GODOT",open_editor)
 	console=TextEdit.new()
 	console.editable=false
 	console.size_flags_vertical=Control.SIZE_EXPAND_FILL
@@ -476,12 +482,66 @@ func undo() -> void:
 	undo_files.clear()
 	staged.clear()
 
+func prepare_runner() -> String:
+	var folder=game_root+"/.atelier-runtime"
+	if DirAccess.make_dir_recursive_absolute(folder)!=OK: return ""
+	stop_file=folder+"/stop-"+str(OS.get_process_id())+".txt"
+	if FileAccess.file_exists(stop_file): DirAccess.remove_absolute(stop_file)
+	var path=folder+"/runner.gd"
+	var file=FileAccess.open(path,FileAccess.WRITE)
+	if not file: return ""
+	file.store_string("""extends SceneTree
+var stop_path: String
+func _initialize() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--atelier-stop="): stop_path=arg.trim_prefix("--atelier-stop=")
+	change_scene_to_file.call_deferred("res://main.tscn")
+func _process(_delta: float) -> bool:
+	if not stop_path.is_empty() and FileAccess.file_exists(stop_path):
+		if is_instance_valid(current_scene) and current_scene.has_method("save_progress"): current_scene.save_progress()
+		if OS.get_name()=="Windows": DisplayServer.tts_stop()
+		quit()
+	return false
+""")
+	file.close()
+	return path
+
 func launch_game() -> void:
-	if validating: return
+	if validating or restarting: return
+	if game_pid>0 and OS.is_process_running(game_pid):
+		log_message("Le jeu est déjà ouvert. Utilise RELANCER LE JEU.")
+		return
+	var runner=prepare_runner()
+	if runner.is_empty(): log_message("Impossible de préparer le lancement du jeu."); return
 	var output: Array=[]
-	OS.execute(OS.get_executable_path(),["--headless","--audio-driver","Dummy","--path",game_root,"--editor","--quit"],output,true)
-	OS.create_process(OS.get_executable_path(),["--path",game_root])
-	log_message("Jeu lancé depuis les sources. Ferme la partie précédente avant de relancer.")
+	var code=OS.execute(OS.get_executable_path(),["--headless","--audio-driver","Dummy","--path",game_root,"--editor","--quit"],output,true)
+	if code!=0: log_message("Import Godot refusé. Le jeu n’a pas été lancé."); return
+	game_pid=OS.create_process(OS.get_executable_path(),["--path",game_root,"--script",runner,"--","--atelier-stop="+stop_file])
+	log_message("Jeu lancé depuis les sources appliquées." if game_pid>0 else "Le lancement du jeu a échoué.")
+
+func restart_game() -> void:
+	if validating or restarting: return
+	if not staged.is_empty():
+		log_message("Applique ou annule la proposition en attente avant de relancer le jeu.")
+		return
+	if game_pid>0 and OS.is_process_running(game_pid):
+		restarting=true
+		var file=FileAccess.open(stop_file,FileAccess.WRITE)
+		if not file:
+			restarting=false
+			log_message("Impossible de demander la fermeture. Ferme la partie puis réessaie.")
+			return
+		file.store_string("stop")
+		file.close()
+		for _step in range(50):
+			if not OS.is_process_running(game_pid): break
+			await get_tree().create_timer(0.1).timeout
+		restarting=false
+		if OS.is_process_running(game_pid):
+			log_message("Le jeu ne s’est pas fermé. Ferme-le puis clique RELANCER LE JEU.")
+			return
+	game_pid=-1
+	launch_game()
 
 func open_editor() -> void:
 	if validating: return
