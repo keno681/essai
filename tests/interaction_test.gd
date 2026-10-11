@@ -15,7 +15,7 @@ func run_tests() -> void:
 	game.new_service()
 	game.ui.hide_page()
 	game.customer_state="waiting"
-	game.customer_x=845
+	game.customer_x=946
 	game.order=0
 	game.selected=0
 	assert(game.guide_step().target=="client")
@@ -24,15 +24,15 @@ func run_tests() -> void:
 	game._process(0.1)
 	assert(game.player.x<before)
 	walk_until_done(game)
-	assert(game.inventory.moonleaf==0)
+	assert(game.inventory.moonleaf==3 and not game.menu)
 	game.planters.harvest("moonleaf")
-	game.planters.popup.hide()
+	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	assert(game.inventory.moonleaf==3)
 	assert(game.guide_step().target=="client")
 	assert(game.start_click_action(Vector2(270,445)))
 	walk_until_done(game)
 	game.planters.harvest("sunfruit")
-	game.planters.popup.hide()
+	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	assert(game.inventory.sunfruit==3 and game.guide_step().target=="client")
 	assert(game.start_click_action(Vector2(650,450)))
 	walk_until_done(game)
@@ -40,7 +40,7 @@ func run_tests() -> void:
 	assert(game.cook())
 	game.ui.hide_page()
 	assert(game.holding==0 and game.guide_step().target=="client")
-	assert(game.start_click_action(Vector2(845,500)))
+	assert(game.start_click_action(Vector2(946,500)))
 	walk_until_done(game)
 	assert(game.ui.page=="reception")
 	assert(game.tables.welcome(8))
@@ -72,7 +72,7 @@ func run_tests() -> void:
 	assert(game.start_click_action(Vector2(140,470)))
 	walk_until_done(game)
 	game.planters.harvest("bed1")
-	game.planters.popup.hide()
+	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	assert(game.inventory.moonleaf==5)
 	game.travel("planet",850)
 	game.camera_x=250

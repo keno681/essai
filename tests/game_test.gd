@@ -52,12 +52,12 @@ func run_tests() -> void:
 	game.cooldowns.moonleaf = 0
 	var before = game.inventory.moonleaf
 	game.interact()
-	assert(game.inventory.moonleaf == before, "Cliquer ouvre le choix, sans récolter automatiquement")
+	assert(game.inventory.moonleaf == before + 3, "Cliquer récolte directement sans ouvrir de menu")
 	game.planters.harvest("moonleaf")
 	assert(game.inventory.moonleaf == before + 3)
 	game.planters.harvest("moonleaf")
 	assert(game.inventory.moonleaf == before + 3, "Repousse respectée")
-	game.planters.popup.hide()
+	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	game.ui.show_page("inventory")
 	assert(game.menu)
 	game.ui.hide_page()
@@ -80,7 +80,7 @@ func run_tests() -> void:
 	game.travel("garden",140)
 	game.interact()
 	game.planters.harvest("bed1")
-	game.planters.popup.hide()
+	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	assert(game.inventory.moonleaf == 3)
 	game.travel("planet",420)
 	game.interact()

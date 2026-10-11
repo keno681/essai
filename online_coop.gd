@@ -197,7 +197,7 @@ func receive(data: Dictionary, sender: int) -> void:
 				elif str(data.get("action",""))=="chat":
 					if game.customer_state=="leaving": game.ui.hide_page()
 					else: game.ui.show_page("chat")
-				elif str(data.get("action","")) in ["harvest","empty","plant"]: game.planters.open(str(data.get("args",{}).get("id","")))
+				elif str(data.get("action","")) in ["empty","plant"]: game.planters.open(str(data.get("args",{}).get("id","")))
 
 func send_world() -> void:
 	var world: Dictionary=game.snapshot()

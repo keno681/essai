@@ -56,7 +56,6 @@ func harvest(id: String) -> void:
 	game.play_sound(620)
 	game.say("Récolte : +3 "+str(game.ingredient(crop).name)+". Le bac est vide.")
 	game.save_progress()
-	open(id)
 func build(box: VBoxContainer) -> void:
 	var id: String=game.ui.get_meta("active_planter","")
 	if not plants.has(id): return

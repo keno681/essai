@@ -8,6 +8,11 @@ func open(id: String) -> void:
 	if is_instance_valid(popup):
 		popup.hide()
 		popup.queue_free()
+	if not str(plants[id]).is_empty():
+		if timer(id)>0:
+			game.say("%s · pousse : %d s." % [name_of(id),ceili(timer(id))])
+		else: harvest(id)
+		return
 	popup = PopupPanel.new()
 	popup.transparent_bg = true
 	game.ui.add_child(popup)
@@ -20,23 +25,16 @@ func open(id: String) -> void:
 	title.text = name_of(id)
 	title.add_theme_font_size_override("font_size", 14)
 	box.add_child(title)
-	if str(plants[id]) != "":
-		var seconds := ceili(timer(id))
-		var take := small_button("Récolter × 3" if seconds == 0 else "Pousse : %d s" % seconds, func(): harvest(id))
-		take.disabled = seconds > 0
-		box.add_child(take)
-		box.add_child(small_button("Vider", func(): empty(id)))
-	else:
-		for item in game.sheet.ingredients:
-			if item.id not in game.discovered or item.get("pantry",false): continue
-			var crop: String = str(item.id)
-			var seed_button := small_button(str(item.short_name)+" · graines : "+str(game.seed_count(crop)), func(): plant(id, crop))
-			seed_button.disabled=game.seed_count(crop)<1
-			box.add_child(seed_button)
+	for item in game.sheet.ingredients:
+		if item.id not in game.discovered or item.get("pantry",false): continue
+		var crop: String = str(item.id)
+		var seed_button := small_button(str(item.short_name)+" · graines : "+str(game.seed_count(crop)), func(): plant(id, crop))
+		seed_button.disabled=game.seed_count(crop)<1
+		box.add_child(seed_button)
 	game.menu = true
 	popup.popup_hide.connect(func(): game.menu = false)
 	var cursor: Vector2 = game.get_viewport().get_mouse_position()
-	var height: int = 100 if str(plants[id]) != "" else 48 + box.get_child_count() * 30
+	var height: int = 48 + box.get_child_count() * 30
 	var viewport_size: Vector2 = game.get_viewport_rect().size
 	popup.popup(Rect2i(Vector2i(clampf(cursor.x + 12, 8, maxf(8, viewport_size.x - 228)), clampf(cursor.y + 8, 8, maxf(8, viewport_size.y - height - 8))), Vector2i(220, height)))
 
