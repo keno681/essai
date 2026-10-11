@@ -140,3 +140,11 @@ Applique `Table-Travail-Pokeball.json` hors ligne sur les deux PC : cette versio
 Une poubelle métallique est placée à gauche du comptoir dans le restaurant. Clique dessus : ton personnage s’approche et jette directement la commande portée, wrap ou boisson, sans menu et sans remboursement. E à proximité fonctionne aussi. Pour installer `Poubelle-Pokeball.json`, applique le correctif hors ligne sur les deux PC : le retour réseau est ajusté pour ne pas rouvrir la cuisine après avoir jeté une commande.
 
 Les huit récoltes restent visibles à gauche, même avec zéro ingrédient préparé ou avant leur découverte. Chaque case indique le stock brut et le stock prêt. Les quantités et les ingrédients utilisables dans la composition se mettent à jour immédiatement après le dépôt dans le saladier, sans fermer la fenêtre.
+
+### Jour 1 et tutoriel débutant
+
+Une nouvelle partie commence au **jour 1 avec exactement cinq clients**, qui commandent des wraps à base des plantes de départ. Au premier clic sur JOUER, le guide explique l’accueil, les tables, la récolte, les graines, le traitement, la cuisine, le comptoir, le service et la sauvegarde. La prochaine étape de la première commande s’affiche en bas. Le menu permet de relire le tutoriel ou de désactiver le guide.
+
+Le HUD indique le jour et le nombre de clients traités. Après les cinq accueils, les arrivées s’arrêtent ; une mauvaise commande ou un client renvoyé compte aussi parmi les cinq voyageurs. Le bilan s’ouvre lorsque toutes les commandes sont traitées et les clients partis. Le bouton JOUR SUIVANT conserve stocks, graines, argent et améliorations. Le jour 2 accueille huit clients ; les jours suivants augmentent progressivement jusqu’à douze.
+
+Jour, compteurs et guide sont sauvegardés et synchronisés en coop. Les anciennes parties déjà avancées sont conservées et passent au jour 2 ; **NOUVEAU SERVICE** démarre une nouvelle partie au jour 1. Applique `Jour-1-Tutoriel-Pokeball.json` hors ligne sur les deux PC avant de reconnecter : protocole coop 7.

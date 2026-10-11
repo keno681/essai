@@ -65,6 +65,7 @@ var music_player: AudioStreamPlayer
 var console_node: Node
 var counter_items: Array = []
 var counter_serial := 0
+var dayflow: RefCounted
 var tables: Node
 var planters: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
@@ -73,6 +74,7 @@ func _ready() -> void:
 	migrate_previous_saves()
 	get_tree().auto_accept_quit = false
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
+	dayflow=preload("res://day_flow.gd").new(); dayflow.game=self
 	add_improvised_recipes()
 	for item in sheet.ingredients:
 		inventory[item.id] = 0
@@ -339,6 +341,7 @@ func new_service() -> void:
 	if online and online.active:
 		say("Quitte la coop avant de recommencer un service.")
 		return
+	dayflow.reset()
 	move_goal=-1
 	click_target.clear()
 	customer_emotion="calm"
@@ -372,7 +375,7 @@ func new_service() -> void:
 		if not item.get("pantry",false): inventory["seed_"+item.id]=3 if item.starter else 0
 	inventory.mineralwater=3
 	save_progress()
-	say("Nouveau service !")
+	say("Jour 1 · cinq clients. Le guide débutant est disponible dans le menu.")
 
 func update_customers(delta: float) -> void:
 	customer_queue.update(delta)
@@ -389,6 +392,7 @@ func update_customers(delta: float) -> void:
 		customer_x = move_toward(customer_x,float(flow.exit_x),float(flow.speed)*hurry*delta)
 		npc_cycle += delta*float(animation("walk").frequency)
 		if is_equal_approx(customer_x,float(flow.exit_x)):
+			if dayflow.admitted>=dayflow.limit(): customer_state="closed"; return
 			actor_customer = customer
 			customer_emotion="calm"
 			reset_customer_conversation()
@@ -397,6 +401,7 @@ func update_customers(delta: float) -> void:
 			customer_state = "arriving"
 
 func _process(delta: float) -> void:
+	if ui and online: dayflow.tick()
 	if not online or not online.active or online.hosting: inventory.mineralwater=maxi(3,int(inventory.get("mineralwater",0)))
 	ambient_clock+=delta
 	if is_instance_valid(music_player): music_player.volume_db=float(sheet.ambience[0].volume_db)-(6 if menu else 0)
@@ -531,12 +536,13 @@ func _draw() -> void:
 		label_at("+5 WCC / wrap",Vector2(1060,366),16,Color("f9d47b"))
 	tables.draw_arrivals()
 	customer_queue.draw_people()
-	alien(Vector2(customer_x,520 if customer_state=="leaving" else 505),Color(sheet.customers[actor_customer].color))
+	if customer_state!="closed": alien(Vector2(customer_x,520 if customer_state=="leaving" else 505),Color(sheet.customers[actor_customer].color))
 	if customer_emotion=="angry":
 		label_at("!",Vector2(customer_x-4,365),27,Color("f28c78"))
 	alien(player,Color("bca2e9"),true)
 	draw_style_box(ART.panel_frame(Color(0.65,0.68,0.70)),Rect2(763,205,407,107))
 	var bubble_title: String = (sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…")
+	if customer_state=="closed": bubble_title="Jour %d · %d/%d clients accueillis" % [dayflow.number,dayflow.admitted,dayflow.limit()]
 	var title_text := TextParagraph.new()
 	title_text.width = 371
 	title_text.max_lines_visible = 1
@@ -544,6 +550,7 @@ func _draw() -> void:
 	title_text.add_string(bubble_title,font,18)
 	title_text.draw(get_canvas_item(),Vector2(781,219),Color("f4dec0"))
 	var spoken: String = speech.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
+	if customer_state=="closed": spoken="Termine les commandes en salle. Le bilan apparaît après le départ des cinq clients." if dayflow.number==1 else "Termine les commandes en salle pour clôturer le jour."
 	var body_text := TextParagraph.new()
 	body_text.width = 371
 	body_text.max_lines_visible = 3
@@ -624,6 +631,9 @@ func choose_customer() -> void:
 	queued_appearance = roll_appearance()
 
 func next_order() -> void:
+	if dayflow.number==1:
+		order=0 if dayflow.admitted%2==0 else 1
+		return
 	var choices: Array[int] = []
 	for index in range(sheet.recipes.size()):
 		if not recipe(index).get("custom",false) and recipe_unlocked(index): choices.append(index)
@@ -708,7 +718,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"counter_items":counter_items.duplicate(true),"table_orders":tables.snapshot(),"selected_table":tables.selected,"waiting_queue":customer_queue.snapshot(),"version":10,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"day_flow":dayflow.snapshot(),"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"counter_items":counter_items.duplicate(true),"table_orders":tables.snapshot(),"selected_table":tables.selected,"waiting_queue":customer_queue.snapshot(),"version":10,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	if online and online.active and (not online.hosting or online.executing_remote): return false
@@ -783,7 +793,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	customer_emotion=data.get("customer_emotion","calm")
 	if customer_emotion not in ["calm","happy","angry"]: customer_emotion="calm"
 	customer_state = data.get("customer_state","arriving")
-	if not customer_state in ["arriving","waiting","leaving"]: customer_state="arriving"
+	if not customer_state in ["arriving","waiting","leaving","closed"]: customer_state="arriving"
 	customer_x = clampf(float(data.get("customer_x",1250)),946,1270)
 	for row in sheet.races:
 		if row.id==data.get("player_race",player_race): player_race=row.id
@@ -793,6 +803,9 @@ func apply_snapshot(data: Dictionary) -> void:
 			deliveries.append({"ingredient":row.ingredient,"kind":"seed","quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
 	customer_queue.restore(data.get("waiting_queue",{}))
 	tables.restore(data.get("table_orders",[]))
+	dayflow.restore(data.get("day_flow"))
+	while customer_queue.people.size()>customer_queue.capacity(): customer_queue.people.pop_back()
+	if dayflow.admitted>=dayflow.limit() and customer_state!="leaving": customer_state="closed"
 	restore_counter(data.get("counter_items",[]))
 	tables.selected=clampi(int(data.get("selected_table",0)),0,8)
 	speech_time = 0
@@ -939,10 +952,15 @@ func draw_restaurant_details() -> void:
 
 func dismiss_customer() -> bool:
 	if customer_state!="waiting": return false
+	if not dayflow.accept(): return false
+	dayflow.finish(false)
 	customer_emotion="angry"
 	customer_state="leaving"
-	choose_customer()
-	next_order()
+	if dayflow.admitted<dayflow.limit():
+		choose_customer()
+		next_order()
+	else:
+		customer_queue.people.clear(); customer_queue.reserved.clear()
 	say("Le client part en colère, sans achat. Un autre voyageur arrivera après son départ.")
 	save_progress()
 	return true
@@ -1018,6 +1036,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if start_click_action(event.position): get_viewport().set_input_as_handled()
 
 func guide_step() -> Dictionary:
+	var lesson: Dictionary=dayflow.guide()
+	if not lesson.is_empty(): return lesson
+	if customer_state=="closed" and tables.people.is_empty(): return {"text":"Jour terminé : ouvre le MENU pour commencer le jour suivant.","target":""}
 	if room=="dining": return {"text":"Clique sur une table pour la servir. TABLES [O] affiche les commandes à préparer.","target":""}
 	if room=="restaurant" and tables and not tables.people.is_empty(): return {"text":"%d tables occupées : TABLES [O] pour choisir une commande, puis SALLE pour servir." % tables.people.size(),"target":"snack_dining" if holding>=0 else "kitchen"}
 	if room=="restaurant" and customer_state=="waiting": return {"text":"Accueille le client et choisis une table libre.","target":"client"}

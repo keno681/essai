@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-6"
+const VERSION := "cosmo-coop-7"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -179,7 +179,7 @@ func receive(data: Dictionary, sender: int) -> void:
 			pending=false
 			game.say(str(data.get("message","")))
 			if bool(data.get("ok",false)):
-				if str(data.get("action","")) in ["welcome","serve_table"]: game.ui.hide_page()
+				if str(data.get("action","")) in ["welcome","serve_table","next_day"]: game.ui.hide_page()
 				elif str(data.get("action","")) in ["store_order","take_order"]: game.ui.hide_page()
 				elif str(data.get("action",""))=="cook_store":
 					var stored_kind: String=game.recipe(int(data.get("args",{}).get("recipe",0))).get("kind","wrap")
@@ -214,6 +214,7 @@ func apply_world(world: Dictionary) -> void:
 	game.planters.restore(world.get("plantings",{}))
 	game.customer_queue.restore(world.get("waiting_queue",{}))
 	game.tables.restore(world.get("table_orders",[]))
+	game.dayflow.restore(world.get("day_flow"))
 	game.restore_counter(world.get("counter_items",[]))
 
 func request(action: String, args: Dictionary = {}) -> bool:
@@ -282,6 +283,7 @@ func handle_action(data: Dictionary) -> void:
 		"serve_table":
 			var table_number:=int(args.get("table",0))
 			if table_number>=1 and table_number<=8 and game.room=="dining" and absf(game.player.x-game.tables.spot(table_number).x)<110: ok=game.tables.serve_table(table_number)
+		"next_day": ok=game.dayflow.next_day()
 		"prepare_crop":
 			if game.room=="restaurant" and (absf(game.player.x-650)<100 or absf(game.player.x-745)<100): ok=game.prepare_crop(str(args.get("id","")))
 		"cook_store":

@@ -37,6 +37,7 @@ func run() -> void:
 	game.ui.hide_page()
 	for i in range(3): game.tables._process(20)
 	assert(game.tables.people.is_empty())
+	game.dayflow.number=2; game.dayflow.admitted=0; game.dayflow.resolved=0; game.dayflow.happy=0
 	for number in range(1,9):
 		ready_customer(game,0)
 		assert(game.tables.welcome(number))

@@ -184,7 +184,7 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"prep":"TABLE DE TRAVAIL","counter":"COMPTOIR DES COMMANDES","orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
+	var box := clear_window({"tutorial":"GUIDE DÉBUTANT","day_end":"BILAN DU JOUR","prep":"TABLE DE TRAVAIL","counter":"COMPTOIR DES COMMANDES","orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	if name in ["cookwrap","cookdrink","prep"]:
@@ -192,6 +192,8 @@ func show_page(name: String) -> void:
 		window.size=Vector2(940,0)
 		box.get_parent().custom_minimum_size=Vector2(900,495)
 	match name:
+		"tutorial": game.dayflow.build_tutorial(box)
+		"day_end": game.dayflow.build_end(box)
 		"prep": preload("res://ingredient_prep.gd").build(self,box)
 		"counter": game.build_counter(box)
 		"orders": tables_view(box)
@@ -287,7 +289,11 @@ func show_page(name: String) -> void:
 			box.add_child(label("Livraisons en attente : %d" % game.deliveries.size(),16))
 		"menu":
 			box.add_child(label("Snack orbital • Solo • Clients patients",16,Color("9fb9cb")))
-			box.add_child(button("JOUER / REPRENDRE",hide_page))
+			box.add_child(button("JOUER / REPRENDRE",func():
+				if not game.dayflow.intro_seen: show_page("tutorial")
+				else: hide_page()))
+			box.add_child(button("TUTORIEL / GUIDE DÉBUTANT",func(): show_page("tutorial")))
+			if game.dayflow.resolved>=game.dayflow.limit(): box.add_child(button("BILAN / JOUR SUIVANT",func(): show_page("day_end")))
 			box.add_child(button("COOP EN LIGNE · 2 JOUEURS",func(): show_page("online")))
 			box.add_child(button("ÉVOLUTION DU RESTAURANT",func(): show_page("progress")))
 			box.add_child(button("INVENTAIRE",func(): show_page("inventory")))
@@ -439,9 +445,10 @@ func show_page(name: String) -> void:
 			box.add_child(button("RETOUR AU MENU",func(): show_page("menu")))
 
 func _process(_delta: float) -> void:
+	if page=="day_end" and game.dayflow.resolved<game.dayflow.limit(): hide_page()
 	CYAN=Color(game.console_node.config.accent)
 	header.add_theme_stylebox_override("panel",ART.panel_frame(Color(0.7,0.75,0.8),18))
-	credits.text = "%d wrapcoincoins" % game.coins
+	credits.text = "J%d · %d/%d · %d WCC" % [game.dayflow.number,game.dayflow.resolved,game.dayflow.limit(),game.coins]
 	var rank: int = game.restaurant_level()
 	var target: String = str(int(game.sheet.progression[rank+1].served)) if rank+1<game.sheet.progression.size() else "∞"
 	task.text = "%s · %d / %s" % [game.sheet.progression[rank].name,game.served,target]

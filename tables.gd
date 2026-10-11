@@ -20,16 +20,21 @@ func welcome(number: int) -> bool:
 	if game.online and game.online.request("welcome",{"table":number}): return false
 	if game.customer_state!="waiting": game.say("Attends que le client arrive à l’accueil."); return false
 	if number not in free_tables(): game.say("Cette table est déjà occupée."); return false
+	if not game.dayflow.accept(): return false
 	people.append({"table":number,"customer":game.actor_customer,"appearance":game.appearance.duplicate(true),"recipe":game.order,"state":"to_room","emotion":"calm","x":game.customer_x,"remaining":0.0,"phase":0.0,"quote":""})
 	game.say("Commande prise : table %d · %s." % [number,game.recipe(game.order).name])
-	game.choose_customer()
-	game.next_order()
-	game.actor_customer=game.customer
-	game.appearance=game.queued_appearance.duplicate(true)
-	game.customer_x=game.customer_queue.enter_service()
-	game.customer_state="arriving"
-	game.customer_emotion="calm"
-	game.reset_customer_conversation()
+	if game.dayflow.admitted>=game.dayflow.limit():
+		game.customer_state="closed"
+		game.customer_queue.people.clear(); game.customer_queue.reserved.clear()
+	else:
+		game.choose_customer()
+		game.next_order()
+		game.actor_customer=game.customer
+		game.appearance=game.queued_appearance.duplicate(true)
+		game.customer_x=game.customer_queue.enter_service()
+		game.customer_state="arriving"
+		game.customer_emotion="calm"
+		game.reset_customer_conversation()
 	game.save_progress()
 	return true
 func serve_table(number: int) -> bool:
@@ -56,6 +61,7 @@ func serve_table(number: int) -> bool:
 		entry.quote="Ce n’est pas ma commande ! Je pars, et je ne paie rien !"
 		game.play_sound(180)
 		game.say("Table %d : mauvaise commande, le client part furieux sans payer !" % number)
+	game.dayflow.finish(correct)
 	if selected==number: selected=0
 	game.save_progress()
 	return true
