@@ -80,6 +80,9 @@ func visit(number: int) -> void:
 		selected=number
 		game.ui.show_page("table")
 func status(entry: Dictionary) -> String:
+	if entry.get("state") not in ["eating","leaving"]:
+		for dish in game.counter_items:
+			if int(dish.table)==int(entry.table): return "Prêt au comptoir" if int(dish.recipe)==int(entry.recipe) else "Au comptoir · à vérifier"
 	return {"to_room":"S’installe","walking":"S’installe","waiting":"À préparer","eating":"Déguste","leaving":"Part furieux" if entry.get("emotion")=="angry" else "S’en va"}.get(str(entry.get("state","")),"")
 func build_orders(box: VBoxContainer) -> void:
 	box.add_child(game.ui.label("%d / 8 tables occupées · Choisis une commande à préparer." % people.size(),16))

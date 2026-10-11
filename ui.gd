@@ -184,7 +184,7 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
+	var box := clear_window({"counter":"COMPTOIR DES COMMANDES","orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	if name in ["cookwrap","cookdrink"]:
@@ -192,6 +192,7 @@ func show_page(name: String) -> void:
 		window.size=Vector2(940,0)
 		box.get_parent().custom_minimum_size=Vector2(900,495)
 	match name:
+		"counter": game.build_counter(box)
 		"orders": tables_view(box)
 		"reception": game.tables.build_reception(box)
 		"table": game.tables.build_table(box)

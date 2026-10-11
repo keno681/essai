@@ -116,3 +116,9 @@ Les tests de gameplay et de coop ont été exécutés sous Linux, y compris la t
 [Le jeu](https://github.com/keno681/essai/raw/refs/heads/master/downloads/CosmoWrapBall-Sources.zip) · [Le guide](GUIDE.md) · [Les sources](https://github.com/keno681/essai)
 
 </div>
+
+### Tickets de cuisine et comptoir
+
+Les post-it de la cuisine indiquent le numéro de table, la recette, les ingrédients et l’état. Clique sur un ticket, compose le wrap ou la boisson, puis choisis **PRÉPARER ET POSER AU COMPTOIR** pour libérer tes mains et passer à la commande suivante. Le comptoir garde jusqu’à 12 préparations étiquetées. Clique dessus pour récupérer une commande, puis sur sa table dans la salle pour la servir. Tu distribues les préparations une à une. Le stock du comptoir est sauvegardé et partagé en coop.
+
+Cette mise à jour passe au protocole coop 5 : applique `Tickets-Comptoir-Pokeball.json` hors ligne sur les deux PC avant de rejoindre le même salon.

@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-4"
+const VERSION := "cosmo-coop-5"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -180,6 +180,11 @@ func receive(data: Dictionary, sender: int) -> void:
 			game.say(str(data.get("message","")))
 			if bool(data.get("ok",false)):
 				if str(data.get("action","")) in ["welcome","serve_table"]: game.ui.hide_page()
+				elif str(data.get("action","")) in ["store_order","take_order"]: game.ui.hide_page()
+				elif str(data.get("action",""))=="cook_store":
+					var stored_kind: String=game.recipe(int(data.get("args",{}).get("recipe",0))).get("kind","wrap")
+					game.ui.set_meta("composition_"+stored_kind,[])
+					game.ui.show_page("cookdrink" if stored_kind=="drink" else "cookwrap")
 				elif str(data.get("action",""))=="cook":
 					var crafted_kind: String=game.recipe(int(data.get("args",{}).get("recipe",0))).get("kind","wrap")
 					game.ui.set_meta("composition_"+crafted_kind,[])
@@ -209,6 +214,7 @@ func apply_world(world: Dictionary) -> void:
 	game.planters.restore(world.get("plantings",{}))
 	game.customer_queue.restore(world.get("waiting_queue",{}))
 	game.tables.restore(world.get("table_orders",[]))
+	game.restore_counter(world.get("counter_items",[]))
 
 func request(action: String, args: Dictionary = {}) -> bool:
 	if not active: return false
@@ -276,6 +282,17 @@ func handle_action(data: Dictionary) -> void:
 		"serve_table":
 			var table_number:=int(args.get("table",0))
 			if table_number>=1 and table_number<=8 and game.room=="dining" and absf(game.player.x-game.tables.spot(table_number).x)<110: ok=game.tables.serve_table(table_number)
+		"cook_store":
+			var index:=int(args.get("recipe",-1))
+			if game.room=="restaurant" and index>=0 and index<game.sheet.recipes.size():
+				var station:=745.0 if game.recipe(index).get("kind","wrap")=="drink" else 650.0
+				if absf(game.player.x-station)<100:
+					game.selected=index
+					ok=game.cook_store(int(args.get("table",0)))
+		"store_order":
+			if game.room=="restaurant" and absf(game.player.x-845)<110: ok=game.store_order(int(args.get("table",0)))
+		"take_order":
+			if game.room=="restaurant" and absf(game.player.x-845)<110: ok=game.take_order(int(args.get("id",0)))
 		"cook":
 			var index := int(args.get("recipe",-1))
 			if game.room=="restaurant" and index>=0 and index<game.sheet.recipes.size():

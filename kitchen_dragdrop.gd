@@ -62,6 +62,7 @@ class Kitchen extends VBoxContainer:
 	var stocks: Array=[]
 	var plate: Control
 	var caption: Label
+	var store: Button
 	var prepare: Button
 	var match_index=-1
 	var textures: Array=[]
@@ -92,15 +93,31 @@ class Kitchen extends VBoxContainer:
 			label.tooltip_text=item.name
 			list.add_child(label)
 			stocks.append(label)
-		var orders := OptionButton.new()
-		orders.add_item("COMMANDES / choisir une table",0)
-		for entry in game.tables.people:
-			if entry.state not in ["eating","leaving"]:
-				orders.add_item("Table %d · %s" % [entry.table,game.recipe(int(entry.recipe)).name],int(entry.table))
-		orders.item_selected.connect(func(index):
-			var number:=orders.get_item_id(index)
-			if number>0: game.tables.select_table(number))
-		add_child(orders)
+		var tickets=HBoxContainer.new()
+		var scroll=ScrollContainer.new()
+		scroll.custom_minimum_size.y=94
+		scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+		add_child(scroll); scroll.add_child(tickets)
+		for ticket in game.tables.people:
+			if ticket.state in ["eating","leaving"]: continue
+			var number: int=int(ticket.table)
+			var details: Array[String]=[]
+			for id in game.recipe(int(ticket.recipe)).ingredients: details.append(game.ingredient(id).short_name)
+			var paper=Button.new()
+			paper.text="TABLE %d · %s\n%s\n%s" % [number,game.recipe(int(ticket.recipe)).name," + ".join(details),game.tables.status(ticket)]
+			paper.custom_minimum_size=Vector2(270,76)
+			paper.clip_text=true
+			paper.tooltip_text=paper.text
+			paper.add_theme_font_size_override("font_size",13)
+			paper.add_theme_color_override("font_color",Color("382a16"))
+			var skin=StyleBoxFlat.new(); skin.bg_color=Color("f2da8d"); skin.border_color=Color("ba8c39"); skin.set_border_width_all(2); skin.set_content_margin_all(8)
+			paper.add_theme_stylebox_override("normal",skin)
+			paper.add_theme_stylebox_override("pressed",skin)
+			paper.add_theme_color_override("font_hover_color",Color("382a16"))
+			paper.add_theme_color_override("font_pressed_color",Color("382a16"))
+			var hover=skin.duplicate(); hover.bg_color=Color("fff0bd"); paper.add_theme_stylebox_override("hover",hover)
+			paper.pressed.connect(func(): game.tables.select_table(number))
+			tickets.add_child(paper)
 		var entry=game.tables.person(game.tables.selected)
 		if not entry.is_empty():
 			var order: Dictionary=game.recipe(int(entry.recipe))
@@ -146,7 +163,20 @@ class Kitchen extends VBoxContainer:
 			game.selected=match_index
 			if game.cook(): clear_preparation(); ui.hide_page()
 			else: caption.text=game.message)
-		add_child(prepare)
+		var actions=HBoxContainer.new()
+		add_child(actions)
+		move_child(actions,table.get_index())
+		prepare.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		prepare.add_theme_font_size_override("font_size",14)
+		actions.add_child(prepare)
+		store=ui.button("PRÉPARER ET POSER AU COMPTOIR",func():
+			if match_index<0: return
+			game.selected=match_index
+			if game.cook_store(game.tables.selected): clear_preparation(); ui.show_page("cookdrink" if kind=="drink" else "cookwrap")
+			else: caption.text=game.message)
+		store.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		store.add_theme_font_size_override("font_size",14)
+		actions.add_child(store)
 		var help=ui.label("Dépose dans le verre. Les ingrédients déposés ne peuvent plus être retirés." if kind=="drink" else "Dépose dans la galette. Les ingrédients déposés ne peuvent plus être retirés.",14)
 		help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		add_child(help)
@@ -182,6 +212,7 @@ class Kitchen extends VBoxContainer:
 			if not game.recipe_unlocked(match_index): caption.text+=" · recette verrouillée"
 		prepare.disabled=match_index<0 or game.holding>=0
 		if match_index>=0: prepare.disabled=prepare.disabled or not game.recipe_unlocked(match_index)
+		store.disabled=prepare.disabled or game.tables.selected<=0 or game.counter_items.size()>=12
 		for i in range(icons.size()):
 			var id: String=shown[i]
 			icons[i].modulate=Color(1,1,1,0.25) if id in chosen or game.inventory[id]<1 else Color.WHITE

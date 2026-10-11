@@ -100,3 +100,9 @@ Le nouveau pack distribue uniquement les sources, les images, les sons et les la
 La mise à jour [Cuisine-Definitive-Pokeball.json](downloads/Cuisine-Definitive-Pokeball.json) modifie aussi le protocole de coop : quitter le salon et l’appliquer séparément sur les deux PC. Les recettes improvisées ont des identifiants déterministes communs aux deux joueurs.
 
 La mise à jour [Tables-Commandes-Pokeball.json](downloads/Tables-Commandes-Pokeball.json) doit être appliquée hors coop, séparément sur les deux PC, car elle ajoute une salle et des actions réseau. Les anciennes sauvegardes démarrent avec une salle vide. Le carnet accepte plusieurs commandes, dont des boissons ; l’accueil attend lorsqu’il n’y a plus de place.
+
+### Tickets de cuisine et comptoir
+
+Les post-it de la cuisine indiquent le numéro de table, la recette, les ingrédients et l’état. Clique sur un ticket, compose le wrap ou la boisson, puis choisis **PRÉPARER ET POSER AU COMPTOIR** pour libérer tes mains et passer à la commande suivante. Le comptoir garde jusqu’à 12 préparations étiquetées. Clique dessus pour récupérer une commande, puis sur sa table dans la salle pour la servir. Tu distribues les préparations une à une. Le stock du comptoir est sauvegardé et partagé en coop.
+
+Cette mise à jour passe au protocole coop 5 : applique `Tickets-Comptoir-Pokeball.json` hors ligne sur les deux PC avant de rejoindre le même salon.

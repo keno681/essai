@@ -63,6 +63,8 @@ var ambient_clock := 0.0
 var ambience_enabled := true
 var music_player: AudioStreamPlayer
 var console_node: Node
+var counter_items: Array = []
+var counter_serial := 0
 var tables: Node
 var planters: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
@@ -238,6 +240,9 @@ func serve() -> bool:
 	return true
 
 func interact() -> void:
+	if room=="restaurant" and absf(player.x-845)<45:
+		ui.show_page("counter")
+		return
 	for door in sheet.doors:
 		if door.room==room and absf(player.x-float(door.x))<30:
 			travel(door.target,float(door.arrival_x))
@@ -337,6 +342,8 @@ func new_service() -> void:
 	discovered = ["moonleaf","sunfruit","mushroom","mineralwater","lunartea","nebulasyrup"]
 	planters.reset()
 	tables.reset()
+	counter_items.clear()
+	counter_serial=0
 	deliveries.clear()
 	chat_log.clear()
 	for id in node_cooldowns: node_cooldowns[id] = 0.0
@@ -695,7 +702,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"table_orders":tables.snapshot(),"selected_table":tables.selected,"waiting_queue":customer_queue.snapshot(),"version":10,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"counter_items":counter_items.duplicate(true),"table_orders":tables.snapshot(),"selected_table":tables.selected,"waiting_queue":customer_queue.snapshot(),"version":10,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	if online and online.active and (not online.hosting or online.executing_remote): return false
@@ -780,6 +787,7 @@ func apply_snapshot(data: Dictionary) -> void:
 			deliveries.append({"ingredient":row.ingredient,"kind":"seed","quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
 	customer_queue.restore(data.get("waiting_queue",{}))
 	tables.restore(data.get("table_orders",[]))
+	restore_counter(data.get("counter_items",[]))
 	tables.selected=clampi(int(data.get("selected_table",0)),0,8)
 	speech_time = 0
 	vertical = 0
@@ -911,6 +919,11 @@ func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_texture_rect(ART.object(11 if tint.g > tint.r else 12),Rect2(at+Vector2(-10,-25),Vector2(20,30)),false)
 
 func draw_restaurant_details() -> void:
+	for i in range(counter_items.size()):
+		var dish: Dictionary=counter_items[i]
+		var at:=Vector2(800+(i%4)*26,425-floori(i/4.0)*35)
+		draw_texture_rect(ART.object(11 if recipe(int(dish.recipe)).get("kind","wrap")=="drink" else 10),Rect2(at,Vector2(25,28)),false)
+		label_at(str(dish.table),at+Vector2(7,27),12,Color("fff1ac"))
 	draw_door_art()
 	draw_texture_rect(ART.object(13),Rect2(1037,369,16,16),false,Color(brightness,brightness,brightness))
 	draw_texture_rect(ART.object(1),Rect2(708,335,77,104),false,Color(brightness,brightness,brightness))
@@ -940,7 +953,9 @@ func interaction_targets() -> Array[Dictionary]:
 	var bounds := {"kitchen":Rect2(595,320,108,224),"counter":Rect2(795,435,114,110),"drinks":Rect2(712,333,69,111),"upgrade":Rect2(1030,400,130,146),"couch":Rect2(344,390,300,155),"computer":Rect2(755,325,260,220)}
 	var names := {"kitchen":"CUISINER","counter":"SERVIR","drinks":"BOISSONS","upgrade":"TERRASSE","couch":"SAUVEGARDER","computer":"COMMANDER"}
 	for station in sheet.stations:
-		if station.id=="counter": continue
+		if station.id=="counter":
+			if station.room==room: result.append({"id":"counter","x":845.0,"label":"COMPTOIR DES COMMANDES","rect":bounds.counter,"action":"counter"})
+			continue
 		if station.room==room: result.append({"id":station.id,"x":float(station.x),"label":names[station.id],"rect":bounds[station.id],"action":"interact"})
 	for node in sheet.beds if room=="garden" else (sheet.wild_nodes if room=="planet" else []):
 		result.append({"id":node.id,"x":float(node.x),"label":"RÉCOLTER" if node.ingredient in discovered else "DÉCOUVRIR","rect":Rect2(float(node.x)-58,425,116,120),"action":"interact"})
@@ -982,6 +997,8 @@ func finish_click_action() -> void:
 		ui.show_page("reception")
 	elif target.action=="table_visit":
 		tables.visit(int(target.table))
+	elif target.action=="counter":
+		ui.show_page("counter")
 	elif target.action=="serve":
 		serve()
 	else: interact()
@@ -1100,3 +1117,58 @@ func migrate_previous_saves() -> void:
 	for name in ["progress.json","sofa-save.json","settings.json","creator-world.json"]:
 		if not FileAccess.file_exists(current+"/"+name) and FileAccess.file_exists(previous+"/"+name):
 			DirAccess.copy_absolute(previous+"/"+name,current+"/"+name)
+
+func restore_counter(value: Variant) -> void:
+	counter_items.clear()
+	if not value is Array: return
+	var seen: Array=[]
+	for item in value:
+		if not item is Dictionary or counter_items.size()>=12: continue
+		var id:=int(item.get("id",0))
+		var index:=int(item.get("recipe",-1))
+		var number:=int(item.get("table",0))
+		if id<=0 or id in seen or index<0 or index>=sheet.recipes.size() or number<0 or number>8: continue
+		seen.append(id)
+		counter_serial=maxi(counter_serial,id)
+		counter_items.append({"id":id,"recipe":index,"table":number})
+func store_order(number: int) -> bool:
+	if online and online.request("store_order",{"table":number}): return false
+	if holding<0 or counter_items.size()>=12 or number<0 or number>8:
+		say("Il faut une commande en main et une place au comptoir."); return false
+	counter_serial+=1
+	counter_items.append({"id":counter_serial,"recipe":holding,"table":number})
+	holding=-1
+	say("Commande posée au comptoir · table %d. Tu peux continuer à cuisiner." % number)
+	save_progress()
+	return true
+func cook_store(number: int) -> bool:
+	if online and online.request("cook_store",{"table":number,"recipe":selected}): return false
+	var entry: Dictionary=tables.person(number)
+	if entry.is_empty() or entry.state in ["eating","leaving"] or counter_items.size()>=12:
+		say("Choisis un ticket actif ; le comptoir peut accueillir 12 commandes."); return false
+	if not cook(): return false
+	return store_order(number)
+func take_order(id: int) -> bool:
+	if online and online.request("take_order",{"id":id}): return false
+	if holding>=0: say("Tes mains sont déjà occupées."); return false
+	for i in range(counter_items.size()):
+		if int(counter_items[i].id)==id:
+			holding=int(counter_items[i].recipe)
+			say("À servir : table %d · %s." % [counter_items[i].table,recipe(holding).name])
+			counter_items.remove_at(i)
+			save_progress()
+			return true
+	say("Cette commande a déjà été récupérée.")
+	return false
+func build_counter(box: VBoxContainer) -> void:
+	box.add_child(ui.label("%d / 12 commandes prêtes · récupère puis clique sur la table dans la salle." % counter_items.size(),15))
+	if holding>=0:
+		box.add_child(ui.button("POSER · TABLE %d" % tables.selected,func():
+			if store_order(tables.selected): ui.show_page("counter")))
+	for item in counter_items:
+		var dish: Dictionary=item.duplicate()
+		var b: Button=ui.button("TABLE %d · %s · RÉCUPÉRER" % [dish.table,recipe(int(dish.recipe)).name],func():
+			if take_order(int(dish.id)): ui.hide_page())
+		b.disabled=holding>=0
+		box.add_child(b)
+	if counter_items.is_empty(): box.add_child(ui.label("Prépare un ticket en cuisine et choisis PRÉPARER ET POSER.",16))
