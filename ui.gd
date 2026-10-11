@@ -222,7 +222,7 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","creator":"CRÉATEUR OPENAI","menu":game.creator.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","creator":"CRÉATEUR IA / "+game.creator.PROVIDERS[game.creator.provider].name.to_upper(),"menu":game.creator.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	match name:
@@ -438,29 +438,49 @@ class SpaceButtonTrim extends Control:
 			draw_circle(Vector2(size.x-8-index*4,9),0.8,tint)
 
 func build_creator(box: VBoxContainer) -> void:
+	var provider_select:=OptionButton.new()
+	provider_select.add_item("Groq",0)
+	provider_select.add_item("OpenAI",1)
+	provider_select.selected=0 if game.creator.provider=="groq" else 1
+	provider_select.disabled=game.creator.request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED
+	provider_select.item_selected.connect(func(index):
+		if game.creator.select_provider("groq" if index==0 else "openai"): show_page("creator"))
+	box.add_child(provider_select)
 	box.add_child(label("Clé privée : mémoire uniquement, jamais sauvegardée dans le jeu.",14))
 	var key_input:=LineEdit.new()
 	key_input.secret=true
-	key_input.placeholder_text="Clé OpenAI (ou variable OPENAI_API_KEY)"
+	key_input.placeholder_text="Clé "+game.creator.PROVIDERS[game.creator.provider].name+" (ou "+game.creator.PROVIDERS[game.creator.provider].env+")"
 	key_input.text=game.creator.key
 	key_input.text_changed.connect(func(value): game.creator.key=value)
 	box.add_child(key_input)
 	var model_input:=LineEdit.new()
 	model_input.text=game.creator.model
-	model_input.placeholder_text="Modèle OpenAI"
+	model_input.placeholder_text="Modèle du fournisseur sélectionné"
 	model_input.text_changed.connect(func(value): game.creator.model=value)
 	box.add_child(model_input)
-	box.add_child(label("API facturée séparément de ChatGPT. Une demande = un appel.",14))
+	box.add_child(label("Groq : offre gratuite selon quotas. Une demande = un appel." if game.creator.provider=="groq" else "OpenAI : API facturée séparément de ChatGPT. Une demande = un appel.",14))
 	var prompt:=TextEdit.new()
 	prompt.custom_minimum_size=Vector2(0,80)
 	prompt.placeholder_text="Ex. : une planète violette, des cristaux et des noms de clients amusants"
 	box.add_child(prompt)
+	var console_scroll:=ScrollContainer.new()
+	console_scroll.custom_minimum_size=Vector2(0,160)
+	console_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(console_scroll)
+	var transcript:=Label.new()
+	transcript.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	transcript.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	transcript.text=game.creator.console_text() if not game.creator.console_log.is_empty() else "Console prête. Décris une modification puis demande un aperçu."
+	console_scroll.add_child(transcript)
 	var output:=Label.new()
 	output.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	output.text=game.creator.status
 	box.add_child(output)
 	var refresh:=func():
-		if is_instance_valid(output): output.text=game.creator.status
+		if is_instance_valid(output):
+			output.text=game.creator.status
+			transcript.text=game.creator.console_text()
+			console_scroll.set_deferred("scroll_vertical",100000)
 	game.creator.changed.connect(refresh)
 	output.tree_exiting.connect(func():
 		if game.creator.changed.is_connected(refresh): game.creator.changed.disconnect(refresh))

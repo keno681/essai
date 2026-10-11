@@ -195,3 +195,29 @@ Les noms/actions des objets apparaissent maintenant au survol uniquement.
 
 Validation hors ligne : `godot --headless --audio-driver Dummy --path . --script tests/creator_test.gd`.
 Le test simule une réponse API : un appel réel nécessite une clé avec quota/crédits.
+
+
+## Groq dans le créateur (v12)
+
+La Pokéball ouvre désormais le créateur avec **Groq sélectionné par défaut**.
+Coller sa clé Groq dans le champ masqué, puis demander un aperçu et appliquer
+la proposition. Le modèle par défaut est `llama-3.3-70b-versatile` ; son nom
+peut être changé selon les modèles accessibles au compte Groq.
+L'offre gratuite reste soumise aux limites de Groq. Aucun crédit OpenAI
+n'est nécessaire pour utiliser Groq.
+
+Le sélecteur conserve aussi OpenAI. Chaque fournisseur utilise son propre
+endpoint, sa clé et son modèle. Les clés sont uniquement en mémoire ou
+injectées via `GROQ_API_KEY` / `OPENAI_API_KEY` et ne sont jamais sauvegardées.
+Changer de fournisseur efface la conversation et la proposition en attente.
+Les modifications déjà appliquées et l'historique d'annulation restent conservés.
+Un changement de fournisseur est bloqué pendant une requête pour éviter
+de mélanger les réponses et les comptes. Les messages 401/429/400/404
+précisent les pistes à vérifier, sans afficher les secrets ni la réponse brute.
+
+Tests hors ligne des deux fournisseurs et de la création :
+`godot --headless --audio-driver Dummy --path . --script tests/creator_test.gd`.
+Un appel réel Groq reste à vérifier avec une clé et un quota disponibles.
+
+La console affiche les demandes, les réponses en français et les confirmations
+d’application/annulation, dans un historique défilant en mémoire (20 entrées).

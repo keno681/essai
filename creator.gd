@@ -4,11 +4,16 @@ signal changed
 var game: Node2D
 var request: HTTPRequest
 var key := ""
-var model := "gpt-4.1-mini"
-var status := "Configure ta clé localement. Les appels API peuvent être payants."
+var provider := "groq"
+var model := "llama-3.3-70b-versatile"
+var credentials: Dictionary = {}
+var models: Dictionary = {}
+const PROVIDERS = {"groq":{"name":"Groq","endpoint":"https://api.groq.com/openai/v1/chat/completions","model":"llama-3.3-70b-versatile","env":"GROQ_API_KEY"},"openai":{"name":"OpenAI","endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4.1-mini","env":"OPENAI_API_KEY"}}
+var status := "Configure ta clé Groq localement. Offre gratuite soumise aux quotas du compte."
 var pending: Dictionary = {}
 var history: Array = []
 var conversation: Array = []
+var console_log: Array[String] = []
 var config: Dictionary = {"title":"COSMO WRAP", "accent":"edc478", "planet_name":"Planète d'origine", "planet_color":"ffffff", "decor":[], "planets":[]}
 var original: Dictionary
 const PATH = "user://creator-world.json"
@@ -16,7 +21,10 @@ const PATH = "user://creator-world.json"
 func _ready() -> void:
 	game=get_parent()
 	original=game.sheet.duplicate(true)
-	key=OS.get_environment("OPENAI_API_KEY")
+	for id in PROVIDERS:
+		credentials[id]=OS.get_environment(PROVIDERS[id].env)
+		models[id]=PROVIDERS[id].model
+	key=credentials[provider]
 	request=HTTPRequest.new()
 	request.timeout=45
 	add_child(request)
@@ -27,22 +35,62 @@ func _ready() -> void:
 			config.merge(validate(saved.config),true)
 			if saved.get("names") is Dictionary: apply_names(validate(saved.names))
 
+func select_provider(id: String) -> bool:
+	if not PROVIDERS.has(id) or request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED: return false
+	credentials[provider]=key
+	models[provider]=model
+	provider=id
+	key=credentials.get(id,"")
+	model=models.get(id,PROVIDERS[id].model)
+	conversation.clear()
+	pending.clear()
+	status="Fournisseur : "+PROVIDERS[id].name+". Renseigne sa clé et son modèle."
+	changed.emit()
+	return true
+
+func endpoint() -> String:
+	return PROVIDERS[provider].endpoint
+
+func console_reply(words: String) -> void:
+	console_log.append(words)
+	while console_log.size()>20: console_log.pop_front()
+
+func console_text() -> String:
+	return "\n\n".join(console_log)
+
+func api_error(code: int, body: PackedByteArray) -> String:
+	var parser=JSON.new()
+	var detail: Variant=null
+	if not body.is_empty() and parser.parse(body.get_string_from_utf8())==OK: detail=parser.data
+	var reason=""
+	if detail is Dictionary and detail.get("error") is Dictionary:
+		reason=str(detail.error.get("code",""))+" "+str(detail.error.get("type",""))
+	if code==429:
+		if "insufficient_quota" in reason: return "API refusée (429) : crédits/quota épuisés. Vérifie la facturation du compte."
+		return "API refusée (429) : limite de demandes ou quota atteint. Attends avant de réessayer et vérifie les limites du compte "+PROVIDERS[provider].name+"."
+	if code==401: return "API refusée (401) : clé invalide pour "+PROVIDERS[provider].name+"."
+	if code==400 or code==404: return "API refusée (%d) : vérifie le nom du modèle et son accès sur %s." % [code,PROVIDERS[provider].name]
+	return "Connexion/API refusée (%d). Vérifie la connexion et le compte %s." % [code,PROVIDERS[provider].name]
+
 func ask(words: String) -> void:
 	if request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED: return
-	if key.strip_edges().is_empty(): status="Clé manquante : renseigne le champ privé."; changed.emit(); return
+	if key.strip_edges().is_empty(): status="Clé manquante : renseigne le champ privé."; console_reply("Console : "+status); changed.emit(); return
 	if words.strip_edges().is_empty(): return
 	pending={}
 	var rules="Tu es le créateur de Cosmo Wrap, jeu 2D. Réponds en JSON uniquement : {explanation: texte français, patch: objet}. Clés patch autorisées: title (texte), accent (couleur hex 6 caractères), planet_name, planet_color (hex), decor (liste max 30 de {x:0..3600,y:180..530,color:hex,size:4..45}, remplace les décorations), planets (liste max 12 de {name:texte,color:hex}, remplace les destinations), customer_names (objet index 0..6 vers nom), customer_races (objet index 0..6 vers human, avian, apex, floran, hylotl, glitch ou novakid), recipe_names (objet index 0..6 vers nom), recipe_prices (objet index 0..6 vers entier 1..100). Pas de code, de fichiers, d'URL. Ces possibilités personnalisent le jeu existant; explique honnêtement les limites pour nouvelles mécaniques, images et structure de menus. Planètes utilisent la carte existante avec une teinte distincte. État actuel: "+JSON.stringify(config)
 	var body=JSON.stringify({"model":model,"messages":[{"role":"system","content":rules}]+conversation+[{"role":"user","content":words.left(2000)}],"response_format":{"type":"json_object"},"max_tokens":1600})
+	console_reply("Toi : "+words.left(2000))
 	conversation.append({"role":"user","content":words.left(2000)})
-	status="OpenAI prépare une proposition…"
-	var error=request.request("https://api.openai.com/v1/chat/completions",["Authorization: Bearer "+key,"Content-Type: application/json"],HTTPClient.METHOD_POST,body)
-	if error!=OK: status="Impossible de démarrer la requête (%d)." % error
+	status=PROVIDERS[provider].name+" prépare une proposition…"
+	var error=request.request(endpoint(),["Authorization: Bearer "+key,"Content-Type: application/json"],HTTPClient.METHOD_POST,body)
+	if error!=OK:
+		status="Impossible de démarrer la requête (%d)." % error
+		console_reply("Console : "+status)
 	changed.emit()
 
 func completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result!=HTTPRequest.RESULT_SUCCESS or code!=200:
-		status="Connexion/API refusée (%d). Vérifie la clé, les crédits et le modèle." % code
+		status=api_error(code,body)
 	else:
 		var response=JSON.parse_string(body.get_string_from_utf8())
 		if response is Dictionary and response.get("choices") is Array and not response.choices.is_empty():
@@ -52,9 +100,11 @@ func completed(result: int, code: int, _headers: PackedStringArray, body: Packed
 				conversation.append({"role":"assistant","content":str(message.get("content",""))})
 				while conversation.size()>10: conversation.pop_front()
 				pending=validate(answer.patch)
-				status=str(answer.get("explanation","Proposition prête.")).left(1800)+"\nChangements : "+JSON.stringify(pending)
+				console_reply(PROVIDERS[provider].name+" : "+str(answer.get("explanation","Proposition prête.")).left(1800))
+				status="Proposition prête. Changements : "+JSON.stringify(pending)
 			else: status="Réponse inexploitable. Aucun changement appliqué."
 		else: status="Réponse API inattendue."
+	if code!=200 or pending.is_empty(): console_reply("Console : "+status)
 	changed.emit()
 
 func valid_color(value: Variant) -> bool:
@@ -131,6 +181,7 @@ func apply_pending() -> void:
 	pending={}
 	status="Changements appliqués et sauvegardés. Ferme le chat pour jouer."
 	save_world()
+	console_reply("Console : "+status)
 	changed.emit()
 
 func undo() -> void:
@@ -141,6 +192,7 @@ func undo() -> void:
 	pending={}
 	status="Dernière modification annulée."
 	save_world()
+	console_reply("Console : "+status)
 	changed.emit()
 
 func visit(planet: Dictionary) -> void:
