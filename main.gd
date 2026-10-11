@@ -427,19 +427,20 @@ func _draw() -> void:
 		label_at("!",Vector2(customer_x-4,365),27,Color("f28c78"))
 	alien(player,Color("bca2e9"),true)
 	draw_style_box(ART.panel_frame(Color(0.65,0.68,0.70)),Rect2(763,205,407,107))
-	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("f4dec0"))
-	var excerpt: String = speech.left(105)+"… [T : texte complet]" if speech.length()>130 else speech
-	var spoken: String = excerpt.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
-	var words := spoken.split(" ")
-	var line := ""
-	var row_y := 254
-	for word in words:
-		if (line+word).length()>53:
-			label_at(line,Vector2(778,row_y),13,Color("e1d8c6"))
-			row_y += 17
-			line = ""
-		line += word+" "
-	label_at(line,Vector2(778,row_y),13,Color("e1d8c6"))
+	var bubble_title: String = (sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…")
+	var title_text := TextParagraph.new()
+	title_text.width = 371
+	title_text.max_lines_visible = 1
+	title_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title_text.add_string(bubble_title,font,18)
+	title_text.draw(get_canvas_item(),Vector2(781,219),Color("f4dec0"))
+	var spoken: String = speech.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
+	var body_text := TextParagraph.new()
+	body_text.width = 371
+	body_text.max_lines_visible = 3
+	body_text.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	body_text.add_string(spoken,font,13)
+	body_text.draw(get_canvas_item(),Vector2(781,247),Color("e1d8c6"))
 	draw_doors()
 	draw_interaction_markers()
 
