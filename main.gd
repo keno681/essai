@@ -168,9 +168,11 @@ func discard_preparation(kind: String, ids: Array) -> bool:
 	save_progress()
 	return true
 
-func discard_order() -> bool:
-	if online and online.request("discard_order"): return false
-	if holding<0: return false
+func discard_order(at_trash: bool = false) -> bool:
+	if online and online.request("discard_order",{"trash":at_trash}): return false
+	if holding<0:
+		say("Tu ne portes aucune commande à jeter.")
+		return false
 	holding=-1
 	say("Commande jetée, sans récupérer les ingrédients.")
 	save_progress()
@@ -241,6 +243,9 @@ func serve() -> bool:
 	return true
 
 func interact() -> void:
+	if room=="restaurant" and absf(player.x-1007)<25:
+		discard_order(true)
+		return
 	if room=="restaurant" and absf(player.x-845)<45:
 		ui.show_page("counter")
 		return
@@ -920,6 +925,7 @@ func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_texture_rect(ART.object(11 if tint.g > tint.r else 12),Rect2(at+Vector2(-10,-25),Vector2(20,30)),false)
 
 func draw_restaurant_details() -> void:
+	draw_texture_rect(preload("res://art/kitchen_trash.svg"),Rect2(986,464,42,82),false,Color(brightness,brightness,brightness))
 	for i in range(counter_items.size()):
 		var dish: Dictionary=counter_items[i]
 		var at:=Vector2(800+(i%4)*26,425-floori(i/4.0)*35)
@@ -949,6 +955,7 @@ func interaction_targets() -> Array[Dictionary]:
 		var rect:=door_hitbox(door)
 		result.append({"id":door.id,"x":float(door.x),"label":destinations[door.target],"rect":rect,"action":"interact"})
 	if room=="restaurant":
+		result.append({"id":"trash","x":1007.0,"label":"POUBELLE","rect":Rect2(986,464,42,82),"action":"trash"})
 		for item in sheet.ingredients:
 			if item.starter: result.append({"id":item.id,"x":float(item.x),"label":"RÉCOLTER","rect":Rect2(float(item.x)-55,400,110,146),"action":"interact"})
 	var bounds := {"kitchen":Rect2(595,320,108,224),"counter":Rect2(795,435,114,110),"drinks":Rect2(712,333,69,111),"upgrade":Rect2(1030,400,130,146),"couch":Rect2(344,390,300,155),"computer":Rect2(755,325,260,220)}
@@ -998,6 +1005,8 @@ func finish_click_action() -> void:
 		ui.show_page("reception")
 	elif target.action=="table_visit":
 		tables.visit(int(target.table))
+	elif target.action=="trash":
+		discard_order(true)
 	elif target.action=="counter":
 		ui.show_page("counter")
 	elif target.action=="serve":
@@ -1046,7 +1055,7 @@ func object_hover_name(target: Dictionary) -> String:
 	if target.get("action")=="welcome": return "Accueil du client"
 	if target.get("action")=="table_visit": return "Table %d" % int(target.table)
 	var id: String=target.get("id","")
-	var names={"kitchen":"Grill à wraps","counter":"Comptoir","drinks":"Distributeur de boissons","upgrade":"Terrasse","couch":"Canapé","computer":"Ordinateur","console":"Pokéball"}
+	var names={"trash":"Poubelle","kitchen":"Grill à wraps","counter":"Comptoir","drinks":"Distributeur de boissons","upgrade":"Terrasse","couch":"Canapé","computer":"Ordinateur","console":"Pokéball"}
 	if names.has(id): return names[id]
 	if id=="client": return str(sheet.customers[actor_customer].name)
 	if planters.plants.has(id): return planters.name_of(id)

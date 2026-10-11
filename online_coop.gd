@@ -193,7 +193,7 @@ func receive(data: Dictionary, sender: int) -> void:
 					var discard_kind: String=str(data.get("args",{}).get("kind","wrap"))
 					game.ui.set_meta("composition_"+discard_kind,[])
 					game.ui.show_page("cookdrink" if discard_kind=="drink" else "cookwrap")
-				elif str(data.get("action",""))=="discard_order": game.ui.show_page("cookdrink" if game.ui.page=="cookdrink" else "cookwrap")
+				elif str(data.get("action",""))=="discard_order" and not bool(data.get("args",{}).get("trash",false)): game.ui.show_page("cookdrink" if game.ui.page=="cookdrink" else "cookwrap")
 				elif str(data.get("action",""))=="chat":
 					if game.customer_state=="leaving": game.ui.hide_page()
 					else: game.ui.show_page("chat")
@@ -306,7 +306,9 @@ func handle_action(data: Dictionary) -> void:
 			var kind: String=str(args.get("kind",""))
 			var station := 745.0 if kind=="drink" else 650.0
 			if game.room=="restaurant" and absf(game.player.x-station)<100 and args.get("ingredients") is Array: ok=game.discard_preparation(kind,args.ingredients)
-		"discard_order": ok=game.discard_order()
+		"discard_order":
+			var at_trash:=bool(args.get("trash",false))
+			if not at_trash or (game.room=="restaurant" and absf(game.player.x-1007)<80): ok=game.discard_order(at_trash)
 		"serve":
 			if game.room=="restaurant" and absf(game.player.x-game.customer_x)<110: ok=game.serve()
 		"return": game.return_wrap(); ok=true

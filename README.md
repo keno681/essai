@@ -136,3 +136,5 @@ La récolte fournit désormais des ingrédients bruts : 3 par plante cultivée, 
 L’eau est prête à l’emploi. Les stocks déjà possédés dans les anciennes sauvegardes restent préparés ; les nouvelles récoltes sont brutes. Les stocks sont sauvegardés et partagés en coop, avec protection contre les traitements simultanés du dernier ingrédient. Les gestes en cours ne consomment rien tant que le résultat n’est pas déposé dans le saladier.
 
 Applique `Table-Travail-Pokeball.json` hors ligne sur les deux PC : cette version utilise le protocole coop 6.
+
+Une poubelle métallique est placée à droite du comptoir dans le restaurant. Clique dessus : ton personnage s’approche et jette directement la commande portée, wrap ou boisson, sans menu et sans remboursement. E à proximité fonctionne aussi. Pour installer `Poubelle-Pokeball.json`, applique le correctif hors ligne sur les deux PC : le retour réseau est ajusté pour ne pas rouvrir la cuisine après avoir jeté une commande.
