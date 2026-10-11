@@ -13,6 +13,8 @@ var staged: Dictionary={}
 var baseline: Dictionary={}
 var undo_files: Dictionary={}
 var steps:=0
+var requests_sent:=0
+var format_retries:=0
 var loading_models:=false
 var running:=false
 var validating:=false
@@ -125,7 +127,10 @@ func prepare() -> void:
 	staged.clear()
 	baseline.clear()
 	steps=0
-	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot 4.6 GDScript. Réponds uniquement en JSON avec UNE action par tour. Actions : {action:read,path:chemin,start:ligne1,lines:80}, {action:search,query:texte}, {action:replace,path:chemin,old:texte EXACT non vide,new:nouveau texte}, {action:create,path:chemin,text:contenu} uniquement pour nouveau fichier, {action:done,explanation:résumé français}. Lire avant modifier. Utiliser replace ciblé avec ancien texte unique; les modifications sont préparées en mémoire et seront appliquées après validation humaine. Pas de shell, réseau, secrets ni chemins hors projet dans le code produit. Ne pas changer le nom du jeu ni la mécanique sauf demandé. Syntaxe Godot4 stricte: expliciter les types si inférence ambiguë. Les fichiers binaires ne peuvent pas être édités. Fichiers: "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
+	requests_sent=0
+	format_retries=0
+	var actions=JSON.stringify([{ "action":"read","path":"ui.gd","start":1,"lines":60},{"action":"search","query":"skin"},{"action":"replace","path":"ui.gd","old":"texte exact unique","new":"nouveau texte"},{"action":"create","path":"nouveau.gd","text":"extends Node\n"},{"action":"done","explanation":"Résumé français"}])
+	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot 4.6 GDScript. Réponds uniquement en JSON avec UNE action par tour. Actions : "+actions+". Les couleurs/cadres HUD sont dans ui.gd (skin, CYAN) et creator.gd (config.accent). Chercher le code exact avant de changer ces valeurs. Pour une seule couleur ne réécris jamais tout design.json. Les clés JSON doivent être entre guillemets doubles. Les nouvelles lignes et guillemets du code doivent être échappés dans les chaînes JSON. Maximum 60 lignes de nouveau code par action; fractionner les gros changements. Lire avant modifier. Utiliser replace ciblé avec ancien texte unique; les modifications sont préparées en mémoire et seront appliquées après validation humaine. Pas de shell, réseau, secrets ni chemins hors projet dans le code produit. Ne pas changer le nom du jeu ni la mécanique sauf demandé. Syntaxe Godot4 stricte: expliciter les types si inférence ambiguë. Les fichiers binaires ne peuvent pas être édités. Fichiers: "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
 	log_message("Toi : "+prompt.text)
 	send_next()
 
@@ -134,9 +139,10 @@ func retry() -> void:
 	send_next()
 
 func send_next() -> void:
-	if steps>=20: log_message("Limite de 20 étapes. Examine la proposition ou recommence une demande plus précise."); return
+	if requests_sent>=20: log_message("Limite de 20 étapes. Examine la proposition ou recommence une demande plus précise."); return
 	running=true
 	loading_models=false
+	requests_sent+=1
 	var body=JSON.stringify({"model":model_input.text.strip_edges(),"messages":messages,"response_format":{"type":"json_object"},"max_tokens":3000})
 	var error=http.request(ENDPOINT,["Authorization: Bearer "+key_input.text.strip_edges(),"Content-Type: application/json"],HTTPClient.METHOD_POST,body)
 	if error!=OK: running=false; log_message("Requête impossible : "+str(error))
@@ -159,8 +165,18 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 		return
 	if not response is Dictionary or not response.get("choices") is Array or response.choices.is_empty(): log_message("Réponse API inattendue."); return
 	var content=str(response.choices[0].get("message",{}).get("content",""))
-	var action=JSON.parse_string(content)
-	if not action is Dictionary: log_message("JSON invalide ; réessaie."); return
+	var action=parse_action(content)
+	var reason=str(response.choices[0].get("finish_reason",""))
+	if action.is_empty() or reason=="length":
+		format_retries+=1
+		log_message("Réponse tronquée (limite de longueur)." if reason=="length" else "Réponse mal formatée par Groq.")
+		if format_retries<=2 and requests_sent<20:
+			messages.append({"role":"user","content":"Ta dernière réponse était tronquée ou du JSON invalide. Recommence cette étape avec UN petit objet JSON valide, sans markdown, sans explication hors JSON. Fais read/search ou replace ciblé très court, jamais un fichier complet. Échappe les retours à la ligne en \n et les guillemets du code. Exemple : "+JSON.stringify({"action":"replace","path":"ui.gd","old":"Color(\"edc478\")","new":"Color(\"55cc77\")"})})
+			log_message("Correction automatique du format (%d/2)…" % format_retries)
+			send_next.call_deferred()
+		else: log_message("Deux corrections ont échoué. Aucun fichier écrit. Tu peux RÉESSAYER ou choisir un autre modèle.")
+		return
+	format_retries=0
 	steps+=1
 	messages.append({"role":"assistant","content":content})
 	if action.get("action")=="done":
@@ -170,6 +186,17 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 	messages.append({"role":"user","content":feedback})
 	log_message("Étape %d : %s %s" % [steps,str(action.get("action","")),str(action.get("path",""))])
 	send_next.call_deferred()
+
+func parse_action(content: String) -> Dictionary:
+	var parser=JSON.new()
+	if parser.parse(content)==OK:
+		return parser.data if parser.data is Dictionary else {}
+	# Accept a single fenced object or surrounding explanation, never incomplete JSON.
+	var start=content.find("{")
+	var end=content.rfind("}")
+	if start>=0 and end>start:
+		if parser.parse(content.substr(start,end-start+1))==OK and parser.data is Dictionary: return parser.data
+	return {}
 
 func perform(action: Dictionary) -> String:
 	if action.get("action")=="search":

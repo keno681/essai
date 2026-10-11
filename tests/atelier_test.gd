@@ -6,6 +6,18 @@ func _initialize() -> void:
 func run() -> void:
 	var tool=load("res://atelier.gd").new()
 	root.add_child(tool)
+	assert(tool.parse_action('{"action":"done","explanation":"prêt"}').action=="done")
+	assert(tool.parse_action('```json\n{"action":"read","path":"ui.gd"}\n```').path=="ui.gd")
+	assert(tool.parse_action('Voici : {"action":"done","explanation":"ok"} Merci').action=="done")
+	assert(tool.parse_action('{"action":"replace","new":"unfinished').is_empty())
+	assert(tool.parse_action('[{"action":"done"}]').is_empty(),"Never accept multiple-action lists")
+	tool.requests_sent=20
+	var bad={"choices":[{"message":{"content":'{"action":"replace","new":"cut'},"finish_reason":"length"}]}
+	tool.received(HTTPRequest.RESULT_SUCCESS,200,[],JSON.stringify(bad).to_utf8_buffer())
+	assert(tool.staged.is_empty() and tool.console.text.contains("tronquée"))
+	var good={"choices":[{"message":{"content":'```json\n{"action":"done","explanation":"Prêt"}\n```'},"finish_reason":"stop"}]}
+	tool.received(HTTPRequest.RESULT_SUCCESS,200,[],JSON.stringify(good).to_utf8_buffer())
+	assert(tool.format_retries==0 and tool.console.text.contains("Groq : Prêt"))
 	tool.game_root="/tmp/atelier-fixture-"+str(Time.get_ticks_usec())
 	DirAccess.make_dir_recursive_absolute(tool.game_root)
 	var file=FileAccess.open(tool.game_root+"/project.godot",FileAccess.WRITE)

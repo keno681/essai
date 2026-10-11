@@ -267,3 +267,13 @@ ni enregistrée dans les sauvegardes.
 Construire le pack : `python3 developer/bundle.py`.
 Test de l’atelier : `godot --headless --audio-driver Dummy --path developer --script /chemin/essai/tests/atelier_test.gd`.
 Les appels API réels et le lancement Windows restent à vérifier sur le PC utilisateur.
+
+### Réponses de l’atelier (v15)
+
+Les exemples d’actions envoyés au modèle sont désormais du JSON strict.
+L’atelier accepte un objet JSON entouré de balises Markdown ou d’une explication.
+Une réponse tronquée (`finish_reason=length`) est refusée. En cas de format
+invalide, au maximum deux appels de correction automatique sont effectués,
+sans écrire de fichiers. Le budget total reste limité à 20 appels par demande.
+Les changements longs doivent être découpés en remplacements courts.
+Les tests couvrent JSON brut, balises, prose, troncature et refus des listes.
