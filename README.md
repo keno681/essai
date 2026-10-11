@@ -6,7 +6,7 @@ Jeu solo de gestion en 2D : restaurant spatial, wraps et boissons à composer, c
 
 Un utilisateur a signalé une détection Wacatac dans le pack Windows. Le ZIP contenant l'exécutable a été retiré de la version courante du dépôt en attendant la vérification. Ne pas lancer, restaurer ou exclure de l'antivirus le fichier signalé. Les anciens liens vers un commit peuvent encore être accessibles : ne pas les utiliser.
 
-Les sources et les images du jeu restent disponibles. Aucune conclusion sur un éventuel faux positif n'est établie à ce stade. Le fichier précisément détecté doit encore être identifié.
+Les sources et les images du jeu restent disponibles. Le moteur inclus a été comparé à l’archive officielle Godot 4.6.3 Windows x64, après vérification de son SHA512 : les exécutables sont identiques. Cette comparaison ne constitue pas une analyse antivirus et ne permet pas de conclure à un faux positif. Le fichier précisément détecté doit encore être identifié. Voir [les détails de vérification](SECURITE.md).
 
 Pour un environnement de développement, obtenir Godot uniquement depuis son site officiel https://godotengine.org/download/windows/ et respecter les alertes de sécurité du système. Aucun moteur Windows n'est actuellement redistribué ici.
 
