@@ -63,6 +63,7 @@ var ambient_clock := 0.0
 var ambience_enabled := true
 var music_player: AudioStreamPlayer
 var console_node: Node
+var tables: Node
 var planters: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
@@ -88,6 +89,8 @@ func _ready() -> void:
 	add_child(planters)
 	customer_queue = load("res://customer_queue.gd").new()
 	customer_queue.setup(self)
+	tables=preload("res://tables.gd").new()
+	add_child(tables)
 	load_progress()
 	load_settings()
 	set_fullscreen(false)
@@ -187,7 +190,7 @@ func cook() -> bool:
 	holding = selected
 	action_time = float(animation("cook").duration)
 	play_sound(440)
-	say("Commande prête ! Clique sur le client pour lui donner.")
+	say("Commande prête ! Entre dans la SALLE et clique sur la table à servir.")
 	return true
 
 func serve() -> bool:
@@ -239,6 +242,9 @@ func interact() -> void:
 		if door.room==room and absf(player.x-float(door.x))<30:
 			travel(door.target,float(door.arrival_x))
 			return
+	if room=="dining":
+		ui.show_page("orders")
+		return
 	if room=="office":
 		if absf(player.x-440)<80: ui.show_page("save")
 		elif absf(player.x-830)<80: ui.show_page("shop")
@@ -251,6 +257,9 @@ func interact() -> void:
 				else: harvest_node(node)
 				return
 		say("E près d'une plante pour récolter. Explorez vers la droite !")
+		return
+	if room=="restaurant" and customer_state=="waiting" and absf(player.x-customer_x)<52:
+		ui.show_page("reception")
 		return
 	for item in sheet.ingredients:
 		if item.starter and absf(player.x-float(item.x))<58:
@@ -304,6 +313,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_E: interact()
 			KEY_SPACE:
 				if player.y >= 505: vertical = -450
+			KEY_O: ui.show_page("orders")
 			KEY_R: discard_order()
 			KEY_N: ui.show_page("confirm")
 
@@ -326,6 +336,7 @@ func new_service() -> void:
 	player.x = 565
 	discovered = ["moonleaf","sunfruit","mushroom","mineralwater","lunartea","nebulasyrup"]
 	planters.reset()
+	tables.reset()
 	deliveries.clear()
 	chat_log.clear()
 	for id in node_cooldowns: node_cooldowns[id] = 0.0
@@ -380,7 +391,7 @@ func _process(delta: float) -> void:
 	var authority: bool = (not connected or online.hosting) and (not connected or online.updates.state.is_empty())
 	if not menu or connected:
 		clock += delta
-		if authority and (room=="restaurant" or connected): update_customers(delta)
+		if authority: update_customers(delta)
 		speech_time = maxf(0.0,speech_time-delta)
 		speech_elapsed += delta
 		if authority: update_deliveries(delta)
@@ -442,7 +453,7 @@ func alien(position: Vector2, color: Color, chef: bool = false, queued: Dictiona
 	var moving: bool = bool(queued.get("moving",walking)) if chef else bool(queued.get("moving",customer_state != "waiting"))
 	var phase: float = float(queued.get("phase",walk_cycle)) if chef else float(queued.get("phase",npc_cycle))
 	var stride := sin(phase)*0.2 if moving else 0.0
-	var direction: float = float(queued.get("facing",facing)) if chef else (1.0 if queued.is_empty() and customer_state=="leaving" else -1.0)
+	var direction: float = float(queued.get("facing",facing)) if chef else float(queued.get("facing",1.0 if queued.is_empty() and customer_state=="leaving" else -1.0))
 	var breathe := sin(clock*2.0)*1.2
 	var bob := absf(cos(phase))*2 if moving else breathe
 	var foot := position+Vector2(0,39)
@@ -456,7 +467,7 @@ func alien(position: Vector2, color: Color, chef: bool = false, queued: Dictiona
 	draw_circle(Vector2.ZERO,20,Color(0.03,0.02,0.01,0.35))
 	for side in [0,1]:
 		var hip := Vector2((side-0.5)*width*0.5,-height*(1-cut)+bob)
-		var angle := stride*(-1 if side==0 else 1)
+		var angle := (-0.9 if side==0 else -0.65) if queued.get("seated",false) else stride*(-1 if side==0 else 1)
 		draw_set_transform(foot+Vector2(hip.x*direction,hip.y),angle*direction,Vector2(direction,1))
 		for part in [[0.76,0.92,"pants_colors"],[0.92,1.0,"shoe_colors"]]:
 			var start := float(part[0])
@@ -505,6 +516,7 @@ func _draw() -> void:
 	if upgraded:
 		draw_circle(Vector2(1127,432),26,Color(1,0.7,0.3,0.1))
 		label_at("+5 WCC / wrap",Vector2(1060,366),16,Color("f9d47b"))
+	tables.draw_arrivals()
 	customer_queue.draw_people()
 	alien(Vector2(customer_x,520 if customer_state=="leaving" else 505),Color(sheet.customers[actor_customer].color))
 	if customer_emotion=="angry":
@@ -619,7 +631,7 @@ func travel(destination: String, arrival_x: float) -> void:
 	camera_x = 0
 	speech_time = 0
 	if OS.get_name()=="Windows": DisplayServer.tts_stop()
-	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des graines.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
+	say({"office":"Le canapé sauvegarde votre partie. Le PC commande des graines.","garden":"Six bacs supplémentaires ! La planète se trouve à droite.","planet":"Explorez la vallée. E près d'une plante inconnue pour la découvrir.","dining":"Salle orbitale : clique sur une table pour consulter ou servir sa commande.","restaurant":"De retour au snack ! Vos clients vous attendent."}.get(room,"Bienvenue !"))
 
 func harvest_node(node: Dictionary) -> bool:
 	if online and online.request("wild",{"id":node.id}): return false
@@ -683,7 +695,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"waiting_queue":customer_queue.snapshot(),"version":9,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"coop_carried":int(online.partner.get("holding",-1)) if online and online.active and online.hosting else -1,"table_orders":tables.snapshot(),"selected_table":tables.selected,"waiting_queue":customer_queue.snapshot(),"version":10,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	if online and online.active and (not online.hosting or online.executing_remote): return false
@@ -751,7 +763,7 @@ func apply_snapshot(data: Dictionary) -> void:
 		if id in inventory and not id in discovered: discovered.append(id)
 	planters.restore(data.get("plantings",{}))
 	room = data.get("room","restaurant")
-	if not room in ["restaurant","office","garden","planet"]: room="restaurant"
+	if not room in ["restaurant","office","garden","planet","dining"]: room="restaurant"
 	player = Vector2(clampf(float(data.get("player_x",565)),40,3560 if room=="planet" else 1160),505)
 	camera_x = clampf(player.x-600,0,2400) if room=="planet" else 0
 	holding = clampi(int(data.get("holding",-1)),-1,sheet.recipes.size()-1)
@@ -767,6 +779,8 @@ func apply_snapshot(data: Dictionary) -> void:
 		if row is Dictionary and row.get("ingredient") in discovered and not ingredient(row.ingredient).get("pantry",false):
 			deliveries.append({"ingredient":row.ingredient,"kind":"seed","quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
 	customer_queue.restore(data.get("waiting_queue",{}))
+	tables.restore(data.get("table_orders",[]))
+	tables.selected=clampi(int(data.get("selected_table",0)),0,8)
 	speech_time = 0
 	vertical = 0
 
@@ -775,7 +789,7 @@ func door_hitbox(door: Dictionary) -> Rect2:
 	return bounds.get(door.id,Rect2(float(door.x)-42,250,84,295))
 
 func draw_door_art() -> void:
-	if room not in ["restaurant","planet"]: return
+	if room not in ["restaurant","planet","dining"]: return
 	for door in sheet.doors:
 		if door.room!=room: continue
 		var rect:=door_hitbox(door)
@@ -786,6 +800,7 @@ func draw_doors() -> void:
 	pass
 
 func draw_other_room() -> void:
+	if room=="dining": tables.draw_dining(); return
 	var texture: Texture2D = room_textures.get(room)
 	if texture:
 		if room=="planet":
@@ -914,7 +929,7 @@ func dismiss_customer() -> bool:
 
 func interaction_targets() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var destinations := {"restaurant":"SNACK","office":"BUREAU","garden":"SERRE","planet":"EXPLORER"}
+	var destinations := {"restaurant":"SNACK","office":"BUREAU","garden":"SERRE","planet":"EXPLORER","dining":"SALLE"}
 	for door in sheet.doors:
 		if door.room!=room: continue
 		var rect:=door_hitbox(door)
@@ -929,7 +944,8 @@ func interaction_targets() -> Array[Dictionary]:
 		if station.room==room: result.append({"id":station.id,"x":float(station.x),"label":names[station.id],"rect":bounds[station.id],"action":"interact"})
 	for node in sheet.beds if room=="garden" else (sheet.wild_nodes if room=="planet" else []):
 		result.append({"id":node.id,"x":float(node.x),"label":"RÉCOLTER" if node.ingredient in discovered else "DÉCOUVRIR","rect":Rect2(float(node.x)-58,425,116,120),"action":"interact"})
-	if room=="restaurant" and customer_state=="waiting": result.append({"id":"client","x":customer_x,"label":"SERVIR LE CLIENT","rect":Rect2(customer_x-32,360,64,185),"action":"serve"})
+	if room=="restaurant" and customer_state=="waiting": result.append({"id":"client","x":customer_x,"label":"SERVIR LE CLIENT","rect":Rect2(customer_x-32,360,64,185),"action":"welcome"})
+	if room=="dining": result.append_array(tables.targets())
 	return result
 
 func clicked_target(at: Vector2) -> Dictionary:
@@ -962,7 +978,11 @@ func finish_click_action() -> void:
 	var target:=click_target.duplicate()
 	click_target.clear()
 	if target.is_empty(): return
-	if target.action=="serve":
+	if target.action=="welcome":
+		ui.show_page("reception")
+	elif target.action=="table_visit":
+		tables.visit(int(target.table))
+	elif target.action=="serve":
 		serve()
 	else: interact()
 
@@ -971,6 +991,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if start_click_action(event.position): get_viewport().set_input_as_handled()
 
 func guide_step() -> Dictionary:
+	if room=="dining": return {"text":"Clique sur une table pour la servir. TABLES [O] affiche les commandes à préparer.","target":""}
+	if room=="restaurant" and tables and not tables.people.is_empty(): return {"text":"%d tables occupées : TABLES [O] pour choisir une commande, puis SALLE pour servir." % tables.people.size(),"target":"snack_dining" if holding>=0 else "kitchen"}
+	if room=="restaurant" and customer_state=="waiting": return {"text":"Accueille le client et choisis une table libre.","target":"client"}
 	if room=="office": return {"text":"Cliquez sur le PC pour commander, ou sur le canapé pour sauvegarder.","target":"computer"}
 	if room=="garden": return {"text":"Récoltez dans les bacs. EXPLORER mène aux ingrédients sauvages.","target":"garden_planet"}
 	if room=="planet": return {"text":"Cliquez sur les plantes sauvages pour découvrir de nouveaux ingrédients.","target":""}
@@ -1002,6 +1025,8 @@ func draw_interaction_markers() -> void:
 		draw_arc(Vector2(x,540),12,0,TAU,24,Color("8ed4d5"),2,true)
 
 func object_hover_name(target: Dictionary) -> String:
+	if target.get("action")=="welcome": return "Accueil du client"
+	if target.get("action")=="table_visit": return "Table %d" % int(target.table)
 	var id: String=target.get("id","")
 	var names={"kitchen":"Grill à wraps","counter":"Comptoir","drinks":"Distributeur de boissons","upgrade":"Terrasse","couch":"Canapé","computer":"Ordinateur","console":"Pokéball"}
 	if names.has(id): return names[id]
@@ -1012,7 +1037,7 @@ func object_hover_name(target: Dictionary) -> String:
 	for plant in sheet.beds+sheet.wild_nodes:
 		if plant.id==id:
 			return str(ingredient(plant.ingredient).name) if plant.ingredient in discovered else "Plante inconnue"
-	var doors={"restaurant":"Porte du restaurant","office":"Porte du bureau","garden":"Porte de la serre","planet":"Passage vers la planète"}
+	var doors={"restaurant":"Porte du restaurant","office":"Porte du bureau","garden":"Porte de la serre","planet":"Passage vers la planète","dining":"Porte de la salle"}
 	for door in sheet.doors:
 		if door.id==id: return str(doors.get(door.target,"Porte"))
 	return "Objet"

@@ -86,11 +86,11 @@ func _ready() -> void:
 	header.add_theme_stylebox_override("panel",ART.panel_frame(Color(0.7,0.75,0.8),18))
 	root.add_child(header)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation",16)
+	row.add_theme_constant_override("separation",8)
 	header.add_child(row)
-	row.add_child(label("COSMO WRAP BALL",18,CYAN))
+	row.add_child(label("COSMO WRAP BALL",16,CYAN))
 	var vitals := VBoxContainer.new()
-	vitals.custom_minimum_size.x = 150
+	vitals.custom_minimum_size.x = 110
 	row.add_child(vitals)
 	vitals.add_child(label("SYSTÈMES / ACTIFS",12,Color("88c9c5")))
 	var health := ProgressBar.new()
@@ -103,15 +103,20 @@ func _ready() -> void:
 	var duck := DuckIcon.new()
 	duck.custom_minimum_size = Vector2(34,32)
 	row.add_child(duck)
-	credits = label("",16,Color("efd37d"))
-	credits.custom_minimum_size.x = 178
+	credits = label("",14,Color("efd37d"))
+	credits.custom_minimum_size.x = 140
 	row.add_child(credits)
-	task = label("",15)
+	task = label("",14)
+	task.clip_text=true
+	task.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	task.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(task)
+	row.add_child(button("TABLES [O]",func(): show_page("orders")))
 	row.add_child(button("CHAT [T]",func(): show_page("chat")))
 	row.add_child(button("SAC [I]",func(): show_page("inventory")))
 	row.add_child(button("MENU [Échap]",func(): show_page("menu")))
+	for item in row.get_children():
+		if item is Button: item.add_theme_font_size_override("font_size",15)
 	var footer := PanelContainer.new()
 	footer.position = Vector2(16,634)
 	footer.size = Vector2(1168,70)
@@ -179,7 +184,7 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
+	var box := clear_window({"orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	if name in ["cookwrap","cookdrink"]:
@@ -187,6 +192,9 @@ func show_page(name: String) -> void:
 		window.size=Vector2(940,0)
 		box.get_parent().custom_minimum_size=Vector2(900,495)
 	match name:
+		"orders": tables_view(box)
+		"reception": game.tables.build_reception(box)
+		"table": game.tables.build_table(box)
 		"planter":
 			game.planters.build(box)
 		"cookwrap":
@@ -519,3 +527,6 @@ func build_console(_box: VBoxContainer) -> void:
 		if game.console_node.changed.is_connected(refresh): game.console_node.changed.disconnect(refresh))
 	if game.console_node.reopen and not game.console_node.status.ends_with("Jeu relancé."):
 		refresh.call_deferred()
+
+func tables_view(box: VBoxContainer) -> void:
+	game.tables.build_orders(box)

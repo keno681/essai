@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-3"
+const VERSION := "cosmo-coop-4"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -95,7 +95,7 @@ func sanitize_player(data: Variant) -> Dictionary:
 		if not (data.get(key,0) is int or data.get(key,0) is float): return {}
 		if not is_finite(float(data.get(key,0))): return {}
 	var room_name := str(data.get("room","restaurant"))
-	if room_name not in ["restaurant","office","garden","planet"]: return {}
+	if room_name not in ["restaurant","office","garden","planet","dining"]: return {}
 	var race := "human"
 	for row in game.sheet.races:
 		if row.id == str(data.get("race","human")): race=row.id
@@ -179,7 +179,8 @@ func receive(data: Dictionary, sender: int) -> void:
 			pending=false
 			game.say(str(data.get("message","")))
 			if bool(data.get("ok",false)):
-				if str(data.get("action",""))=="cook":
+				if str(data.get("action","")) in ["welcome","serve_table"]: game.ui.hide_page()
+				elif str(data.get("action",""))=="cook":
 					var crafted_kind: String=game.recipe(int(data.get("args",{}).get("recipe",0))).get("kind","wrap")
 					game.ui.set_meta("composition_"+crafted_kind,[])
 					game.ui.hide_page()
@@ -207,6 +208,7 @@ func apply_world(world: Dictionary) -> void:
 	game.completed=game.served>=3
 	game.planters.restore(world.get("plantings",{}))
 	game.customer_queue.restore(world.get("waiting_queue",{}))
+	game.tables.restore(world.get("table_orders",[]))
 
 func request(action: String, args: Dictionary = {}) -> bool:
 	if not active: return false
@@ -269,6 +271,11 @@ func handle_action(data: Dictionary) -> void:
 	var ok := false
 	game.message="Action impossible ici."
 	match action:
+		"welcome":
+			if game.room=="restaurant" and absf(game.player.x-game.customer_x)<110: ok=game.tables.welcome(int(args.get("table",0)))
+		"serve_table":
+			var table_number:=int(args.get("table",0))
+			if table_number>=1 and table_number<=8 and game.room=="dining" and absf(game.player.x-game.tables.spot(table_number).x)<110: ok=game.tables.serve_table(table_number)
 		"cook":
 			var index := int(args.get("recipe",-1))
 			if game.room=="restaurant" and index>=0 and index<game.sheet.recipes.size():

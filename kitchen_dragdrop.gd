@@ -92,11 +92,21 @@ class Kitchen extends VBoxContainer:
 			label.tooltip_text=item.name
 			list.add_child(label)
 			stocks.append(label)
-		if game.customer_state=="waiting":
-			var order: Dictionary=game.recipe(game.order)
+		var orders := OptionButton.new()
+		orders.add_item("COMMANDES / choisir une table",0)
+		for entry in game.tables.people:
+			if entry.state not in ["eating","leaving"]:
+				orders.add_item("Table %d · %s" % [entry.table,game.recipe(int(entry.recipe)).name],int(entry.table))
+		orders.item_selected.connect(func(index):
+			var number:=orders.get_item_id(index)
+			if number>0: game.tables.select_table(number))
+		add_child(orders)
+		var entry=game.tables.person(game.tables.selected)
+		if not entry.is_empty():
+			var order: Dictionary=game.recipe(int(entry.recipe))
 			var needs: Array[String]=[]
 			for id in order.ingredients: needs.append(game.ingredient(id).short_name)
-			var request=ui.label("Commande : "+order.name+" · "+" + ".join(needs),15,Color("efd37d"))
+			var request=ui.label("TABLE %d · %s · %s" % [entry.table,order.name," + ".join(needs)],15,Color("efd37d"))
 			request.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 			add_child(request)
 		var table=Table.new()

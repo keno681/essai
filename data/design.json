@@ -518,6 +518,12 @@
       "name": "Vallée des comètes",
       "width": 3600,
       "asset": "art/planet.png"
+    },
+    {
+      "id": "dining",
+      "name": "Salle orbitale",
+      "width": 1200,
+      "asset": "art/restaurant.png"
     }
   ],
   "beds": [
@@ -643,6 +649,20 @@
       "x": 42,
       "target": "garden",
       "arrival_x": 1090
+    },
+    {
+      "id": "snack_dining",
+      "room": "restaurant",
+      "x": 1170,
+      "target": "dining",
+      "arrival_x": 1110
+    },
+    {
+      "id": "dining_snack",
+      "room": "dining",
+      "x": 1125,
+      "target": "restaurant",
+      "arrival_x": 1120
     }
   ],
   "currency": [

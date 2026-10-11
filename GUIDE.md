@@ -20,11 +20,11 @@ Ce nouveau conditionnement évite la redistribution de l'exécutable ; **il ne c
 ## Commandes et interactions
 
 - Q/D ou flèches : marcher ; espace : sauter ; E : interagir.
-- I : inventaire ; T : discuter avec les clients ; Échap : menu.
+- I : inventaire ; T : discuter avec les clients ; O : carnet des commandes ; Échap : menu.
 - Cliquer sur une porte permet de rejoindre la pièce correspondante.
 - Cliquer sur un bac ouvre un petit choix près du curseur : récolter, vider ou planter une variété découverte.
 - Cliquer sur la cuisine ou le distributeur ouvre la préparation. Glisser les ingrédients de la table dans la galette ou le verre, puis fabriquer la commande. Un ingrédient déposé ne peut plus être retiré. JETER LA PRÉPARATION supprime toute la composition et consomme ses ingrédients. JETER LA COMMANDE PORTÉE (ou R) détruit la commande fabriquée sans remboursement. Une composition hors menu produit une commande improvisée, que les clients ne demandent jamais. Les recettes nommées restent soumises à leur progression.
-- Cliquer sur le client lui remet la commande préparée ; le chat reste accessible avec T et le bouton du HUD. Trois clients attendent derrière lui, avec des apparences aléatoires. Ils avancent dans l’ordre après son départ ; la file est conservée dans les sauvegardes.
+- Cliquer sur le client à l’accueil ouvre le choix des 8 tables. Choisir une table libre prend sa commande ; il rejoint sa place et le prochain client avance. TABLES [O] affiche les commandes et leurs ingrédients. Cliquer sur une commande conduit au bon poste de cuisine ; Y ALLER conduit à la table. Passer par la porte SALLE et cliquer sur la table remet la préparation portée. Chaque chef porte une commande à la fois. Le client déguste pendant 6 secondes, puis repart et libère la table. Les arrivées, repas, départs et commandes sont sauvegardés et partagés en coop. Le chat de l’accueil reste accessible avec T.
 - Le canapé du bureau sert à sauvegarder et charger ; le PC permet de commander uniquement des graines, par lots de 3. Une graine produit 3 ingrédients en une récolte, puis le bac devient vide. Vider un plant avant sa récolte ne rend pas la graine. Trois graines de chaque variété de départ sont offertes ; les plants déjà présents restent utilisables. Les semences sont conservées dans les sauvegardes et partagées en coop.
 
 Les objets se mettent en surbrillance au passage du curseur. L'infobulle affiche leur nom. Le jeu démarre dans une fenêtre maximisée.
@@ -82,6 +82,8 @@ godot --headless --audio-driver Dummy --path . --script tests/customer_queue_tes
 godot --headless --audio-driver Dummy --path . --script tests/online_coop_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/drink_ingredients_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/seeds_test.gd
+godot --headless --audio-driver Dummy --path . --script tests/tables_test.gd
+godot --headless --audio-driver Dummy --path . --script tests/tables_online_test.gd
 python3 tests/run_coop_sync.py
 ```
 
@@ -96,3 +98,5 @@ python3 tools/package_windows.py
 Le nouveau pack distribue uniquement les sources, les images, les sons et les lanceurs texte. Une empreinte SHA256 du ZIP est publiée à côté de celui-ci. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; l'installation automatique et le démarrage sous Windows restent à vérifier sur un PC Windows.
 
 La mise à jour [Cuisine-Definitive-Pokeball.json](downloads/Cuisine-Definitive-Pokeball.json) modifie aussi le protocole de coop : quitter le salon et l’appliquer séparément sur les deux PC. Les recettes improvisées ont des identifiants déterministes communs aux deux joueurs.
+
+La mise à jour [Tables-Commandes-Pokeball.json](downloads/Tables-Commandes-Pokeball.json) doit être appliquée hors coop, séparément sur les deux PC, car elle ajoute une salle et des actions réseau. Les anciennes sauvegardes démarrent avec une salle vide. Le carnet accepte plusieurs commandes, dont des boissons ; l’accueil attend lorsqu’il n’y a plus de place.

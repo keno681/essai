@@ -23,11 +23,19 @@ Seul ou avec un ami, sers des extraterrestres qui ont du caractère.
 
 | 🌯 Cuisiner | 🥤 Préparer des boissons | 👽 Accueillir les clients |
 | :--- | :--- | :--- |
-| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. Les ingrédients déposés sont définitifs ; la poubelle permet de recommencer. | Eau minérale, thé lunaire, baies nébuleuses et citron astral : chaque boisson a ses ingrédients. | Des apparences aléatoires, des conversations et une file d’attente qui avance au rythme du service. |
+| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. Les ingrédients déposés sont définitifs ; la poubelle permet de recommencer. | Eau minérale, thé lunaire, baies nébuleuses et citron astral : chaque boisson a ses ingrédients. | Accueille chaque client, choisis une table et gère jusqu’à 8 commandes grâce au carnet TABLES [O]. |
 | **🌱 Cultiver** | **🪐 Explorer** | **🦆 Développer le restaurant** |
 | Achète tes graines au PC : une graine donne 3 ingrédients, puis le bac devient vide. | Pars sur la planète pour trouver de nouveaux ingrédients et débloquer des recettes. | Gagne des wrapcoincoins, commande tes graines au PC et sauvegarde depuis le canapé. |
 
-Une mauvaise commande peut être remise au client : wrap ou boisson incorrect, il part furieux sans payer. La commande est consommée, et le client suivant arrive après son départ.
+Une mauvaise commande servie à une table fait partir le client furieux, sans payer. Une bonne commande est dégustée, puis la table se libère. Tu peux gérer plusieurs clients et choisir l’ordre du service ; chaque chef porte une préparation à la fois.
+
+## Un service à plusieurs tables
+
+1. Clique sur le client à l’accueil et choisis une table libre.
+2. Ouvre **TABLES [O]**, puis choisis la commande à préparer : ses ingrédients restent affichés en cuisine.
+3. Fabrique le wrap ou la boisson, entre dans la **SALLE**, puis clique sur la bonne table pour servir.
+
+Les clients rejoignent leur table, dégustent et repartent. Les commandes et l’occupation des tables sont sauvegardées et partagées en coop.
 
 ## Un univers à découvrir
 
@@ -66,6 +74,7 @@ En coop, les blocs envoyés par l’hôte peuvent être appliqués sur les deux 
 | Installer la synchronisation, hors coop, sur **les deux PC** | [Synchronisation Coop](https://raw.githubusercontent.com/keno681/essai/master/downloads/Synchronisation-Coop-Pokeball.json) |
 | Séparer les ingrédients des wraps et des boissons, après installation de la synchronisation | [Ingrédients Boissons](https://raw.githubusercontent.com/keno681/essai/master/downloads/Ingredients-Boissons-Pokeball.json) |
 | Planter avec des graines, récolter 3 ingrédients et acheter uniquement des semences au PC | [Système de graines](https://raw.githubusercontent.com/keno681/essai/master/downloads/Graines-Pokeball.json) |
+| Salle de 8 tables et carnet de commandes ; appliquer hors coop sur les deux PC | [Tables et commandes](https://raw.githubusercontent.com/keno681/essai/master/downloads/Tables-Commandes-Pokeball.json) |
 
 **Le ZIP actuel inclut déjà ces mises à jour.** La synchronisation porte sur les fichiers texte et SVG ; les PNG et les sons nécessitent un transfert séparé. [Fonctionnement et limites →](GUIDE.md#console-pokéball)
 
