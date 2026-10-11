@@ -29,6 +29,7 @@ func run() -> void:
 	file.close()
 	tool.provider="ollama"
 	tool.key_input.text="fake-private-key"
+	tool.local_structured=false
 	var local_payload=tool.chat_payload()
 	assert(local_payload.think==false and local_payload.stream==false)
 	assert(not JSON.stringify(local_payload).contains(tool.key_input.text))
@@ -45,6 +46,12 @@ func run() -> void:
 	tool.messages.append({"role":"tool","tool_call_id":tool_id,"content":"ok"})
 	assert(tool.chat_payload().messages[-1].tool_name=="finish")
 	tool.messages.pop_back()
+	tool.local_structured=true
+	var constrained=tool.chat_payload()
+	assert(constrained.has("format") and not constrained.has("tools"))
+	assert(constrained.format.oneOf.size()==5)
+	assert(constrained.format.oneOf[2].required.has("old"))
+	assert("sample.gd" in constrained.format.oneOf[0].properties.path.enum)
 	tool.provider="groq"
 	var definitions=tool.tool_definitions()
 	assert(definitions.size()==5)

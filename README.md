@@ -321,3 +321,15 @@ un indice `0.0` à un champ entier du serveur provoquait une erreur HTTP400
 au deuxième appel. Les noms, arguments et réponses des outils sont conservés.
 Le test HTTP utilise désormais deux appels avec indices numériques pour
 vérifier le retour de l’historique au serveur, puis l’application et l’annulation.
+
+### Atelier v19 : actions structurées locales
+
+Ollama utilise maintenant son paramètre `format` avec un schéma JSON
+pour cinq actions (read/search/replace/create/done). Chaque action impose
+les champs requis et, pour les fichiers existants, les chemins du projet.
+La génération locale n’a plus besoin de la capacité tool calling du modèle.
+Le serveur guide le format ; la validation des chemins, l’aperçu et la
+vérification Godot restent nécessaires. Les tests HTTP simulés couvrent
+le cycle en trois requêtes : lecture, remplacement préparé, fin de proposition.
+La qualité du code et le support du schéma par la version réelle d’Ollama
+restent à vérifier avec le modèle de l’utilisateur.

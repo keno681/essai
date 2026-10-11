@@ -1,8 +1,9 @@
 extends Control
 
 const ENDPOINT="https://api.groq.com/openai/v1/chat/completions"
-const EXTENSIONS=["gd","tscn","tres","godot","json","cfg","svg","md","txt"]
+const EXTENSIONS=["gd","gdshader","tscn","tres","godot","json","cfg","svg","md","txt"]
 var provider := "ollama"
+var local_structured := true
 var provider_select: OptionButton
 var provider_models := {"ollama":"qwen3:8b","groq":"openai/gpt-oss-20b"}
 var tool_names: Dictionary={}
@@ -35,7 +36,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation",8)
 	margin.add_child(box)
 	var title:=Label.new()
-	title.text="ATELIER IA v18 · OLLAMA LOCAL / GROQ"
+	title.text="ATELIER IA v19 · OLLAMA LOCAL / GROQ"
 	title.add_theme_font_size_override("font_size",24)
 	box.add_child(title)
 	var note:=Label.new()
@@ -154,6 +155,7 @@ func prepare() -> void:
 	tool_names.clear()
 	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot4.6. Utilise les fonctions fournies pour lire et modifier les vrais fichiers, jamais des chemins inventés. Les couleurs/cadres du HUD sont dans ui.gd (skin, CYAN), les cadres de survol des objets dans main.gd (draw_interaction_markers), les paramètres de couleur dans creator.gd (config.accent). Recherche puis lis le fichier avant de remplacer. Copie old exactement depuis la lecture. Fais des changements petits et ciblés, jamais la réécriture complète de design.json pour une couleur. Chaque changement est préparé en mémoire et nécessite une validation humaine. Ne génère pas de réseau, shell ou accès à des fichiers hors du jeu. Appelle finish pour expliquer le résultat en français quand la proposition est prête. Fichiers : "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
 	log_message("Toi : "+prompt.text)
+	if provider=="ollama" and local_structured: log_message("Ollama · actions structurées imposées par le serveur.")
 	send_next()
 
 func retry() -> void:
@@ -190,8 +192,37 @@ func chat_payload() -> Dictionary:
 		if entry.get("role")=="tool":
 			entry.tool_name=tool_names.get(entry.get("tool_call_id",""),"")
 			entry.erase("tool_call_id")
+		if local_structured:
+			if entry.get("role")=="system": entry.content=str(entry.get("content","")).replace("Utilise les fonctions fournies", "Utilise les actions structurées").replace("Appelle finish", "Termine avec done")+"\nMODE ACTIONS STRUCTURÉES : ne fais aucun appel de fonction. Réponds avec UNE action dans le format JSON imposé par le serveur. Actions : read(path,start,lines), search(query), replace(path,old,new), create(path,text), done(explanation). Utilise les vrais fichiers et les extraits lus, termine avec done."
+			if entry.get("tool_calls") is Array:
+				entry.content="Actions effectuées : "+JSON.stringify(entry.tool_calls)
+				entry.erase("tool_calls")
+			if entry.get("role")=="tool":
+				entry.role="user"
+				entry.content="Résultat de l'action : "+str(entry.content)
+				entry.erase("tool_name")
 		local_messages.append(entry)
-	return {"model":model_input.text.strip_edges(),"messages":local_messages,"tools":tool_definitions(),"stream":false,"think":false,"options":{"temperature":0.1,"num_ctx":8192,"num_predict":3000}}
+	var payload={"model":model_input.text.strip_edges(),"messages":local_messages,"stream":false,"think":false,"options":{"temperature":0.1,"num_ctx":8192,"num_predict":3000}}
+	if local_structured: payload.format=action_schema()
+	else: payload.tools=tool_definitions()
+	return payload
+
+func action_schema() -> Dictionary:
+	var paths: Array=file_list()
+	for path in staged:
+		if path not in paths: paths.append(path)
+	var variants: Array=[]
+	for spec in [
+		{"action":"read","fields":{"path":{"type":"string","enum":paths},"start":{"type":"integer"},"lines":{"type":"integer"}}},
+		{"action":"search","fields":{"query":{"type":"string"}}},
+		{"action":"replace","fields":{"path":{"type":"string","enum":paths},"old":{"type":"string"},"new":{"type":"string"}}},
+		{"action":"create","fields":{"path":{"type":"string"},"text":{"type":"string"}}},
+		{"action":"done","fields":{"explanation":{"type":"string"}}}
+	]:
+		var properties: Dictionary=spec.fields.duplicate(true)
+		properties.action={"type":"string","enum":[spec.action]}
+		variants.append({"type":"object","properties":properties,"required":properties.keys(),"additionalProperties":false})
+	return {"oneOf":variants}
 
 func normalize_local(response: Dictionary) -> Dictionary:
 	if not response.get("message") is Dictionary: return response
