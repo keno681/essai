@@ -1,4 +1,5 @@
 extends Node2D
+const ART=preload("res://visual_library.gd")
 
 var sheet: Dictionary
 var inventory: Dictionary = {}
@@ -60,6 +61,7 @@ var ambient_clock := 0.0
 var ambience_enabled := true
 var music_player: AudioStreamPlayer
 var console_node: Node
+var planters: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
 func _ready() -> void:
@@ -78,8 +80,12 @@ func _ready() -> void:
 	appearance = queued_appearance.duplicate(true)
 	next_order()
 	dialogue_engine = load("res://dialogue.gd").new()
+	planters=preload("res://planters_compact.gd").new()
+	add_child(planters)
 	load_progress()
 	load_settings()
+	set_fullscreen(false)
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
 	accessory_texture = load("res://art/accessories.svg")
 	race_texture = load("res://art/races.png")
 	sound_player = AudioStreamPlayer.new()
@@ -87,6 +93,7 @@ func _ready() -> void:
 	setup_ambience()
 	console_node = load("res://console.gd").new()
 	add_child(console_node)
+	add_child(load("res://hover_highlight.gd").new())
 	ui = load("res://ui.gd").new()
 	add_child(ui)
 	var art_path: String = "res://" + sheet.visuals[0].asset
@@ -128,7 +135,7 @@ func cook() -> bool:
 	holding = selected
 	action_time = float(animation("cook").duration)
 	play_sound(440)
-	say("Commande prête ! Direction le comptoir.")
+	say("Commande prête ! Clique sur le client pour lui donner.")
 	return true
 
 func serve() -> bool:
@@ -139,7 +146,7 @@ func serve() -> bool:
 		say("Votre client attend " + recipe(order).name + ".")
 		return false
 	if holding != order:
-		say("Ce n'est pas sa commande. 1 / 2 / 3 : choisissez la bonne recette ; R : ranger ce wrap.")
+		say("Le client attend "+recipe(order).name+". R : ranger cette commande, puis retourne en cuisine.")
 		return false
 	var previous_level := restaurant_level()
 	coins += int(recipe(order).price) + (5 if upgraded else 0) + int(sheet.progression[previous_level].bonus)
@@ -176,30 +183,21 @@ func interact() -> void:
 	if room in ["garden","planet"]:
 		for node in sheet.beds if room=="garden" else sheet.wild_nodes:
 			if absf(player.x-float(node.x))<62:
-				harvest_node(node)
+				if room=="garden": planters.open(node.id)
+				else: harvest_node(node)
 				return
 		say("E près d'une plante pour récolter. Explorez vers la droite !")
 		return
 	for item in sheet.ingredients:
-		if not item.starter: continue
-		if absf(player.x - float(item.x)) < 58:
-			if cooldowns[item.id] > 0:
-				say("Ça repousse tranquillement… Essayez une autre plante.")
-			else:
-				inventory[item.id] += 1
-				play_sound(320)
-				action_time = float(animation("harvest").duration)
-				cooldowns[item.id] = float(item.regrow_seconds)
-				say("+1 " + item.name)
+		if item.starter and absf(player.x-float(item.x))<58:
+			planters.open(item.id)
 			return
 	if absf(player.x - 745) < 36:
-		if recipe(selected).get("kind", "wrap")=="drink": cook()
-		else: say("Choisissez une boisson : 6 ou 7, puis E.")
+		ui.set_meta("wrap_composition",[])
+		ui.show_page("cookdrink")
 	elif absf(player.x - 650) < 65:
-		if recipe(selected).get("kind", "wrap")=="wrap": cook()
-		else: say("Les boissons se fabriquent à la machine à droite de la cuisine.")
-	elif absf(player.x - 845) < 65:
-		serve()
+		ui.set_meta("wrap_composition",[])
+		ui.show_page("cookwrap")
 	elif absf(player.x - 1090) < 65:
 		if upgraded:
 			say("Votre terrasse est déjà ouverte ! +5 wrapcoincoins par commande.")
@@ -258,6 +256,7 @@ func new_service() -> void:
 	room = "restaurant"
 	player.x = 565
 	discovered = ["moonleaf","sunfruit","mushroom"]
+	planters.reset()
 	deliveries.clear()
 	chat_log.clear()
 	for id in node_cooldowns: node_cooldowns[id] = 0.0
@@ -392,11 +391,9 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 	if chef and holding>=0 and recipe(holding).get("kind","wrap")=="drink":
 		draw_drink(Vector2(20,-57),Color("a5d5b7") if holding==5 else Color("d08bea"))
 	elif chef and holding>=0:
-		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
-		draw_line(Vector2(12,-62),Vector2(29,-62),Color("679958"),4,true)
-		draw_line(Vector2(16,-62),Vector2(26,-62),Color("c4583f"),3,true)
+		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
 	if not chef and customer_state=="leaving" and customer_emotion!="angry":
-		panel(Rect2(9,-65,25,16),Color("efd1a0"),4)
+		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
 	draw_set_transform(Vector2.ZERO)
 
 func _draw() -> void:
@@ -410,6 +407,7 @@ func _draw() -> void:
 		draw_rect(Rect2(0,190,1200,420),Color("463e39"))
 	draw_ambient_decor()
 	draw_restaurant_details()
+	planters.paint()
 	# Soft room lighting and active stations stay legible without covering the art.
 	for item in sheet.ingredients:
 		if not item.starter: continue
@@ -428,8 +426,8 @@ func _draw() -> void:
 	if customer_emotion=="angry":
 		label_at("!",Vector2(customer_x-4,365),27,Color("f28c78"))
 	alien(player,Color("bca2e9"),true)
-	panel(Rect2(763,205,407,107),Color("eee2c9"),10)
-	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("44382e"))
+	draw_style_box(ART.panel_frame(Color(0.65,0.68,0.70)),Rect2(763,205,407,107))
+	label_at((sheet.customers[customer].name+" · "+recipe(order).name) if customer_state=="waiting" else (("Client en colère : il s’en va !" if customer_emotion=="angry" else "Merci, à bientôt !") if customer_state=="leaving" else "Un client arrive…"),Vector2(778,232),19,Color("f4dec0"))
 	var excerpt: String = speech.left(105)+"… [T : texte complet]" if speech.length()>130 else speech
 	var spoken: String = excerpt.left(int(speech_elapsed*35)) if speech_time>0 else sheet.customers[actor_customer].line
 	var words := spoken.split(" ")
@@ -437,12 +435,11 @@ func _draw() -> void:
 	var row_y := 254
 	for word in words:
 		if (line+word).length()>53:
-			label_at(line,Vector2(778,row_y),13,Color("685446"))
+			label_at(line,Vector2(778,row_y),13,Color("e1d8c6"))
 			row_y += 17
 			line = ""
 		line += word+" "
-	label_at(line,Vector2(778,row_y),13,Color("685446"))
-	label_at("T : discuter · Voix et sous-titres",Vector2(778,299),12,Color("8b7055"))
+	label_at(line,Vector2(778,row_y),13,Color("e1d8c6"))
 	draw_doors()
 	draw_interaction_markers()
 
@@ -591,7 +588,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":6,"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"version":7,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -647,6 +644,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	discovered = ["moonleaf","sunfruit","mushroom"]
 	for id in data.get("discovered",[]):
 		if id in inventory and not id in discovered: discovered.append(id)
+	planters.restore(data.get("plantings",{}))
 	room = data.get("room","restaurant")
 	if not room in ["restaurant","office","garden","planet"]: room="restaurant"
 	player = Vector2(clampf(float(data.get("player_x",565)),40,3560 if room=="planet" else 1160),505)
@@ -666,14 +664,20 @@ func apply_snapshot(data: Dictionary) -> void:
 	speech_time = 0
 	vertical = 0
 
-func draw_doors() -> void:
+func door_hitbox(door: Dictionary) -> Rect2:
+	var bounds={"snack_garden":Rect2(0,250,84,295),"snack_office":Rect2(508,250,84,295),"office_snack":Rect2(28,195,194,315),"garden_snack":Rect2(0,235,110,305),"garden_planet":Rect2(1100,220,100,330),"planet_garden":Rect2(0,260,84,285)}
+	return bounds.get(door.id,Rect2(float(door.x)-42,250,84,295))
+
+func draw_door_art() -> void:
+	if room not in ["restaurant","planet"]: return
 	for door in sheet.doors:
 		if door.room!=room: continue
-		var x := float(door.x)-camera_x
-		var names := {"restaurant":"SNACK","office":"BUREAU","garden":"SERRE","planet":"PLANÈTE"}
-		panel(Rect2(x-29,488,58,56),Color(0.08,0.17,0.2,0.8),4)
-		draw_rect(Rect2(x-18,502,36,28),Color("597888"),false,2)
-		label_at("→",Vector2(x-9,526),22,Color("efcb82"))
+		var rect:=door_hitbox(door)
+		rect.position.x-=camera_x
+		draw_texture_rect(ART.object(0),rect,false,Color(brightness,brightness,brightness))
+
+func draw_doors() -> void:
+	pass
 
 func draw_other_room() -> void:
 	var texture: Texture2D = room_textures.get(room)
@@ -681,21 +685,23 @@ func draw_other_room() -> void:
 		if room=="planet":
 			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness)*Color(console_node.config.planet_color))
 		else: draw_texture_rect(texture,Rect2(0,0,1200,768),false,Color(brightness,brightness,brightness))
+	draw_door_art()
 	draw_ambient_decor()
 	if room=="planet":
 		label_at(console_node.config.planet_name,Vector2(25,165),24)
 		for prop in console_node.config.decor:
 			draw_circle(Vector2(prop.x-camera_x,prop.y),prop.size,Color(prop.color))
+	planters.paint()
 	var nodes: Array = sheet.wild_nodes if room=="planet" else (sheet.beds if room=="garden" else [])
 	for node in nodes:
 		var x := float(node.x)-camera_x
 		if x < -80 or x > 1280: continue
 		var item := ingredient(node.ingredient)
 		if room=="planet":
-			draw_line(Vector2(x,536),Vector2(x,468),Color("83b3a0"),5,true)
-			for j in range(5): draw_circle(Vector2(x+sin(j*1.5)*19,482+cos(j*1.5)*15),10,Color(item.color).darkened(0.4 if node_cooldowns[node.id]>0 else 0))
-			if node.ingredient=="crystalrice":
-				for j in range(4): draw_line(Vector2(x+j*8-12,530),Vector2(x+j*8-12,480-j*4),Color("a7edef"),5,true)
+			var crop_index: int = ["moonleaf","sunfruit","mushroom","starlime","firepepper","crystalrice"].find(str(node.ingredient))
+			var scale := 0.6 if float(node_cooldowns[node.id]) > 0 else 1.0
+			var height := 110.0 * scale
+			draw_texture_rect(ART.crop(crop_index),Rect2(x-55*scale,536-height,110*scale,height),false,Color(brightness,brightness,brightness))
 	if room=="planet":
 		label_at("VALLÉE DES COMÈTES · %d m" % int(player.x/10),Vector2(32,184),16,Color("bce9dc"))
 		label_at("DÉCOUVERTES : %d / 3" % (discovered.size()-3),Vector2(930,184),16,Color("bce9dc"))
@@ -736,10 +742,10 @@ func draw_accessories(width: float, height: float, look: Dictionary) -> void:
 	var hat: String = look.hats
 	var hat_index := ["none","fez","fedora","cap","helmet","beanie"].find(hat)
 	if hat_index>0 and accessory_texture:
-		draw_texture_rect_region(accessory_texture,Rect2(-width*0.48,head_top-12,width*0.96,40),Rect2((hat_index-1)*100,0,100,80))
+		draw_texture_rect(ART.accessory(hat_index-1),Rect2(-width*0.48,head_top-16,width*0.96,42),false)
 	var glasses_index := ["none","round","dark","visor"].find(look.glasses)
 	if glasses_index>0 and accessory_texture:
-		draw_texture_rect_region(accessory_texture,Rect2(face-Vector2(19,9),Vector2(33,15)),Rect2((glasses_index-1)*100,80,100,45))
+		draw_texture_rect(ART.accessory(4+glasses_index),Rect2(face-Vector2(19,9),Vector2(33,16)),false)
 
 func restaurant_level() -> int:
 	var result := 0
@@ -780,27 +786,12 @@ func reset_customer_conversation() -> void:
 	chat_memory.clear()
 
 func draw_drink(at: Vector2, tint: Color) -> void:
-	draw_colored_polygon(PackedVector2Array([at+Vector2(-9,-16),at+Vector2(9,-16),at+Vector2(6,3),at+Vector2(-6,3)]),Color("bacbd0"))
-	draw_colored_polygon(PackedVector2Array([at+Vector2(-7,-12),at+Vector2(7,-12),at+Vector2(5,1),at+Vector2(-5,1)]),tint.darkened(0.2))
-	draw_line(at+Vector2(-5,-11),at+Vector2(-3,0),Color(1,1,1,0.7),2,true)
-	draw_line(at+Vector2(3,-8),at+Vector2(6,-25),Color("e8c599"),2,true)
+	draw_texture_rect(ART.object(11 if tint.g > tint.r else 12),Rect2(at+Vector2(-10,-25),Vector2(20,30)),false)
 
 func draw_restaurant_details() -> void:
-	# Pokéball console shortcut on the shelf.
-	var ball := Vector2(1045,377)
-	draw_circle(ball+Vector2(1,2),6,Color(0,0,0,0.45))
-	draw_circle(ball,5,Color("dad8ce"))
-	draw_colored_polygon(PackedVector2Array([ball+Vector2(-5,0),ball+Vector2(-4,-3),ball+Vector2(0,-5),ball+Vector2(4,-3),ball+Vector2(5,0)]),Color("a93932"))
-	draw_line(ball-Vector2(5,0),ball+Vector2(5,0),Color("302a26"),1.5,true)
-	draw_circle(ball,2,Color("302a26"))
-	draw_circle(ball,1,Color("eae0cc"))
-	# Beverage dispenser, with a lit panel, nozzle and metal drip tray.
-	panel(Rect2(724,421,39,59),Color("28343b"),3)
-	panel(Rect2(727,424,33,39),Color("566570"),3)
-	draw_rect(Rect2(733,430,20,17),Color("183139"))
-	draw_line(Vector2(736,435),Vector2(750,435),Color("81c7c5"),2,true)
-	draw_line(Vector2(743,451),Vector2(743,462),Color("b8bab5"),4,true)
-	for offset in range(5): draw_line(Vector2(729+offset*6,473),Vector2(729+offset*6,478),Color("87949a"),2,true)
+	draw_door_art()
+	draw_texture_rect(ART.object(13),Rect2(1037,369,16,16),false,Color(brightness,brightness,brightness))
+	draw_texture_rect(ART.object(1),Rect2(708,335,77,104),false,Color(brightness,brightness,brightness))
 	if restaurant_level()>=1:
 		label_at("★".repeat(restaurant_level()),Vector2(1006,340),22,Color("e7c078"))
 
@@ -819,19 +810,19 @@ func interaction_targets() -> Array[Dictionary]:
 	var destinations := {"restaurant":"SNACK","office":"BUREAU","garden":"SERRE","planet":"EXPLORER"}
 	for door in sheet.doors:
 		if door.room!=room: continue
-		var rect := Rect2(float(door.x)-27,488,54,60)
-		if room=="office": rect=Rect2(45,205,165,340)
+		var rect:=door_hitbox(door)
 		result.append({"id":door.id,"x":float(door.x),"label":destinations[door.target],"rect":rect,"action":"interact"})
 	if room=="restaurant":
 		for item in sheet.ingredients:
 			if item.starter: result.append({"id":item.id,"x":float(item.x),"label":"RÉCOLTER","rect":Rect2(float(item.x)-55,400,110,146),"action":"interact"})
-	var bounds := {"kitchen":Rect2(595,320,108,224),"counter":Rect2(795,435,114,110),"drinks":Rect2(719,410,53,133),"upgrade":Rect2(1030,400,130,146),"couch":Rect2(344,390,300,155),"computer":Rect2(755,325,260,220)}
+	var bounds := {"kitchen":Rect2(595,320,108,224),"counter":Rect2(795,435,114,110),"drinks":Rect2(712,333,69,111),"upgrade":Rect2(1030,400,130,146),"couch":Rect2(344,390,300,155),"computer":Rect2(755,325,260,220)}
 	var names := {"kitchen":"CUISINER","counter":"SERVIR","drinks":"BOISSONS","upgrade":"TERRASSE","couch":"SAUVEGARDER","computer":"COMMANDER"}
 	for station in sheet.stations:
+		if station.id=="counter": continue
 		if station.room==room: result.append({"id":station.id,"x":float(station.x),"label":names[station.id],"rect":bounds[station.id],"action":"interact"})
 	for node in sheet.beds if room=="garden" else (sheet.wild_nodes if room=="planet" else []):
 		result.append({"id":node.id,"x":float(node.x),"label":"RÉCOLTER" if node.ingredient in discovered else "DÉCOUVRIR","rect":Rect2(float(node.x)-58,425,116,120),"action":"interact"})
-	if room=="restaurant" and customer_state=="waiting": result.append({"id":"client","x":845.0,"label":"DISCUTER","rect":Rect2(customer_x-32,360,64,185),"action":"chat"})
+	if room=="restaurant" and customer_state=="waiting": result.append({"id":"client","x":customer_x,"label":"SERVIR LE CLIENT","rect":Rect2(customer_x-32,360,64,185),"action":"serve"})
 	return result
 
 func clicked_target(at: Vector2) -> Dictionary:
@@ -864,9 +855,8 @@ func finish_click_action() -> void:
 	var target:=click_target.duplicate()
 	click_target.clear()
 	if target.is_empty(): return
-	if target.action=="chat":
-		if customer_state=="waiting": ui.show_page("chat")
-		else: say("Le client est déjà reparti.")
+	if target.action=="serve":
+		serve()
 	else: interact()
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -880,8 +870,7 @@ func guide_step() -> Dictionary:
 	if customer_state!="waiting": return {"text":"Un client arrive. Profitez-en pour récolter ou visiter le bureau.","target":"moonleaf"}
 	if holding>=0:
 		if holding!=order: return {"text":"Vous portez une autre recette : R pour la ranger, puis choisissez la commande.","target":""}
-		return {"text":"Commande prête ! Cliquez sur SERVIR au comptoir.","target":"counter"}
-	if selected!=order: return {"text":"Choisissez « "+recipe(order).name+" » dans les boutons du haut.","target":""}
+		return {"text":"Commande prête ! Clique sur le client pour lui donner.","target":"client"}
 	for id in recipe(order).ingredients:
 		if inventory[id]<1:
 			if ingredient(id).starter: return {"text":"Il manque "+ingredient(id).name+" : cliquez sur le bac pour récolter.","target":id}
@@ -894,18 +883,32 @@ func draw_interaction_markers() -> void:
 	var hover:=clicked_target(get_global_mouse_position())
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if not hover.is_empty() else Input.CURSOR_ARROW)
 	if not hover.is_empty():
-		var rect: Rect2=hover.rect
-		rect.position.x-=camera_x
-		draw_rect(rect,Color("8edce5"),false,2)
+		var object_name:=object_hover_name(hover)
+		var width:=maxf(120,ThemeDB.fallback_font.get_string_size(object_name,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+20)
 		var at:=get_global_mouse_position()
-		at.x=clampf(at.x+15,10,970)
-		at.y=clampf(at.y-52,90,630)
-		panel(Rect2(at,Vector2(220,46)),Color("172b35"),4)
-		label_at(hover.label,at+Vector2(8,18),14,Color("8edce5"))
-		label_at("Cliquer pour agir",at+Vector2(8,36),12)
+		at.x=clampf(at.x+15,10,1190-width)
+		at.y=clampf(at.y-34,90,630)
+		panel(Rect2(at,Vector2(width,28)),Color("172b35"),4)
+		label_at(object_name,at+Vector2(10,19),14,Color("8edce5"))
 	if move_goal>=0:
 		var x:=move_goal-camera_x
 		draw_arc(Vector2(x,540),12,0,TAU,24,Color("8ed4d5"),2,true)
+
+func object_hover_name(target: Dictionary) -> String:
+	var id: String=target.get("id","")
+	var names={"kitchen":"Grill à wraps","counter":"Comptoir","drinks":"Distributeur de boissons","upgrade":"Terrasse","couch":"Canapé","computer":"Ordinateur","console":"Pokéball"}
+	if names.has(id): return names[id]
+	if id=="client": return str(sheet.customers[actor_customer].name)
+	if planters.plants.has(id): return planters.name_of(id)
+	for item in sheet.ingredients:
+		if item.id==id: return str(item.name)
+	for plant in sheet.beds+sheet.wild_nodes:
+		if plant.id==id:
+			return str(ingredient(plant.ingredient).name) if plant.ingredient in discovered else "Plante inconnue"
+	var doors={"restaurant":"Porte du restaurant","office":"Porte du bureau","garden":"Porte de la serre","planet":"Passage vers la planète"}
+	for door in sheet.doors:
+		if door.id==id: return str(doors.get(door.target,"Porte"))
+	return "Objet"
 
 func setup_ambience() -> void:
 	music_player=AudioStreamPlayer.new()

@@ -1,4 +1,5 @@
 extends CanvasLayer
+const ART=preload("res://visual_library.gd")
 
 var game: Node2D
 var header: PanelContainer
@@ -18,12 +19,7 @@ const TEXT = Color("dfecf5")
 
 class DuckIcon extends Control:
 	func _draw() -> void:
-		var c := size*0.5
-		draw_circle(c+Vector2(0,3),10,Color("e8bc55"))
-		draw_circle(c+Vector2(6,-5),7,Color("f5d783"))
-		draw_circle(c+Vector2(8,-7),1.5,Color("232938"))
-		draw_colored_polygon(PackedVector2Array([c+Vector2(11,-4),c+Vector2(19,-2),c+Vector2(12,0)]),Color("ee934e"))
-		draw_arc(c+Vector2(-1,3),5,0.2,2.8,16,Color("ba8a38"),2,true)
+		draw_texture_rect(preload("res://visual_library.gd").interface(0),Rect2(Vector2.ZERO,size),false)
 
 class ConsoleTrim extends Control:
 	func _draw() -> void:
@@ -37,48 +33,18 @@ class ConsoleTrim extends Control:
 class IngredientIcon extends Control:
 	var kind := 0
 	func _draw() -> void:
-		var center := size*0.5
-		if kind==0:
-			for i in range(5):
-				draw_circle(center+Vector2(sin(i*1.4)*9,cos(i*1.4)*4),7,Color("70b965") if i%2==0 else Color("98d576"))
-			draw_line(center+Vector2(-6,8),center+Vector2(7,-7),Color("c1e88e"),2,true)
-		elif kind==1:
-			draw_circle(center,12,Color("c74e3a"))
-			draw_circle(center+Vector2(-3,-3),8,Color("e57651"))
-			for i in range(5): draw_line(center+Vector2(0,-10),center+Vector2(sin(i*TAU/5)*6,-10+cos(i*TAU/5)*4),Color("86ba69"),3,true)
-		elif kind==2:
-			draw_rect(Rect2(center+Vector2(-3,-1),Vector2(6,13)),Color("dcc9af"))
-			draw_circle(center+Vector2(0,-2),12,Color("a67abb"))
-			draw_circle(center+Vector2(-4,-5),7,Color("c59cce"))
-			draw_line(center+Vector2(-10,4),center+Vector2(10,4),Color("665775"),3,true)
-		elif kind==3:
-			draw_circle(center,11,Color("d4d85e"))
-			draw_circle(center+Vector2(-3,-3),7,Color("edf09a"))
-			draw_line(center+Vector2(0,-10),center+Vector2(5,-15),Color("7bac63"),3,true)
-		elif kind==4:
-			draw_colored_polygon(PackedVector2Array([center+Vector2(-8,-9),center+Vector2(9,-5),center+Vector2(2,13),center+Vector2(-4,7)]),Color("e87f50"))
-			draw_line(center+Vector2(0,-7),center+Vector2(2,-15),Color("83b568"),3,true)
-		else:
-			for i in range(5):
-				draw_line(center+Vector2(-10+i*5,8),center+Vector2(-10+i*5,-5+i%2*5),Color("a4e0e7"),4,true)
+		draw_texture_rect(preload("res://visual_library.gd").food(kind),Rect2(Vector2.ZERO,size),false)
 
-func skin(bg: Color, border: Color = Color("496881"), width: int = 2) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color = bg
-	s.border_color = border
-	s.set_border_width_all(width)
-	s.border_color = border.lightened(0.08)
-	s.set_corner_radius_all(2)
-	s.corner_radius_top_left=13
-	s.corner_radius_bottom_right=13
-	s.border_color=border
-	s.shadow_color=Color(border.r,border.g,border.b,0.2)
-	s.border_width_top = width+1
-	s.border_width_bottom = width+2
-	s.set_content_margin_all(12)
-	s.shadow_color = Color(0,0,0,0.4)
-	s.shadow_size = 5
-	return s
+func skin(bg: Color, border: Color = Color("496881"), width: int = 2) -> StyleBox:
+	if width == 0:
+		var flat := StyleBoxFlat.new()
+		flat.bg_color = bg
+		flat.set_corner_radius_all(3)
+		return flat
+	var luminance := (bg.r+bg.g+bg.b)/3.0
+	var tint := Color(0.55+luminance,0.60+luminance,0.65+luminance)
+	if border == CYAN: tint = tint.lightened(0.08)
+	return ART.frame(tint)
 
 func label(words: String, size: int = 18, tint: Color = TEXT) -> Label:
 	var node := Label.new()
@@ -117,7 +83,7 @@ func _ready() -> void:
 	header = PanelContainer.new()
 	header.position = Vector2(16,14)
 	header.size = Vector2(1168,67)
-	header.add_theme_stylebox_override("panel",skin(Color("17242e"),Color("7b8c93"),3))
+	header.add_theme_stylebox_override("panel",ART.panel_frame(Color(0.7,0.75,0.8),18))
 	root.add_child(header)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",16)
@@ -146,22 +112,11 @@ func _ready() -> void:
 	row.add_child(button("CHAT [T]",func(): show_page("chat")))
 	row.add_child(button("SAC [I]",func(): show_page("inventory")))
 	row.add_child(button("MENU [Échap]",func(): show_page("menu")))
-	hotbar = HBoxContainer.new()
-	hotbar.position = Vector2(45,93)
-	hotbar.add_theme_constant_override("separation",7)
-	root.add_child(hotbar)
-	for i in range(game.sheet.recipes.size()):
-		var index := i
-		var slot := button("",func(): game.selected=index)
-		slot.custom_minimum_size = Vector2(150,57)
-		slot.add_theme_font_size_override("font_size",13)
-		hotbar.add_child(slot)
-		slots.append(slot)
 	var footer := PanelContainer.new()
 	footer.position = Vector2(16,634)
 	footer.size = Vector2(1168,70)
-	var footer_skin:=skin(Color("111d2e"))
-	footer_skin.set_content_margin_all(8)
+	var footer_skin:=ART.panel_frame(Color(0.65,0.70,0.75),12)
+	footer_skin.set_content_margin_all(12)
 	footer.add_theme_stylebox_override("panel",footer_skin)
 	root.add_child(footer)
 	var text_column := VBoxContainer.new()
@@ -192,7 +147,7 @@ func clear_window(title: String) -> VBoxContainer:
 	window = PanelContainer.new()
 	window.position = Vector2(270,164)
 	window.size = Vector2(660,0)
-	window.add_theme_stylebox_override("panel",skin(Color("101d2e"),CYAN))
+	window.add_theme_stylebox_override("panel",ART.panel_frame(Color(0.7,0.75,0.8),20))
 	overlay.add_child(window)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation",10)
@@ -205,7 +160,7 @@ func clear_window(title: String) -> VBoxContainer:
 	top.add_child(button("FERMER",hide_page))
 	box.add_child(HSeparator.new())
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(630,430)
+	scroll.custom_minimum_size = Vector2(620,420)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	var content := VBoxContainer.new()
@@ -224,10 +179,20 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
+	if name in ["cookwrap","cookdrink"]:
+		window.position=Vector2(130,55)
+		window.size=Vector2(940,0)
+		box.get_parent().custom_minimum_size=Vector2(900,495)
 	match name:
+		"planter":
+			game.planters.build(box)
+		"cookwrap":
+			preload("res://kitchen_dragdrop.gd").build(self,box,"wrap")
+		"cookdrink":
+			preload("res://kitchen_dragdrop.gd").build(self,box,"drink")
 		"console":
 			build_console(box)
 		"chat":
@@ -413,7 +378,7 @@ func show_page(name: String) -> void:
 
 func _process(_delta: float) -> void:
 	CYAN=Color(game.console_node.config.accent)
-	header.add_theme_stylebox_override("panel",skin(Color("101d2e"),CYAN))
+	header.add_theme_stylebox_override("panel",ART.panel_frame(Color(0.7,0.75,0.8),18))
 	credits.text = "%d wrapcoincoins" % game.coins
 	var rank: int = game.restaurant_level()
 	var target: String = str(int(game.sheet.progression[rank+1].served)) if rank+1<game.sheet.progression.size() else "∞"
@@ -441,35 +406,22 @@ class SpaceButtonTrim extends Control:
 
 class OpenBall extends Control:
 	func _draw() -> void:
-		var center=Vector2(400,330)
-		draw_circle(center+Vector2(0,26),322,Color("131b25"))
-		draw_circle(center+Vector2(0,18),308,Color("e9e8dd"))
-		draw_arc(center+Vector2(0,18),298,0,PI,80,Color("b9c7ca"),12,true)
-		var cap:=PackedVector2Array([Vector2(96,155)])
-		for i in range(65):
-			var angle=PI+PI*float(i)/64.0
-			cap.append(Vector2(400+304*cos(angle),155+118*sin(angle)))
-		cap.append(Vector2(704,155))
-		draw_colored_polygon(cap,Color("cf3f52"))
-		var shine:=PackedVector2Array()
-		for i in range(41):
-			var angle=PI*1.12+PI*0.76*float(i)/40.0
-			shine.append(Vector2(400+294*cos(angle),155+108*sin(angle)))
-		draw_polyline(shine,Color("f6858e"),3,true)
-		draw_line(Vector2(100,156),Vector2(700,156),Color("17283a"),12,true)
-		draw_circle(Vector2(400,156),34,Color("15283b"))
-		draw_circle(Vector2(400,156),25,Color("8ce4da"))
-		draw_circle(Vector2(400,156),17,Color("e8f6f0"))
+		draw_texture_rect(preload("res://visual_library.gd").interface(3),Rect2(0,0,600,620),false)
 
 func build_console(_box: VBoxContainer) -> void:
 	overlay.remove_child(window)
 	window.queue_free()
 	window=PanelContainer.new()
-	window.position=Vector2(270,185)
-	window.size=Vector2(660,426)
-	window.add_theme_stylebox_override("panel",skin(Color("102137"),Color("79dacc")))
+	window.position=Vector2(408,343)
+	window.size=Vector2(384,190)
+	var inside := StyleBoxFlat.new()
+	inside.bg_color=Color(0.06,0.08,0.09,0.88)
+	inside.set_content_margin_all(8)
+	inside.set_corner_radius_all(12)
+	window.add_theme_stylebox_override("panel",inside)
 	var ball:=OpenBall.new()
-	ball.position=Vector2(200,6)
+	ball.position=Vector2(300,69)
+	ball.scale=Vector2.ONE
 	ball.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(ball)
 	ball.set_meta("console_decor",true)
@@ -479,36 +431,39 @@ func build_console(_box: VBoxContainer) -> void:
 	window.add_child(box)
 	var top:=HBoxContainer.new()
 	box.add_child(top)
-	var title:=label("POKÉBALL · CONSOLE DU JEU",21,Color("8ce4da"))
-	title.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	top.add_child(title)
-	top.add_child(button("FERMER",hide_page))
-	var scroll:=ScrollContainer.new()
-	scroll.custom_minimum_size=Vector2(0,64)
-	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-	box.add_child(scroll)
-	var history:=label(game.console_node.transcript,15)
-	history.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	history.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	scroll.add_child(history)
-	box.add_child(label("Colle le bloc de modification fourni dans notre conversation.",14,Color("a6c9d4")))
+	var spacer:=Control.new()
+	spacer.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	top.add_child(spacer)
+	var close_button=button("FERMER",hide_page)
+	close_button.custom_minimum_size.y=28
+	close_button.add_theme_font_size_override("font_size",13)
+	top.add_child(close_button)
 	var composer:=TextEdit.new()
-	composer.custom_minimum_size=Vector2(0,80)
-	composer.placeholder_text="Ton bloc de modification…"
+	composer.custom_minimum_size=Vector2(0,88)
+	composer.size_flags_vertical=Control.SIZE_EXPAND_FILL
 	composer.text=game.console_node.draft
+	var paper:=StyleBoxFlat.new()
+	paper.bg_color=Color(0.02,0.03,0.035,0.85)
+	paper.set_content_margin_all(8)
+	paper.set_corner_radius_all(6)
+	composer.add_theme_stylebox_override("normal",paper)
+	composer.add_theme_color_override("font_color",Color("f3e6ce"))
+	composer.add_theme_font_size_override("font_size",14)
 	box.add_child(composer)
-	var output:=label(game.console_node.status,14)
-	output.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(output)
-	var actions:=HBoxContainer.new()
-	box.add_child(actions)
-	actions.add_child(button("VÉRIFIER LE BLOC",func(): game.console_node.preview(composer.text)))
-	actions.add_child(button("ANNULER LA MODIFICATION",func(): game.console_node.undo()))
-	box.add_child(button("ENVOYER ET RELANCER LE JEU",func(): game.console_node.draft=composer.text; game.console_node.send_and_restart()))
+	var send_button=button("ENVOYER ET RELANCER LE JEU",func(): game.console_node.draft=composer.text; game.console_node.send_and_restart())
+	send_button.custom_minimum_size.y=32
+	send_button.add_theme_font_size_override("font_size",14)
+	box.add_child(send_button)
+	var problem:=AcceptDialog.new()
+	problem.title="Modification impossible"
+	overlay.add_child(problem)
+	problem.set_meta("console_decor",true)
 	var refresh:=func():
-		if is_instance_valid(output):
-			output.text=game.console_node.status.left(240)
-			history.text=game.console_node.transcript
+		if not game.console_node.status.begins_with("PRÊT"):
+			problem.dialog_text=game.console_node.status
+			problem.popup_centered(Vector2i(540,220))
 	game.console_node.changed.connect(refresh)
-	output.tree_exiting.connect(func():
+	composer.tree_exiting.connect(func():
 		if game.console_node.changed.is_connected(refresh): game.console_node.changed.disconnect(refresh))
+	if game.console_node.reopen and not game.console_node.status.ends_with("Jeu relancé."):
+		refresh.call_deferred()

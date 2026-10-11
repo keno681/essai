@@ -1,0 +1,46 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='480' height='720' viewBox='0 0 480 720'>
+<defs>
+<linearGradient id='metal' x1='0' x2='1'><stop stop-color='#443f39'/><stop offset='.12' stop-color='#c5baaa'/><stop offset='.27' stop-color='#f3e9d6'/><stop offset='.42' stop-color='#8a8984'/><stop offset='.65' stop-color='#dbd8cc'/><stop offset='.85' stop-color='#a69f91'/><stop offset='1' stop-color='#494c4a'/></linearGradient>
+<linearGradient id='front' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#ded3be'/><stop offset='.4' stop-color='#969a97'/><stop offset='.7' stop-color='#b5b7b0'/><stop offset='1' stop-color='#4b514f'/></linearGradient>
+<linearGradient id='dark' x1='0' y1='0' x2='0' y2='1'><stop stop-color='#111b1e'/><stop offset='.65' stop-color='#344548'/><stop offset='1' stop-color='#131d20'/></linearGradient>
+<linearGradient id='screen' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#244c50'/><stop offset='1' stop-color='#07181b'/></linearGradient>
+<linearGradient id='glass' x1='0' x2='1'><stop stop-color='#eef8ed' stop-opacity='.75'/><stop offset='.2' stop-color='#d5efed' stop-opacity='.18'/><stop offset='.8' stop-color='#c5e5de' stop-opacity='.35'/><stop offset='1' stop-color='#ffffff' stop-opacity='.8'/></linearGradient>
+<linearGradient id='juice' x1='0' x2='1'><stop stop-color='#276b70'/><stop offset='.4' stop-color='#68b6b3'/><stop offset='1' stop-color='#174449'/></linearGradient>
+</defs>
+<ellipse cx='250' cy='687' rx='196' ry='26' fill='#171512' opacity='.45'/>
+<path d='M94 57 L373 57 L429 91 L429 656 L373 682 L94 672 Z' fill='#252b2c' stroke='#302e29' stroke-width='9'/>
+<path d='M374 66 L423 94 L423 651 L374 674 Z' fill='#555b57'/>
+<path d='M388 94 L411 108 L411 638 L388 651 Z' fill='#303c3c'/>
+<rect x='82' y='52' width='295' height='613' rx='27' fill='url(#metal)' stroke='#595d58' stroke-width='5'/>
+<rect x='98' y='69' width='262' height='570' rx='17' fill='url(#front)' stroke='#eee0c5' stroke-opacity='.6' stroke-width='3'/>
+<path d='M108 82 H346 M109 86 V618' fill='none' stroke='#fff0d2' stroke-opacity='.65' stroke-width='3'/>
+<rect x='120' y='105' width='219' height='150' rx='13' fill='#303b3d' stroke='#5d625c' stroke-width='7'/>
+<rect x='131' y='116' width='197' height='127' rx='7' fill='url(#screen)' stroke='#9db7aa' stroke-width='2'/>
+<path d='M141 125 H310 L141 191 Z' fill='#c0dfd8' opacity='.12'/>
+<path d='M153 149 H253 M153 164 H224 M153 214 H290' stroke='#83c7ba' stroke-width='5' stroke-linecap='round'/>
+<path d='M280 143 L295 143 L292 183 L283 183 Z' fill='#dfb86c'/>
+<circle cx='174' cy='285' r='17' fill='#293231' stroke='#ced1bd' stroke-width='5'/>
+<circle cx='174' cy='285' r='9' fill='#dfab58'/>
+<circle cx='229' cy='285' r='17' fill='#293231' stroke='#ced1bd' stroke-width='5'/>
+<circle cx='229' cy='285' r='9' fill='#6caf9f'/>
+<circle cx='284' cy='285' r='17' fill='#293231' stroke='#ced1bd' stroke-width='5'/>
+<circle cx='284' cy='285' r='9' fill='#bfa0c0'/>
+<rect x='117' y='326' width='225' height='283' rx='15' fill='#4e5651' stroke='#d5cbb7' stroke-width='5'/>
+<rect x='130' y='337' width='199' height='250' rx='10' fill='url(#dark)'/>
+<path d='M137 344 H320' stroke='#f0c17b' stroke-width='4' opacity='.8'/>
+<rect x='199' y='333' width='61' height='48' rx='9' fill='url(#metal)' stroke='#1d2527' stroke-width='3'/>
+<path d='M214 375 H245 V411 Q230 424 214 411 Z' fill='url(#metal)' stroke='#35403f' stroke-width='3'/>
+<ellipse cx='230' cy='410' rx='14' ry='5' fill='#152326'/>
+<path d='M174 479 L286 479 L272 577 Q230 593 188 577 Z' fill='url(#glass)' stroke='#c1d8cf' stroke-width='3'/>
+<path d='M181 517 L279 517 L269 572 Q231 585 191 573 Z' fill='url(#juice)' opacity='.9'/>
+<ellipse cx='230' cy='517' rx='49' ry='9' fill='#85c5bb'/>
+<ellipse cx='230' cy='479' rx='56' ry='10' fill='none' stroke='#d9eee4' stroke-width='4'/>
+<path d='M189 491 L198 565' stroke='#effbf2' stroke-width='5' opacity='.6'/>
+<path d='M113 602 L345 602 L354 631 L104 631 Z' fill='url(#metal)' stroke='#414a46' stroke-width='3'/>
+<path d='M130 608 V624 M149 608 V624 M168 608 V624 M187 608 V624 M206 608 V624 M225 608 V624 M244 608 V624 M263 608 V624 M282 608 V624 M301 608 V624 M320 608 V624' stroke='#394542' stroke-width='5'/>
+<path d='M121 646 H336' stroke='#e2d9c3' stroke-width='3' opacity='.7'/>
+<rect x='101' y='665' width='43' height='19' rx='5' fill='#20292a'/>
+<rect x='318' y='665' width='43' height='19' rx='5' fill='#20292a'/>
+<path d='M395 429 L407 436 M395 446 L407 453 M395 463 L407 470 M395 480 L407 487' stroke='#78857b' stroke-width='4'/>
+<circle cx='108' cy='97' r='3' fill='#535d56'/><circle cx='350' cy='97' r='3' fill='#535d56'/>
+</svg>

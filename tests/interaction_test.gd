@@ -15,6 +15,7 @@ func run_tests() -> void:
 	game.new_service()
 	game.ui.hide_page()
 	game.customer_state="waiting"
+	game.customer_x=845
 	game.order=0
 	game.selected=0
 	assert(game.guide_step().target=="moonleaf")
@@ -23,14 +24,22 @@ func run_tests() -> void:
 	game._process(0.1)
 	assert(game.player.x<before)
 	walk_until_done(game)
+	assert(game.inventory.moonleaf==0)
+	game.planters.harvest("moonleaf")
+	game.planters.popup.hide()
 	assert(game.inventory.moonleaf==1)
 	assert(game.guide_step().target=="sunfruit")
 	assert(game.start_click_action(Vector2(270,445)))
 	walk_until_done(game)
+	game.planters.harvest("sunfruit")
+	game.planters.popup.hide()
 	assert(game.inventory.sunfruit==1 and game.guide_step().target=="kitchen")
 	assert(game.start_click_action(Vector2(650,450)))
 	walk_until_done(game)
-	assert(game.holding==0 and game.guide_step().target=="counter")
+	assert(game.ui.page=="cookwrap")
+	assert(game.cook())
+	game.ui.hide_page()
+	assert(game.holding==0 and game.guide_step().target=="client")
 	assert(game.start_click_action(Vector2(845,500)))
 	walk_until_done(game)
 	assert(game.served==1 and game.coins==12)
@@ -54,6 +63,8 @@ func run_tests() -> void:
 	assert(game.room=="garden")
 	assert(game.start_click_action(Vector2(140,470)))
 	walk_until_done(game)
+	game.planters.harvest("bed1")
+	game.planters.popup.hide()
 	assert(game.inventory.moonleaf==2)
 	game.travel("planet",850)
 	game.camera_x=250
@@ -67,6 +78,8 @@ func run_tests() -> void:
 	game.customer_x=946
 	assert(game.start_click_action(Vector2(946,445)))
 	walk_until_done(game)
+	assert(game.ui.page!="chat", "Un clic sur le client sert sa commande, sans ouvrir la conversation")
+	game.ui.show_page("chat")
 	assert(game.ui.page=="chat")
 	game.ui.hide_page()
 	assert(game.music_player.stream is AudioStreamWAV)

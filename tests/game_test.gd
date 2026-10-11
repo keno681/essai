@@ -51,9 +51,12 @@ func run_tests() -> void:
 	game.cooldowns.moonleaf = 0
 	var before = game.inventory.moonleaf
 	game.interact()
+	assert(game.inventory.moonleaf == before, "Cliquer ouvre le choix, sans récolter automatiquement")
+	game.planters.harvest("moonleaf")
 	assert(game.inventory.moonleaf == before + 1)
-	game.interact()
+	game.planters.harvest("moonleaf")
 	assert(game.inventory.moonleaf == before + 1, "Repousse respectée")
+	game.planters.popup.hide()
 	game.ui.show_page("inventory")
 	assert(game.menu)
 	game.ui.hide_page()
@@ -75,6 +78,8 @@ func run_tests() -> void:
 	assert(not game.recipe_unlocked(3))
 	game.travel("garden",140)
 	game.interact()
+	game.planters.harvest("bed1")
+	game.planters.popup.hide()
 	assert(game.inventory.moonleaf == 2)
 	game.travel("planet",420)
 	game.interact()
@@ -147,6 +152,9 @@ func run_tests() -> void:
 	for id in game.recipe(5).ingredients: game.inventory[id]=1
 	game.player.x=745
 	game.interact()
+	assert(game.ui.page=="cookdrink")
+	assert(game.cook())
+	game.ui.hide_page()
 	assert(game.holding==5 and game.inventory.moonleaf==0)
 	game.customer_state="waiting"
 	game.order=5

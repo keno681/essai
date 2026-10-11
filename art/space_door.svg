@@ -1,0 +1,26 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='256' height='768' viewBox='0 0 256 768'><defs>
+<linearGradient id='frame'><stop stop-color='#42362d'/><stop offset='.18' stop-color='#a58b62'/><stop offset='.4' stop-color='#dcc69a'/><stop offset='.6' stop-color='#82735e'/><stop offset='1' stop-color='#3a3933'/></linearGradient>
+<linearGradient id='glass' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#526467'/><stop offset='.4' stop-color='#263e43'/><stop offset='1' stop-color='#101e27'/></linearGradient>
+<linearGradient id='panel'><stop stop-color='#252c2b'/><stop offset='.5' stop-color='#6c756b'/><stop offset='1' stop-color='#303b38'/></linearGradient>
+</defs>
+<ellipse cx='128' cy='747' rx='123' ry='15' fill='#161914' opacity='.45'/>
+<path d='M18 743 L18 95 L58 25 L198 25 L238 95 L238 743Z' fill='#262d2b' stroke='#352a21' stroke-width='9'/>
+<path d='M24 737 L24 100 L64 34 L192 34 L232 100 L232 737Z' fill='url(#frame)' stroke='#ad936c' stroke-width='3'/>
+<path d='M47 721 L47 114 L78 65 L178 65 L209 114 L209 721Z' fill='#1c292b' stroke='#c3aa7e' stroke-width='5'/>
+<rect x='57' y='133' width='142' height='568' fill='url(#panel)' stroke='#111e21' stroke-width='3'/>
+<rect x='64' y='153' width='57' height='437' rx='5' fill='url(#glass)' stroke='#a1947a' stroke-width='2'/>
+<rect x='135' y='153' width='57' height='437' rx='5' fill='url(#glass)' stroke='#a1947a' stroke-width='2'/>
+<path d='M69 163 H112 L69 356Z M140 163 H183 L140 356Z' fill='#dee0bf' opacity='.12'/>
+<path d='M64 397 H121 M135 397 H192' stroke='#787e6c' stroke-width='5'/>
+<path d='M63 609 H121 V678 H63Z M135 609 H193 V678 H135Z' fill='#37413c' stroke='#8c826b' stroke-width='3'/>
+<path d='M128 135 V702' stroke='#0a191d' stroke-width='7'/>
+<rect x='109' y='419' width='8' height='54' rx='3' fill='#d4c5a8'/>
+<rect x='139' y='419' width='8' height='54' rx='3' fill='#bcb9a3'/>
+<rect x='83' y='70' width='90' height='17' rx='6' fill='#393c31' stroke='#9e8965' stroke-width='3'/>
+<rect x='91' y='75' width='74' height='7' rx='3' fill='#edcd8c'/>
+<path d='M37 187 V566 M219 187 V566' stroke='#1b3537' stroke-width='12'/>
+<path d='M37 193 V560 M219 193 V560' stroke='#82b8b0' stroke-width='4'/>
+<path d='M27 717 H229 L236 739 H20Z' fill='url(#frame)' stroke='#3b3d33' stroke-width='3'/>
+<path d='M40 726 H216' stroke='#e0c498' stroke-width='3'/>
+<circle cx='43' cy='109' r='4' fill='#343d36'/><circle cx='213' cy='109' r='4' fill='#343d36'/><circle cx='39' cy='681' r='4' fill='#343d36'/><circle cx='217' cy='681' r='4' fill='#343d36'/>
+</svg>
