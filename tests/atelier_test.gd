@@ -26,6 +26,25 @@ func run() -> void:
 	file=FileAccess.open(tool.game_root+"/sample.gd",FileAccess.WRITE)
 	file.store_string("extends Node\nvar answer: int = 1\n")
 	file.close()
+	var definitions=tool.tool_definitions()
+	assert(definitions.size()==5)
+	assert("sample.gd" in definitions[0].function.parameters.properties.path.enum)
+	assert(tool.perform({"action":"read","path":"sample.gd","lines":[{"line_number":30}]}).contains("numéros"))
+	assert(tool.perform({"action":"replace","path":"hui:/ui.gd","old":"x","new":"y"}).contains("interdit"))
+	var calls=[
+		{"id":"call_read","type":"function","function":{"name":"read_file","arguments":JSON.stringify({"path":"sample.gd","start":1,"lines":20})}},
+		{"id":"call_replace","type":"function","function":{"name":"replace_text","arguments":JSON.stringify({"path":"sample.gd","old":"= 1","new":"= 2"})}},
+		{"id":"call_finish","type":"function","function":{"name":"finish","arguments":JSON.stringify({"explanation":"Modification proposée"})}}
+	]
+	assert(tool.execute_tool_calls({"tool_calls":calls}))
+	assert(tool.staged["sample.gd"].contains("= 2"))
+	assert(FileAccess.get_file_as_string(tool.game_root+"/sample.gd").contains("= 1"))
+	assert(tool.messages[-1].role=="tool" and tool.messages[-1].tool_call_id=="call_finish")
+	tool.staged.clear()
+	tool.baseline.clear()
+	tool.requests_sent=20
+	tool.received(HTTPRequest.RESULT_SUCCESS,400,[],JSON.stringify({"error":{"code":"json_validate_failed","message":"Failed to generate JSON"}}).to_utf8_buffer())
+	assert(tool.console.text.contains("Groq a refusé"))
 	assert(tool.safe_path("../../outside.gd").is_empty())
 	assert(tool.safe_path("/tmp/outside.gd").is_empty())
 	assert(tool.safe_path(".git/config").is_empty())

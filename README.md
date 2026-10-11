@@ -277,3 +277,17 @@ invalide, au maximum deux appels de correction automatique sont effectués,
 sans écrire de fichiers. Le budget total reste limité à 20 appels par demande.
 Les changements longs doivent être découpés en remplacements courts.
 Les tests couvrent JSON brut, balises, prose, troncature et refus des listes.
+
+### Atelier v16 : appels de fonctions Groq
+
+Le protocole principal utilise maintenant les fonctions natives `read_file`,
+`search_code`, `replace_text`, `create_file`, `finish`, avec les schémas des
+arguments et les vrais chemins pour lecture/remplacement. Le mode JSON libre
+`response_format` a été retiré afin d’éviter `json_validate_failed` pour les
+remplacements de code contenant des guillemets. Chaque résultat est renvoyé
+au modèle avec le rôle `tool` et l’identifiant d’appel. Les actions refusées
+et leurs raisons apparaissent dans la console. Les types des arguments sont
+vérifiés avant toute modification. Une erreur de génération de fonction
+peut déclencher jusqu’à deux corrections dans le budget global de 20 appels.
+Utiliser un modèle Groq compatible avec les appels de fonctions. Le titre
+« ATELIER GROQ v16 · APPELS DE FONCTIONS » permet de vérifier la version ouverte.

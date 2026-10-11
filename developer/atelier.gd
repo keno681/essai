@@ -31,7 +31,7 @@ func _ready() -> void:
 	box.add_theme_constant_override("separation",8)
 	margin.add_child(box)
 	var title:=Label.new()
-	title.text="ATELIER GROQ · MODIFIER LE PROJET SOURCE"
+	title.text="ATELIER GROQ v16 · APPELS DE FONCTIONS"
 	title.add_theme_font_size_override("font_size",24)
 	box.add_child(title)
 	var note:=Label.new()
@@ -129,8 +129,7 @@ func prepare() -> void:
 	steps=0
 	requests_sent=0
 	format_retries=0
-	var actions=JSON.stringify([{ "action":"read","path":"ui.gd","start":1,"lines":60},{"action":"search","query":"skin"},{"action":"replace","path":"ui.gd","old":"texte exact unique","new":"nouveau texte"},{"action":"create","path":"nouveau.gd","text":"extends Node\n"},{"action":"done","explanation":"Résumé français"}])
-	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot 4.6 GDScript. Réponds uniquement en JSON avec UNE action par tour. Actions : "+actions+". Les couleurs/cadres HUD sont dans ui.gd (skin, CYAN) et creator.gd (config.accent). Chercher le code exact avant de changer ces valeurs. Pour une seule couleur ne réécris jamais tout design.json. Les clés JSON doivent être entre guillemets doubles. Les nouvelles lignes et guillemets du code doivent être échappés dans les chaînes JSON. Maximum 60 lignes de nouveau code par action; fractionner les gros changements. Lire avant modifier. Utiliser replace ciblé avec ancien texte unique; les modifications sont préparées en mémoire et seront appliquées après validation humaine. Pas de shell, réseau, secrets ni chemins hors projet dans le code produit. Ne pas changer le nom du jeu ni la mécanique sauf demandé. Syntaxe Godot4 stricte: expliciter les types si inférence ambiguë. Les fichiers binaires ne peuvent pas être édités. Fichiers: "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
+	messages=[{"role":"system","content":"Tu modifies un vrai projet Godot4.6. Utilise les fonctions fournies pour lire et modifier les vrais fichiers, jamais des chemins inventés. Les couleurs/cadres du HUD sont dans ui.gd (skin, CYAN), les cadres de survol des objets dans main.gd (draw_interaction_markers), les paramètres de couleur dans creator.gd (config.accent). Recherche puis lis le fichier avant de remplacer. Copie old exactement depuis la lecture. Fais des changements petits et ciblés, jamais la réécriture complète de design.json pour une couleur. Chaque changement est préparé en mémoire et nécessite une validation humaine. Ne génère pas de réseau, shell ou accès à des fichiers hors du jeu. Appelle finish pour expliquer le résultat en français quand la proposition est prête. Fichiers : "+JSON.stringify(file_list())},{"role":"user","content":prompt.text.left(4000)}]
 	log_message("Toi : "+prompt.text)
 	send_next()
 
@@ -143,13 +142,76 @@ func send_next() -> void:
 	running=true
 	loading_models=false
 	requests_sent+=1
-	var body=JSON.stringify({"model":model_input.text.strip_edges(),"messages":messages,"response_format":{"type":"json_object"},"max_tokens":3000})
+	var body=JSON.stringify({"model":model_input.text.strip_edges(),"messages":messages,"tools":tool_definitions(),"tool_choice":"auto","temperature":0.1,"max_tokens":3000})
 	var error=http.request(ENDPOINT,["Authorization: Bearer "+key_input.text.strip_edges(),"Content-Type: application/json"],HTTPClient.METHOD_POST,body)
 	if error!=OK: running=false; log_message("Requête impossible : "+str(error))
+
+func tool_definitions() -> Array:
+	var paths: Array=file_list()
+	for path in staged:
+		if path not in paths: paths.append(path)
+	var specs=[
+		{"name":"read_file","description":"Lire les lignes réelles d'un fichier du projet.","properties":{"path":{"type":"string","enum":paths},"start":{"type":"integer"},"lines":{"type":"integer"}},"required":["path","start","lines"]},
+		{"name":"search_code","description":"Chercher un texte dans le projet et obtenir les chemins et lignes exacts.","properties":{"query":{"type":"string"}},"required":["query"]},
+		{"name":"replace_text","description":"Préparer un remplacement précis. old doit être un extrait exact et unique du fichier lu.","properties":{"path":{"type":"string","enum":paths},"old":{"type":"string"},"new":{"type":"string"}},"required":["path","old","new"]},
+		{"name":"create_file","description":"Préparer un nouveau fichier texte dans le projet.","properties":{"path":{"type":"string"},"text":{"type":"string"}},"required":["path","text"]},
+		{"name":"finish","description":"Terminer et expliquer les changements préparés en français.","properties":{"explanation":{"type":"string"}},"required":["explanation"]}
+	]
+	var result: Array=[]
+	for spec in specs:
+		result.append({"type":"function","function":{"name":spec.name,"description":spec.description,"parameters":{"type":"object","properties":spec.properties,"required":spec.required,"additionalProperties":false}}})
+	return result
+
+func recover_format(reason: String) -> void:
+	format_retries+=1
+	log_message(reason)
+	if format_retries<=2 and requests_sent<20:
+		messages.append({"role":"user","content":"La réponse précédente a échoué. Utilise un appel de fonction fourni, avec ses arguments exacts. Ne rédige pas de JSON libre ou de code inventé. Commence par read_file ou search_code, puis fais un replace_text court avec le texte exact lu. Les chemins sont ceux de la liste du projet. Termine avec finish."})
+		log_message("Correction automatique (%d/2)…" % format_retries)
+		send_next.call_deferred()
+	else: log_message("Corrections épuisées. Aucun fichier écrit. Choisis un modèle compatible avec les appels de fonctions.")
+
+func execute_tool_calls(message: Dictionary) -> bool:
+	var calls=message.get("tool_calls",[])
+	if not calls is Array or calls.is_empty() or calls.size()>5: return false
+	for call in calls:
+		if not call is Dictionary or not call.get("id") is String or not call.get("function") is Dictionary: return false
+	var assistant={"role":"assistant","tool_calls":calls}
+	if message.get("content") is String: assistant.content=message.content
+	messages.append(assistant)
+	var finished:=false
+	for call in calls:
+		if not call is Dictionary or not call.get("id") is String or not call.get("function") is Dictionary:
+			log_message("Appel de fonction incomplet ; recommence la demande.")
+			return false
+		var function=call.function
+		var action=parse_action(str(function.get("arguments","")))
+		var actions={"read_file":"read","search_code":"search","replace_text":"replace","create_file":"create","finish":"done"}
+		var feedback="Arguments invalides ou fonction inconnue. Utilise les arguments du schéma."
+		if not action.is_empty() and actions.has(function.get("name","")):
+			action.action=actions[function.name]
+			if action.action=="done":
+				finished=true
+				feedback="Proposition terminée."
+				log_message("Groq : "+str(action.get("explanation","Terminé"))+"\nFichiers préparés : "+JSON.stringify(staged.keys())+"\nApplique la proposition puis relance le jeu.")
+			else:
+				feedback=perform(action)
+				steps+=1
+				log_message("Étape %d : %s %s\n%s" % [steps,action.action,str(action.get("path","")),feedback.left(700)])
+		messages.append({"role":"tool","tool_call_id":call.id,"content":feedback})
+	format_retries=0
+	if not finished: send_next.call_deferred()
+	return true
 
 func received(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	running=false
 	if result!=HTTPRequest.RESULT_SUCCESS or code!=200:
+		var error_parser=JSON.new()
+		if not loading_models and code==400 and error_parser.parse(body.get_string_from_utf8())==OK and error_parser.data is Dictionary:
+			var detail=error_parser.data.get("error",{})
+			if detail is Dictionary and detail.get("code","") in ["json_validate_failed","tool_use_failed"]:
+				recover_format("Groq a refusé le format de l'appel de fonction.")
+				return
 		log_message("API %d : %s\nEn cas de 429, attends puis clique RÉESSAYER. Aucun fichier écrit." % [code,body.get_string_from_utf8().left(1200)])
 		return
 	var response=JSON.parse_string(body.get_string_from_utf8())
@@ -164,17 +226,17 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 		if not ids.is_empty() and model_input.text not in ids: model_input.text=ids[0]
 		return
 	if not response is Dictionary or not response.get("choices") is Array or response.choices.is_empty(): log_message("Réponse API inattendue."); return
-	var content=str(response.choices[0].get("message",{}).get("content",""))
+	var message=response.choices[0].get("message",{})
+	var finish_reason=str(response.choices[0].get("finish_reason",""))
+	if finish_reason=="length": recover_format("Réponse tronquée (limite de longueur)."); return
+	if message is Dictionary and message.get("tool_calls") is Array:
+		if not execute_tool_calls(message): log_message("Appels de fonctions illisibles. Aucun fichier écrit.")
+		return
+	var content=str(message.get("content",""))
 	var action=parse_action(content)
 	var reason=str(response.choices[0].get("finish_reason",""))
-	if action.is_empty() or reason=="length":
-		format_retries+=1
-		log_message("Réponse tronquée (limite de longueur)." if reason=="length" else "Réponse mal formatée par Groq.")
-		if format_retries<=2 and requests_sent<20:
-			messages.append({"role":"user","content":"Ta dernière réponse était tronquée ou du JSON invalide. Recommence cette étape avec UN petit objet JSON valide, sans markdown, sans explication hors JSON. Fais read/search ou replace ciblé très court, jamais un fichier complet. Échappe les retours à la ligne en \n et les guillemets du code. Exemple : "+JSON.stringify({"action":"replace","path":"ui.gd","old":"Color(\"edc478\")","new":"Color(\"55cc77\")"})})
-			log_message("Correction automatique du format (%d/2)…" % format_retries)
-			send_next.call_deferred()
-		else: log_message("Deux corrections ont échoué. Aucun fichier écrit. Tu peux RÉESSAYER ou choisir un autre modèle.")
+	if action.is_empty() or action.get("action","") not in ["read","search","replace","create","done"]:
+		recover_format("Réponse sans appel de fonction exploitable.")
 		return
 	format_retries=0
 	steps+=1
@@ -184,7 +246,7 @@ func received(result: int, code: int, _headers: PackedStringArray, body: PackedB
 		return
 	var feedback=perform(action)
 	messages.append({"role":"user","content":feedback})
-	log_message("Étape %d : %s %s" % [steps,str(action.get("action","")),str(action.get("path",""))])
+	log_message("Étape %d : %s %s\n%s" % [steps,str(action.get("action","")),str(action.get("path","")),feedback.left(700)])
 	send_next.call_deferred()
 
 func parse_action(content: String) -> Dictionary:
@@ -199,6 +261,14 @@ func parse_action(content: String) -> Dictionary:
 	return {}
 
 func perform(action: Dictionary) -> String:
+	var kind=action.get("action","")
+	var fields={"search":["query"],"read":["path"],"replace":["path","old","new"],"create":["path","text"]}
+	if not fields.has(kind): return "Action inconnue."
+	for field in fields[kind]:
+		if not action.get(field) is String: return "Argument requis invalide : "+str(field)
+	if kind=="read":
+		for field in ["start","lines"]:
+			if action.has(field) and not (action[field] is int or action[field] is float): return "La lecture attend des numéros de lignes, pas une liste de lignes inventées."
 	if action.get("action")=="search":
 		var query=str(action.get("query",""))
 		if query.is_empty(): return "Recherche vide interdite."
