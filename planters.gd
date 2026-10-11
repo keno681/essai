@@ -50,11 +50,11 @@ func harvest(id: String) -> void:
 	if not plants.has(id): return
 	var crop: String=plants[id]
 	if crop.is_empty() or timer(id)>0: return
-	game.inventory[crop]+=3
+	game.inventory["raw_"+crop]+=3
 	plants[id]=""
 	set_timer(id,0)
 	game.play_sound(620)
-	game.say("Récolte : +3 "+str(game.ingredient(crop).name)+". Le bac est vide.")
+	game.say("Récolte : +3 "+str(game.ingredient(crop).name)+" bruts · à traiter en cuisine. Le bac est vide.")
 	game.save_progress()
 func build(box: VBoxContainer) -> void:
 	var id: String=game.ui.get_meta("active_planter","")

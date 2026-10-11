@@ -76,6 +76,7 @@ func _ready() -> void:
 	add_improvised_recipes()
 	for item in sheet.ingredients:
 		inventory[item.id] = 0
+		if not item.get("pantry",false): inventory["raw_"+item.id]=0
 		if not item.get("pantry",false): inventory["seed_"+item.id]=3 if item.starter else 0
 		cooldowns[item.id] = 0.0
 	for row in sheet.beds + sheet.wild_nodes: node_cooldowns[row.id] = 0.0
@@ -185,7 +186,7 @@ func cook() -> bool:
 		return false
 	for ingredient in recipe(selected).ingredients:
 		if inventory[ingredient] < 1:
-			say("Il manque des ingrédients : faites un tour au jardin !")
+			say("Traite les récoltes sur la TABLE DE TRAVAIL avant de cuisiner." if inventory.get("raw_"+ingredient,0)>0 else "Il manque des ingrédients : fais un tour au jardin !")
 			return false
 	for ingredient in recipe(selected).ingredients:
 		inventory[ingredient] -= 1
@@ -646,12 +647,12 @@ func harvest_node(node: Dictionary) -> bool:
 		say("Cette plante repousse. Revenez dans %d secondes." % ceili(node_cooldowns[node.id]))
 		return false
 	var item := ingredient(node.ingredient)
-	inventory[node.ingredient] += 2
+	inventory["raw_"+node.ingredient] += 2
 	node_cooldowns[node.id] = float(node.regrow_seconds)
 	if not node.ingredient in discovered:
 		discovered.append(node.ingredient)
 		say("Découverte : "+item.name+" ! Disponible au PC et dans vos recettes.")
-	else: say("+2 "+item.name)
+	else: say("+2 "+item.name+" bruts · à traiter en cuisine.")
 	play_sound(620)
 	action_time = float(animation("harvest").duration)
 	return true
@@ -1172,3 +1173,14 @@ func build_counter(box: VBoxContainer) -> void:
 		b.disabled=holding>=0
 		box.add_child(b)
 	if counter_items.is_empty(): box.add_child(ui.label("Prépare un ticket en cuisine et choisis PRÉPARER ET POSER.",16))
+
+func prepare_crop(id: String) -> bool:
+	if online and online.request("prepare_crop",{"id":id}): return false
+	if preload("res://ingredient_prep.gd").tool_for(id).is_empty() or inventory.get("raw_"+id,0)<1:
+		say("Il manque une récolte brute à traiter."); return false
+	inventory["raw_"+id]-=1
+	inventory[id]+=1
+	say("+1 "+str(ingredient(id).name)+" préparé dans le saladier.")
+	play_sound(620)
+	save_progress()
+	return true

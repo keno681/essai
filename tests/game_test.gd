@@ -50,13 +50,13 @@ func run_tests() -> void:
 	assert(game.customer_emotion=="angry" and game.holding==-1)
 	game.player.x = 130
 	game.cooldowns.moonleaf = 0
-	var before = game.inventory.moonleaf
+	var before = game.inventory.raw_moonleaf
 	game.interact()
-	assert(game.inventory.moonleaf == before + 3, "Cliquer récolte directement sans ouvrir de menu")
+	assert(game.inventory.raw_moonleaf == before + 3, "Cliquer récolte directement sans ouvrir de menu")
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf == before + 3)
+	assert(game.inventory.raw_moonleaf == before + 3)
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf == before + 3, "Repousse respectée")
+	assert(game.inventory.raw_moonleaf == before + 3, "Repousse respectée")
 	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
 	game.ui.show_page("inventory")
 	assert(game.menu)
@@ -81,11 +81,11 @@ func run_tests() -> void:
 	game.interact()
 	game.planters.harvest("bed1")
 	if is_instance_valid(game.planters.popup): game.planters.popup.hide()
-	assert(game.inventory.moonleaf == 3)
+	assert(game.inventory.raw_moonleaf == 3)
 	game.travel("planet",420)
 	game.interact()
 	assert("starlime" in game.discovered)
-	assert(game.inventory.starlime == 2)
+	assert(game.inventory.raw_starlime == 2)
 	assert(not game.harvest_node(game.sheet.wild_nodes[0]), "Une plante ne peut pas être récoltée deux fois immédiatement")
 	game.player.x = 1080
 	game.interact()

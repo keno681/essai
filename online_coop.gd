@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-5"
+const VERSION := "cosmo-coop-6"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -282,6 +282,8 @@ func handle_action(data: Dictionary) -> void:
 		"serve_table":
 			var table_number:=int(args.get("table",0))
 			if table_number>=1 and table_number<=8 and game.room=="dining" and absf(game.player.x-game.tables.spot(table_number).x)<110: ok=game.tables.serve_table(table_number)
+		"prepare_crop":
+			if game.room=="restaurant" and (absf(game.player.x-650)<100 or absf(game.player.x-745)<100): ok=game.prepare_crop(str(args.get("id","")))
 		"cook_store":
 			var index:=int(args.get("recipe",-1))
 			if game.room=="restaurant" and index>=0 and index<game.sheet.recipes.size():

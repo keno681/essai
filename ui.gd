@@ -184,14 +184,15 @@ func show_page(name: String) -> void:
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"counter":"COMPTOIR DES COMMANDES","orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
+	var box := clear_window({"prep":"TABLE DE TRAVAIL","counter":"COMPTOIR DES COMMANDES","orders":"CARNET DE COMMANDES","reception":"ACCUEILLIR UN CLIENT","table":"COMMANDE DE LA TABLE","online":"COOP EN LIGNE","planter":"BAC DE CULTURE","cookwrap":"COMPOSER TON WRAP","cookdrink":"PRÉPARER UNE BOISSON","chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / GRAINES"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
-	if name in ["cookwrap","cookdrink"]:
+	if name in ["cookwrap","cookdrink","prep"]:
 		window.position=Vector2(130,55)
 		window.size=Vector2(940,0)
 		box.get_parent().custom_minimum_size=Vector2(900,495)
 	match name:
+		"prep": preload("res://ingredient_prep.gd").build(self,box)
 		"counter": game.build_counter(box)
 		"orders": tables_view(box)
 		"reception": game.tables.build_reception(box)
@@ -345,7 +346,9 @@ func show_page(name: String) -> void:
 			box.add_child(button("RECOMMENCER",func(): game.new_service(); hide_page()))
 			box.add_child(button("ANNULER",func(): show_page("menu")))
 		"inventory":
-			box.add_child(label("Ingrédients disponibles • Les wraps ne périment pas",15,Color("9fb9cb")))
+			box.add_child(label("Ingrédients préparés • Récoltes brutes à traiter sur la table de travail",15,Color("9fb9cb")))
+			for raw_item in game.sheet.ingredients:
+				if game.inventory.get("raw_"+raw_item.id,0)>0: box.add_child(label("%s bruts × %d" % [raw_item.name,game.inventory["raw_"+raw_item.id]],14))
 			var grid := GridContainer.new()
 			grid.columns = 6
 			grid.add_theme_constant_override("h_separation",5)

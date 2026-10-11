@@ -79,6 +79,9 @@ class Kitchen extends VBoxContainer:
 			if recipe.get("kind","wrap")==kind:
 				for id in recipe.ingredients:
 					if id not in allowed: allowed.append(id)
+		add_child(ui.button("TABLE DE TRAVAIL · TRAITER LES RÉCOLTES",func():
+			ui.set_meta("prep_return","cookdrink" if kind=="drink" else "cookwrap")
+			ui.show_page("prep")))
 		chosen=ui.get_meta("composition_"+kind,[]).filter(func(id): return id in allowed)
 		add_theme_constant_override("separation",8)
 		for i in range(game.sheet.ingredients.size()): textures.append(preload("res://visual_library.gd").food(i))
@@ -90,7 +93,7 @@ class Kitchen extends VBoxContainer:
 			var label=ui.label(item.short_name+" × "+str(game.inventory[item.id]),13)
 			label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 			label.custom_minimum_size.y=26
-			label.tooltip_text=item.name
+			label.tooltip_text=item.name+" préparé · bruts : "+str(game.inventory.get("raw_"+item.id,0))
 			list.add_child(label)
 			stocks.append(label)
 		var tickets=HBoxContainer.new()

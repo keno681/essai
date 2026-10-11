@@ -8,7 +8,7 @@ func run() -> void:
 	var host=load("res://main.gd").new(); root.add_child(host)
 	host.new_service(); host.ui.hide_page()
 	host.planters.open("moonleaf")
-	assert(host.inventory.moonleaf==3 and host.planters.plants.moonleaf=="")
+	assert(host.inventory.raw_moonleaf==3 and host.planters.plants.moonleaf=="")
 	assert(not is_instance_valid(host.planters.popup) and not host.menu)
 	host.planters.open("moonleaf")
 	assert(is_instance_valid(host.planters.popup) and host.menu)
@@ -16,10 +16,10 @@ func run() -> void:
 	await process_frame
 	assert(not host.menu)
 	host.planters.open("moonleaf")
-	assert(host.inventory.moonleaf==3 and not host.menu)
+	assert(host.inventory.raw_moonleaf==3 and not host.menu)
 	host.cooldowns.moonleaf=0
 	host.planters.open("moonleaf")
-	assert(host.inventory.moonleaf==6 and host.planters.plants.moonleaf=="")
+	assert(host.inventory.raw_moonleaf==6 and host.planters.plants.moonleaf=="")
 	host.new_service(); host.ui.hide_page()
 	var guest=load("res://main.gd").new(); root.add_child(guest)
 	guest.new_service(); guest.ui.hide_page()
@@ -27,8 +27,8 @@ func run() -> void:
 	await wait_for(func(): return guest.online.authenticated)
 	guest.player.x=float(host.ingredient("moonleaf").x)
 	guest.planters.open("moonleaf")
-	await wait_for(func(): return not guest.online.pending and guest.inventory.moonleaf==3)
-	assert(host.inventory.moonleaf==3 and host.planters.plants.moonleaf=="")
+	await wait_for(func(): return not guest.online.pending and guest.inventory.raw_moonleaf==3)
+	assert(host.inventory.raw_moonleaf==3 and host.planters.plants.moonleaf=="")
 	assert(not is_instance_valid(guest.planters.popup) and not guest.menu)
 	host.online.leave(); guest.online.leave()
 	host.queue_free(); guest.queue_free(); await process_frame

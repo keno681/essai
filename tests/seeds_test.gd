@@ -7,25 +7,25 @@ func run() -> void:
 	game.ui.hide_page()
 	assert(game.seed_count("moonleaf")==3)
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf==3 and game.planters.plants.moonleaf=="")
+	assert(game.inventory.raw_moonleaf==3 and game.planters.plants.moonleaf=="")
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf==3)
+	assert(game.inventory.raw_moonleaf==3)
 	game.planters.plant("moonleaf","moonleaf")
 	assert(game.seed_count("moonleaf")==2 and game.planters.timer("moonleaf")>0)
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf==3)
+	assert(game.inventory.raw_moonleaf==3)
 	game.cooldowns.moonleaf=0
 	game.planters.harvest("moonleaf")
-	assert(game.inventory.moonleaf==6 and game.planters.plants.moonleaf=="")
+	assert(game.inventory.raw_moonleaf==6 and game.planters.plants.moonleaf=="")
 	game.inventory.seed_moonleaf=0
 	game.planters.plant("moonleaf","moonleaf")
 	assert(game.planters.plants.moonleaf=="")
 	game.coins=100
-	var stock: int=game.inventory.moonleaf
+	var stock: int=game.inventory.raw_moonleaf
 	assert(game.purchase("moonleaf"))
 	assert(game.seed_count("moonleaf")==0 and game.coins==94)
 	game.update_deliveries(4.1)
-	assert(game.seed_count("moonleaf")==3 and game.inventory.moonleaf==stock)
+	assert(game.seed_count("moonleaf")==3 and game.inventory.raw_moonleaf==stock)
 	assert(not game.purchase("mineralwater"))
 	for id in ["lunartea","nebulasyrup"]:
 		assert(game.purchase(id))
@@ -34,7 +34,7 @@ func run() -> void:
 		assert(game.seed_count(id)==2)
 		game.cooldowns.moonleaf=0
 		game.planters.harvest("moonleaf")
-		assert(game.inventory[id]==3 and game.planters.plants.moonleaf=="")
+		assert(game.inventory["raw_"+id]==3 and game.planters.plants.moonleaf=="")
 	var saved: Dictionary=game.snapshot()
 	game.inventory.seed_moonleaf=0
 	game.apply_snapshot(saved)

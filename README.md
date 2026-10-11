@@ -124,3 +124,15 @@ Les post-it de la cuisine indiquent le numéro de table, la recette, les ingréd
 Cette mise à jour passe au protocole coop 5 : applique `Tickets-Comptoir-Pokeball.json` hors ligne sur les deux PC avant de rejoindre le même salon.
 
 Les bacs se récoltent directement au clic : une plante mûre donne 3 ingrédients et laisse un bac vide. Une plante en croissance affiche le temps restant ; clique sur un bac vide pour choisir une graine. Aucun menu Vider/Récolter ne s’ouvre.
+
+### Table de travail : récoltes brutes et ingrédients préparés
+
+La récolte fournit désormais des ingrédients bruts : 3 par plante cultivée, 2 par récolte sauvage. Depuis la cuisine ou les boissons, clique sur **TABLE DE TRAVAIL · TRAITER LES RÉCOLTES**. Glisse un ingrédient sur la planche, puis le bon ustensile dessus, puis le résultat dans le saladier. Chaque geste est instantané : aucun compte à rebours. Une unité brute devient une unité préparée, utilisable dans les recettes.
+
+- Couteau : salade, tomate, champignon et piment.
+- Presse-agrumes : citron et baies pour les boissons.
+- Passoire : riz et feuilles de thé à nettoyer.
+
+L’eau est prête à l’emploi. Les stocks déjà possédés dans les anciennes sauvegardes restent préparés ; les nouvelles récoltes sont brutes. Les stocks sont sauvegardés et partagés en coop, avec protection contre les traitements simultanés du dernier ingrédient. Les gestes en cours ne consomment rien tant que le résultat n’est pas déposé dans le saladier.
+
+Applique `Table-Travail-Pokeball.json` hors ligne sur les deux PC : cette version utilise le protocole coop 6.
