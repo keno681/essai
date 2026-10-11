@@ -34,6 +34,7 @@ var actor_customer := 0
 var npc_cycle := 0.0
 var appearance: Dictionary = {}
 var queued_appearance: Dictionary = {}
+var customer_queue: RefCounted
 var customer_rng := RandomNumberGenerator.new()
 var fullscreen := false
 var sound_enabled := true
@@ -82,6 +83,8 @@ func _ready() -> void:
 	dialogue_engine = load("res://dialogue.gd").new()
 	planters=preload("res://planters_compact.gd").new()
 	add_child(planters)
+	customer_queue = load("res://customer_queue.gd").new()
+	customer_queue.setup(self)
 	load_progress()
 	load_settings()
 	set_fullscreen(false)
@@ -264,13 +267,14 @@ func new_service() -> void:
 	served = 0
 	upgraded = false
 	completed = false
+	customer_queue.reset()
 	choose_customer()
 	actor_customer = customer
 	appearance = queued_appearance.duplicate(true)
 	next_order()
 	holding = -1
 	customer_state = "arriving"
-	customer_x = 1250
+	customer_x = customer_queue.enter_service()
 	for id in inventory:
 		inventory[id] = 0
 		cooldowns[id] = 0.0
@@ -278,6 +282,7 @@ func new_service() -> void:
 	say("Nouveau service !")
 
 func update_customers(delta: float) -> void:
+	customer_queue.update(delta)
 	var flow: Dictionary = sheet.systems[2]
 	if customer_state == "arriving":
 		customer_x = move_toward(customer_x,float(flow.waiting_x),float(flow.speed)*delta)
@@ -295,7 +300,7 @@ func update_customers(delta: float) -> void:
 			customer_emotion="calm"
 			reset_customer_conversation()
 			appearance = queued_appearance.duplicate(true)
-			customer_x = float(flow.spawn_x)
+			customer_x = customer_queue.enter_service()
 			customer_state = "arriving"
 
 func _process(delta: float) -> void:
@@ -349,25 +354,26 @@ func panel(rect: Rect2, color: Color, radius: int = 14) -> void:
 	style.set_corner_radius_all(radius)
 	draw_style_box(style, rect)
 
-func alien(position: Vector2, color: Color, chef: bool = false) -> void:
+func alien(position: Vector2, color: Color, chef: bool = false, queued: Dictionary = {}) -> void:
 	if not race_texture: return
-	var race_id: String = player_race if chef else sheet.customers[actor_customer].race
+	var person_id: int = int(queued.get("customer",actor_customer))
+	var race_id: String = player_race if chef else sheet.customers[person_id].race
 	var race_index := 0
 	var sprite_row: Dictionary = sheet.races[0]
 	for row in sheet.races:
 		if row.id == race_id:
 			race_index = int(row.sprite_index)
 			sprite_row = row
-	var moving := walking if chef else customer_state != "waiting"
-	var phase := walk_cycle if chef else npc_cycle
+	var moving: bool = walking if chef else bool(queued.get("moving",customer_state != "waiting"))
+	var phase: float = walk_cycle if chef else float(queued.get("phase",npc_cycle))
 	var stride := sin(phase)*0.2 if moving else 0.0
-	var direction := facing if chef else (1.0 if customer_state=="leaving" else -1.0)
+	var direction := facing if chef else (1.0 if queued.is_empty() and customer_state=="leaving" else -1.0)
 	var breathe := sin(clock*2.0)*1.2
 	var bob := absf(cos(phase))*2 if moving else breathe
 	var foot := position+Vector2(0,39)
 	var cell := Vector2(float(sprite_row.source_width),race_texture.get_height())
 	var source_x := float(sprite_row.source_x)
-	var look: Dictionary = {} if chef else appearance
+	var look: Dictionary = {} if chef else queued.get("appearance",appearance)
 	var height := 152.0*float(look.get("size",1.0))
 	var width := height*cell.x/cell.y
 	var cut := 0.76
@@ -392,7 +398,7 @@ func alien(position: Vector2, color: Color, chef: bool = false) -> void:
 		draw_drink(Vector2(20,-57),Color("a5d5b7") if holding==5 else Color("d08bea"))
 	elif chef and holding>=0:
 		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
-	if not chef and customer_state=="leaving" and customer_emotion!="angry":
+	if not chef and queued.is_empty() and customer_state=="leaving" and customer_emotion!="angry":
 		draw_texture_rect(ART.object(15),Rect2(9,-72,26,30),false)
 	draw_set_transform(Vector2.ZERO)
 
@@ -422,7 +428,8 @@ func _draw() -> void:
 	if upgraded:
 		draw_circle(Vector2(1127,432),26,Color(1,0.7,0.3,0.1))
 		label_at("+5 WCC / wrap",Vector2(1060,366),16,Color("f9d47b"))
-	alien(Vector2(customer_x,505),Color(sheet.customers[actor_customer].color))
+	customer_queue.draw_people()
+	alien(Vector2(customer_x,520 if customer_state=="leaving" else 505),Color(sheet.customers[actor_customer].color))
 	if customer_emotion=="angry":
 		label_at("!",Vector2(customer_x-4,365),27,Color("f28c78"))
 	alien(player,Color("bca2e9"),true)
@@ -500,6 +507,9 @@ func roll_appearance() -> Dictionary:
 	return result
 
 func choose_customer() -> void:
+	if customer_queue:
+		customer_queue.take_next()
+		return
 	var choices: Array[int] = []
 	for index in range(sheet.customers.size()):
 		if index != actor_customer: choices.append(index)
@@ -589,7 +599,7 @@ func speak_dialogue(kind: String) -> void:
 		else: play_sound(240+actor_customer*35)
 
 func snapshot() -> Dictionary:
-	return {"version":7,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
+	return {"waiting_queue":customer_queue.snapshot(),"version":8,"plantings":planters.plants.duplicate(),"customer_emotion":customer_emotion,"chat_memory":chat_memory.duplicate(true),"chat_log":chat_log.duplicate(true),"appearance":appearance.duplicate(true),"queued_appearance":queued_appearance.duplicate(true),"coins":coins,"served":served,"upgraded":upgraded,"inventory":inventory.duplicate(),"discovered":discovered.duplicate(),"room":room,"player_x":player.x,"order":order,"customer":customer,"actor_customer":actor_customer,"customer_state":customer_state,"customer_x":customer_x,"holding":holding,"player_race":player_race,"cooldowns":cooldowns.duplicate(),"node_cooldowns":node_cooldowns.duplicate(),"deliveries":deliveries.duplicate(true)}
 
 func write_snapshot(path: String) -> bool:
 	var file := FileAccess.open(path+".tmp",FileAccess.WRITE)
@@ -662,6 +672,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	for row in data.get("deliveries",[]):
 		if row is Dictionary and row.get("ingredient") in discovered:
 			deliveries.append({"ingredient":row.ingredient,"quantity":clampi(int(row.get("quantity",3)),1,3),"remaining":clampf(float(row.get("remaining",4)),0,4)})
+	customer_queue.restore(data.get("waiting_queue",{}))
 	speech_time = 0
 	vertical = 0
 

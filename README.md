@@ -24,7 +24,7 @@ Ce nouveau conditionnement évite la redistribution de l'exécutable ; **il ne c
 - Cliquer sur une porte permet de rejoindre la pièce correspondante.
 - Cliquer sur un bac ouvre un petit choix près du curseur : récolter, vider ou planter une variété découverte.
 - Cliquer sur la cuisine ou le distributeur ouvre la préparation. Glisser les ingrédients de la table dans la galette ou le verre, puis fabriquer la commande. Ramener un ingrédient sur la table permet de le retirer.
-- Cliquer sur le client lui remet la commande préparée ; le chat reste accessible avec T et le bouton du HUD.
+- Cliquer sur le client lui remet la commande préparée ; le chat reste accessible avec T et le bouton du HUD. Trois clients attendent derrière lui, avec des apparences aléatoires. Ils avancent dans l’ordre après son départ ; la file est conservée dans les sauvegardes.
 - Le canapé du bureau sert à sauvegarder et charger ; le PC permet de commander les ingrédients.
 
 Les objets se mettent en surbrillance au passage du curseur. L'infobulle affiche leur nom. Le jeu démarre dans une fenêtre maximisée.
