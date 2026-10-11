@@ -458,6 +458,15 @@ func build_creator(box: VBoxContainer) -> void:
 	model_input.placeholder_text="Modèle du fournisseur sélectionné"
 	model_input.text_changed.connect(func(value): game.creator.model=value)
 	box.add_child(model_input)
+	box.add_child(button("CHARGER LES MODÈLES DISPONIBLES",func(): game.creator.load_models()))
+	var model_select:=OptionButton.new()
+	model_select.add_item("Choisir un modèle disponible")
+	for id in game.creator.available_models: model_select.add_item(id)
+	model_select.item_selected.connect(func(index):
+		if index>0:
+			game.creator.model=model_select.get_item_text(index)
+			model_input.text=game.creator.model)
+	box.add_child(model_select)
 	box.add_child(label("Groq : offre gratuite selon quotas. Une demande = un appel." if game.creator.provider=="groq" else "OpenAI : API facturée séparément de ChatGPT. Une demande = un appel.",14))
 	var prompt:=TextEdit.new()
 	prompt.custom_minimum_size=Vector2(0,80)
@@ -479,6 +488,9 @@ func build_creator(box: VBoxContainer) -> void:
 	var refresh:=func():
 		if is_instance_valid(output):
 			output.text=game.creator.status
+			model_select.clear()
+			model_select.add_item("Choisir un modèle disponible")
+			for id in game.creator.available_models: model_select.add_item(id)
 			transcript.text=game.creator.console_text()
 			console_scroll.set_deferred("scroll_vertical",100000)
 	game.creator.changed.connect(refresh)

@@ -221,3 +221,13 @@ Un appel réel Groq reste à vérifier avec une clé et un quota disponibles.
 
 La console affiche les demandes, les réponses en français et les confirmations
 d’application/annulation, dans un historique défilant en mémoire (20 entrées).
+
+### Diagnostic des modèles (v13)
+
+En cas de 404, sélectionner le fournisseur puis **CHARGER LES MODÈLES DISPONIBLES**.
+Le jeu interroge `/models` avec la clé du fournisseur ; choisir un modèle
+dans la liste remplit son nom exact. Les modèles audio, de modération
+et les entrées inactives sont filtrés. La liste reste en mémoire.
+Les erreurs 400/404 affichent le fournisseur, le modèle et le message API
+avec les clés masquées, pour distinguer les causes. Aucun nouvel appel
+de génération n’est lancé automatiquement.

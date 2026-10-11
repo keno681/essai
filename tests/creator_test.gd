@@ -28,6 +28,13 @@ func run() -> void:
 	creator.key=""
 	creator.ask("change le décor")
 	assert(creator.status.begins_with("Clé manquante"))
+	creator.key="gsk_private_test_secret"
+	var diagnostic=creator.api_error(404,JSON.stringify({"error":{"code":"model_not_found","message":"Model absent gsk_private_test_secret"}}).to_utf8_buffer())
+	assert(diagnostic.contains("Model absent") and not diagnostic.contains(creator.key))
+	creator.request_kind="models"
+	creator.completed(HTTPRequest.RESULT_SUCCESS,200,[],JSON.stringify({"data":[{"id":"llama-3.3-70b-versatile","active":true},{"id":"whisper-large-v3"},{"id":"retired","active":false}]}).to_utf8_buffer())
+	assert(creator.available_models==["llama-3.3-70b-versatile"])
+	creator.request_kind="chat"
 	var before=game.sheet.recipes[0].name
 	var response={"choices":[{"message":{"content":JSON.stringify({"explanation":"Un monde violet", "patch":{"title":"WRAP GALAXIE","accent":"aa88ff","recipe_names":{"0":"Wrap violet"},"recipe_prices":{"0":200},"planets":[{"name":"Violette","color":"aa88ff"}],"decor":[{"x":600,"y":400,"size":20,"color":"aa88ff"}],"code":"delete files"}})}}]}
 	creator.completed(HTTPRequest.RESULT_SUCCESS,200,[],JSON.stringify(response).to_utf8_buffer())

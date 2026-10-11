@@ -14,6 +14,8 @@ var pending: Dictionary = {}
 var history: Array = []
 var conversation: Array = []
 var console_log: Array[String] = []
+var available_models: Array[String] = []
+var request_kind := "chat"
 var config: Dictionary = {"title":"COSMO WRAP", "accent":"edc478", "planet_name":"Planète d'origine", "planet_color":"ffffff", "decor":[], "planets":[]}
 var original: Dictionary
 const PATH = "user://creator-world.json"
@@ -42,6 +44,7 @@ func select_provider(id: String) -> bool:
 	provider=id
 	key=credentials.get(id,"")
 	model=models.get(id,PROVIDERS[id].model)
+	available_models.clear()
 	conversation.clear()
 	pending.clear()
 	status="Fournisseur : "+PROVIDERS[id].name+". Renseigne sa clé et son modèle."
@@ -58,24 +61,50 @@ func console_reply(words: String) -> void:
 func console_text() -> String:
 	return "\n\n".join(console_log)
 
+func load_models() -> void:
+	if request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED: return
+	key=key.strip_edges()
+	if key.is_empty():
+		status="Clé manquante : renseigne le champ privé."
+		changed.emit()
+		return
+	request_kind="models"
+	status="Recherche des modèles disponibles sur "+PROVIDERS[provider].name+"…"
+	var error=request.request(endpoint().replace("/chat/completions","/models"),["Authorization: Bearer "+key],HTTPClient.METHOD_GET)
+	if error!=OK: status="Impossible de charger les modèles (%d)." % error
+	changed.emit()
+
+func safe_detail(value: String) -> String:
+	for secret in credentials.values()+[key]:
+		if str(secret).length()>4: value=value.replace(str(secret),"[clé masquée]")
+	var regex=RegEx.new()
+	regex.compile("(?:sk-|gsk_)[A-Za-z0-9_-]+")
+	return regex.sub(value,"[clé masquée]",true).left(600)
+
 func api_error(code: int, body: PackedByteArray) -> String:
 	var parser=JSON.new()
 	var detail: Variant=null
 	if not body.is_empty() and parser.parse(body.get_string_from_utf8())==OK: detail=parser.data
 	var reason=""
+	var explanation=""
 	if detail is Dictionary and detail.get("error") is Dictionary:
 		reason=str(detail.error.get("code",""))+" "+str(detail.error.get("type",""))
+		explanation=safe_detail(str(detail.error.get("message","")))
 	if code==429:
 		if "insufficient_quota" in reason: return "API refusée (429) : crédits/quota épuisés. Vérifie la facturation du compte."
 		return "API refusée (429) : limite de demandes ou quota atteint. Attends avant de réessayer et vérifie les limites du compte "+PROVIDERS[provider].name+"."
 	if code==401: return "API refusée (401) : clé invalide pour "+PROVIDERS[provider].name+"."
-	if code==400 or code==404: return "API refusée (%d) : vérifie le nom du modèle et son accès sur %s." % [code,PROVIDERS[provider].name]
+	if code==400 or code==404:
+		return "API refusée (%d) sur %s, modèle %s. Clique sur CHARGER LES MODÈLES puis sélectionne un modèle disponible.\n%s" % [code,PROVIDERS[provider].name,safe_detail(model),explanation]
 	return "Connexion/API refusée (%d). Vérifie la connexion et le compte %s." % [code,PROVIDERS[provider].name]
 
 func ask(words: String) -> void:
 	if request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED: return
 	if key.strip_edges().is_empty(): status="Clé manquante : renseigne le champ privé."; console_reply("Console : "+status); changed.emit(); return
 	if words.strip_edges().is_empty(): return
+	key=key.strip_edges()
+	model=model.strip_edges()
+	request_kind="chat"
 	pending={}
 	var rules="Tu es le créateur de Cosmo Wrap, jeu 2D. Réponds en JSON uniquement : {explanation: texte français, patch: objet}. Clés patch autorisées: title (texte), accent (couleur hex 6 caractères), planet_name, planet_color (hex), decor (liste max 30 de {x:0..3600,y:180..530,color:hex,size:4..45}, remplace les décorations), planets (liste max 12 de {name:texte,color:hex}, remplace les destinations), customer_names (objet index 0..6 vers nom), customer_races (objet index 0..6 vers human, avian, apex, floran, hylotl, glitch ou novakid), recipe_names (objet index 0..6 vers nom), recipe_prices (objet index 0..6 vers entier 1..100). Pas de code, de fichiers, d'URL. Ces possibilités personnalisent le jeu existant; explique honnêtement les limites pour nouvelles mécaniques, images et structure de menus. Planètes utilisent la carte existante avec une teinte distincte. État actuel: "+JSON.stringify(config)
 	var body=JSON.stringify({"model":model,"messages":[{"role":"system","content":rules}]+conversation+[{"role":"user","content":words.left(2000)}],"response_format":{"type":"json_object"},"max_tokens":1600})
@@ -91,6 +120,20 @@ func ask(words: String) -> void:
 func completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 	if result!=HTTPRequest.RESULT_SUCCESS or code!=200:
 		status=api_error(code,body)
+	elif request_kind=="models":
+		var response=JSON.parse_string(body.get_string_from_utf8())
+		available_models.clear()
+		if response is Dictionary and response.get("data") is Array:
+			for entry in response.data:
+				if not entry is Dictionary or not entry.get("id") is String or entry.get("active",true)==false: continue
+				var id: String=entry.id
+				if "whisper" in id or "tts" in id or "guard" in id or "embedding" in id: continue
+				available_models.append(id)
+		available_models.sort()
+		status="Modèles chargés : sélectionne un modèle dans la liste puis réessaie." if not available_models.is_empty() else "Aucun modèle de conversation trouvé sur ce compte."
+		console_reply("Console : "+status)
+		changed.emit()
+		return
 	else:
 		var response=JSON.parse_string(body.get_string_from_utf8())
 		if response is Dictionary and response.get("choices") is Array and not response.choices.is_empty():
