@@ -2,13 +2,22 @@
 
 Jeu solo de gestion en 2D : restaurant spatial, wraps et boissons à composer, clients extraterrestres, serre, exploration et wrapcoincoins. Ce dépôt contient les sources complètes et les images de la version aux graphismes harmonisés.
 
-## Alerte Windows Defender — téléchargement suspendu
+## Nouveau pack Windows — moteur à télécharger séparément
 
-Un utilisateur a signalé une détection Wacatac dans le pack Windows. Le ZIP contenant l'exécutable a été retiré de la version courante du dépôt en attendant la vérification. Ne pas lancer, restaurer ou exclure de l'antivirus le fichier signalé. Les anciens liens vers un commit peuvent encore être accessibles : ne pas les utiliser.
+Télécharger [CosmoWrapBall-Sources.zip](https://github.com/keno681/essai/raw/refs/heads/master/downloads/CosmoWrapBall-Sources.zip). Ce nouveau pack contient le jeu, les images et des lanceurs texte `.cmd`, **sans fichier `.exe`, `.dll` ou moteur inclus**.
 
-Les sources et les images du jeu restent disponibles. Le moteur inclus a été comparé à l’archive officielle Godot 4.6.3 Windows x64, après vérification de son SHA512 : les exécutables sont identiques. Cette comparaison ne constitue pas une analyse antivirus et ne permet pas de conclure à un faux positif. Le fichier précisément détecté doit encore être identifié. Voir [les détails de vérification](SECURITE.md).
+1. Extraire le ZIP dans un nouveau dossier, sans reprendre les fichiers de l'ancien pack signalé.
+2. Télécharger Godot **standard Windows x64**, version 4.6.3 recommandée, depuis [le site officiel](https://godotengine.org/download/windows/). Extraire son ZIP.
+3. Copier l'exécutable nommé `Godot_v…-stable_win64.exe` à côté de `JOUER.cmd`, sans le renommer. Ne pas choisir le fichier `…_console.exe` ni l'installateur d'un autre logiciel.
+4. Lancer `JOUER.cmd`. Le premier lancement importe les images. Les dossiers `game` et `launcher` doivent rester à côté du lanceur.
 
-Pour un environnement de développement, obtenir Godot uniquement depuis son site officiel https://godotengine.org/download/windows/ et respecter les alertes de sécurité du système. Aucun moteur Windows n'est actuellement redistribué ici.
+Le lanceur ne télécharge rien et ne modifie pas les réglages de l'antivirus. Si Godot n'est pas présent, il affiche ces instructions. `OUVRIR-EDITEUR.cmd` ouvre les sources dans l'éditeur. Le jeu et la console restent hors ligne ; aucune clé API n'est nécessaire. La sauvegarde reste dans le même profil utilisateur que précédemment.
+
+### Signalement antivirus toujours à identifier
+
+L'ancien ZIP contenant `Godot.exe` a été retiré après un signalement Wacatac. Ne pas utiliser les liens vers ses anciens commits, restaurer le fichier signalé ou ajouter une exclusion antivirus. Le moteur anciennement inclus correspond à l'archive officielle vérifiée, mais cela ne permet pas de conclure à un faux positif. Le fichier précisément détecté n'a pas encore été identifié : [détails de vérification](SECURITE.md).
+
+Ce nouveau conditionnement évite la redistribution de l'exécutable ; **il ne constitue pas une certification antivirus**. Si Defender signale un fichier du nouveau pack ou le moteur téléchargé séparément, ne pas le lancer et relever le chemin de l'élément affecté.
 
 ## Commandes et interactions
 
@@ -53,10 +62,10 @@ godot --headless --audio-driver Dummy --path . --script tests/console_test.gd
 
 Le contrôle graphique nécessite un affichage : `godot --audio-driver Dummy --path . --script tests/visual_test.gd`. Il vérifie les bacs, les stocks, les recettes, la sauvegarde et le glisser-déposer, puis écrit des captures dans `user://captures`. Utiliser un profil de test séparé : ces tests modifient la progression et les réglages du profil courant.
 
-Pour reproduire le pack Windows avec le moteur officiel et ses licences :
+Pour reproduire le pack Windows sans embarquer de moteur :
 
 ```sh
-python3 tools/package_windows.py --runtime /chemin/Godot.exe --license-dir /chemin/licences
+python3 tools/package_windows.py
 ```
 
-La génération du pack Windows est conservée comme outil de développement, mais sa redistribution est suspendue après le signalement antivirus. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; le démarrage sous Windows reste à vérifier sur un PC Windows.
+Le nouveau pack distribue uniquement les sources, les images, les sons et les lanceurs texte. Une empreinte SHA256 du ZIP est publiée à côté de celui-ci. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; le démarrage sous Windows reste à vérifier sur un PC Windows.

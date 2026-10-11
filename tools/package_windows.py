@@ -1,36 +1,48 @@
-"""Create the Windows source pack with a supplied official Godot runtime."""
+"""Build the editable Windows game pack without distributing a runtime executable."""
 from pathlib import Path
-import argparse, zipfile
-parser=argparse.ArgumentParser()
-parser.add_argument('--runtime',type=Path,required=True)
-parser.add_argument('--license-dir',type=Path,required=True)
-parser.add_argument('--preview',type=Path)
-args=parser.parse_args()
-root=Path(__file__).resolve().parents[1]
-# Old screenshots, demonstration video and legacy menu mockups are not game assets.
-unused_art={'clients-demo.mp4','gameplay.png','garden-gameplay.png','office-gameplay.png','planet-gameplay.png','inventory.png','menu.png','options.png','races-demo.png','save.png','shop.png'}
-readme=(root/'README.md').read_text()
-(root/'downloads').mkdir(exist_ok=True)
-with zipfile.ZipFile(root/'downloads/CosmoWrapBall.zip','w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
- base='CosmoWrapBall/'
- z.write(args.runtime,base+'Godot.exe')
- for name in ['GODOT-LICENSE.txt','GODOT-COPYRIGHT.txt']: z.write(args.license_dir/name,base+name)
- z.writestr(base+'JOUER.cmd','@echo off\r\ncd /d "%~dp0"\r\n"%~dp0Godot.exe" --headless --audio-driver Dummy --path "%~dp0launcher"\r\nif errorlevel 1 pause\r\n')
- z.writestr(base+'OUVRIR-EDITEUR.cmd','@echo off\r\n"%~dp0Godot.exe" --path "%~dp0game" --editor\r\n')
- z.writestr(base+'LIRE-MOI.txt',readme)
- for p in root.rglob('*'):
-  rel=p.relative_to(root)
-  if not p.is_file() or any(a.startswith('.') for a in rel.parts): continue
-  if rel.parts[0] in ['downloads','build','developer','tools','tests','launcher']: continue
-  if rel.parts[0]=='art' and (p.name in unused_art or p.name.removesuffix('.import') in unused_art): continue
-  if p.suffix not in ['.gd','.uid','.godot','.tscn','.tres','.json','.svg','.png','.wav','.md','.txt','.cfg','.gdshader']: continue
-  z.write(p,base+'game/'+rel.as_posix())
- for p in (root/'launcher').rglob('*'):
-  if p.is_file() and not any(a.startswith('.') for a in p.relative_to(root/'launcher').parts): z.write(p,base+'launcher/'+p.relative_to(root/'launcher').as_posix())
- if args.preview: z.write(args.preview,base+'APERCU-CONSOLE.png')
-with zipfile.ZipFile(root/'downloads/CosmoWrapBall.zip') as z:
- assert z.testzip() is None
- assert not any('/developer/' in n or 'creator.gd' in n for n in z.namelist())
- assert [n for n in z.namelist() if n.lower().endswith('.exe')]==[base+'Godot.exe']
- assert (root/'downloads/CosmoWrapBall.zip').stat().st_size < 100*1024*1024, 'ZIP exceeds the GitHub file limit'
-print('ZIP verified:',(root/'downloads/CosmoWrapBall.zip').stat().st_size)
+import argparse
+import hashlib
+import zipfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--preview', type=Path)
+args = parser.parse_args()
+root = Path(__file__).resolve().parents[1]
+unused_art = {
+    'clients-demo.mp4', 'gameplay.png', 'garden-gameplay.png', 'office-gameplay.png',
+    'planet-gameplay.png', 'inventory.png', 'menu.png', 'options.png', 'save.png', 'shop.png',
+}
+allowed = {'.gd', '.uid', '.godot', '.tscn', '.tres', '.json', '.svg', '.png', '.wav', '.cfg', '.gdshader'}
+output = root / 'downloads' / 'CosmoWrapBall-Sources.zip'
+output.parent.mkdir(exist_ok=True)
+base = 'CosmoWrapBall/'
+with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+    for name in ['JOUER.cmd', 'OUVRIR-EDITEUR.cmd', 'TROUVER-GODOT.cmd']:
+        text = (root / 'tools' / 'windows' / name).read_text()
+        z.writestr(base + name, text.replace('\r\n', '\n').replace('\n', '\r\n'))
+    z.writestr(base + 'LIRE-MOI.txt', (root / 'README.md').read_text())
+    z.writestr(base + 'SECURITE.txt', (root / 'SECURITE.md').read_text())
+    for p in sorted(root.rglob('*')):
+        rel = p.relative_to(root)
+        if not p.is_file() or any(part.startswith('.') for part in rel.parts):
+            continue
+        if rel.parts[0] in {'downloads', 'build', 'developer', 'tools', 'tests', 'launcher'}:
+            continue
+        if p.suffix not in allowed or (rel.parts[0] == 'art' and p.name in unused_art):
+            continue
+        z.write(p, base + 'game/' + rel.as_posix())
+    for p in sorted((root / 'launcher').rglob('*')):
+        rel = p.relative_to(root / 'launcher')
+        if p.is_file() and not any(part.startswith('.') for part in rel.parts) and p.suffix in allowed:
+            z.write(p, base + 'launcher/' + rel.as_posix())
+    if args.preview:
+        if args.preview.suffix.lower() != '.png':
+            parser.error('--preview must be a PNG image')
+        z.write(args.preview, base + 'APERCU-CONSOLE.png')
+with zipfile.ZipFile(output) as z:
+    assert z.testzip() is None
+    assert not any(Path(n).suffix.lower() in {'.exe', '.dll', '.msi', '.pck'} for n in z.namelist())
+    assert not any('/.console-' in n or '/.godot/' in n for n in z.namelist())
+digest = hashlib.sha256(output.read_bytes()).hexdigest()
+output.with_suffix('.sha256').write_text(f'{digest}  {output.name}\n')
+print(f'Pack verified: {output.name}, {output.stat().st_size} bytes, no bundled executable')
