@@ -10,6 +10,8 @@ var config: Dictionary={"title":"COSMO WRAP BALL","accent":"edc478","planet_name
 var root_path: String
 var managed := false
 var reopen := false
+var last_result: Dictionary={}
+var progressing := false
 func _ready() -> void:
 	game=get_parent()
 	root_path=ProjectSettings.globalize_path("res://").trim_suffix("/")
@@ -27,10 +29,12 @@ func _ready() -> void:
 	if managed and FileAccess.file_exists(receipt):
 		var result=JSON.parse_string(FileAccess.get_file_as_string(receipt))
 		if result is Dictionary:
+			last_result=result
 			status=str(result.get("message","Jeu relancé."))
 			transcript="CONSOLE · "+status
 			reopen=true
 		DirAccess.remove_absolute(receipt)
+		if FileAccess.file_exists(root_path+"/.console-runtime/coop-resume.json"): reopen=false
 
 func preview(words: String) -> void:
 	draft=words
@@ -42,20 +46,27 @@ func preview(words: String) -> void:
 func send_and_restart() -> void:
 	preview(draft)
 	if pending.is_empty(): return
+	if game.online and game.online.active:
+		game.online.updates.begin(draft)
+		return
 	queue_restart({"action":"apply","patch":draft})
 
 func undo() -> void:
+	if game.online and game.online.active:
+		status="En coop, utilise un bloc de correction commun plutôt qu’une annulation locale."
+		changed.emit(); return
 	queue_restart({"action":"undo"})
 
-func queue_restart(command: Dictionary) -> void:
+func queue_restart(command: Dictionary) -> bool:
 	if not managed:
 		status="Ouvre le pack sources avec JOUER.cmd pour modifier les fichiers et relancer le jeu."
-		changed.emit(); return
+		changed.emit(); return false
 	game.save_progress()
 	var folder=root_path+"/.console-runtime"
-	if DirAccess.make_dir_recursive_absolute(folder)!=OK: status="Dossier de relance inaccessible."; changed.emit(); return
+	if DirAccess.make_dir_recursive_absolute(folder)!=OK: status="Dossier de relance inaccessible."; changed.emit(); return false
 	var file=FileAccess.open(folder+"/request.tmp",FileAccess.WRITE)
-	if not file: status="Envoi impossible."; changed.emit(); return
+	if not file: status="Envoi impossible."; changed.emit(); return false
 	file.store_string(JSON.stringify(command)); file.close()
-	if DirAccess.rename_absolute(folder+"/request.tmp",folder+"/request.json")!=OK: status="Envoi impossible."; changed.emit(); return
+	if DirAccess.rename_absolute(folder+"/request.tmp",folder+"/request.json")!=OK: status="Envoi impossible."; changed.emit(); return false
 	get_tree().quit()
+	return true

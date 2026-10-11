@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-1"
+const VERSION := "cosmo-coop-2"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -19,12 +19,15 @@ var solo_save: Dictionary = {}
 var sequence := 0
 var last_command := 0
 var pending := false
+var updates: Node
 var partner_position := Vector2.ZERO
 var partner_room := ""
 
 func _ready() -> void:
 	game = get_parent()
 	password = Crypto.new().generate_random_bytes(4).hex_encode()
+	updates=load("res://coop_updates.gd").new()
+	add_child(updates)
 
 func local_addresses() -> String:
 	var addresses: Array[String]=[]
@@ -72,13 +75,16 @@ func join(ip: String, secret: String) -> void:
 	sequence=0
 	pending=false
 	status="Connexion en cours…"
-	peer.peer_connected.connect(func(_id): send({"kind":"hello","version":VERSION,"design":FileAccess.get_file_as_string("res://data/design.json").sha256_text(),"password":password}))
+	peer.peer_connected.connect(func(_id): send({"kind":"hello","version":VERSION,"design":FileAccess.get_file_as_string("res://data/design.json").sha256_text(),"password":password,"resume":updates.resume_hello()}))
 
 func send(packet: Dictionary, target: int = 0) -> void:
 	if not peer or peer.get_connection_status()!=MultiplayerPeer.CONNECTION_CONNECTED: return
 	peer.set_target_peer(target if target!=0 else partner_id)
 	peer.transfer_mode=MultiplayerPeer.TRANSFER_MODE_RELIABLE
-	peer.put_packet(JSON.stringify(packet).to_utf8_buffer())
+	var sent := peer.put_packet(JSON.stringify(packet).to_utf8_buffer())
+	if sent!=OK:
+		status="Transmission réseau impossible : erreur %d" % sent
+		game.say(status)
 
 func local_player() -> Dictionary:
 	return {"x":game.player.x,"y":game.player.y,"room":game.room,"race":game.player_race,"moving":game.walking,"phase":game.walk_cycle,"facing":game.facing,"holding":game.holding}
@@ -108,7 +114,7 @@ func _process(delta: float) -> void:
 	if not hosting and peer.get_connection_status()==MultiplayerPeer.CONNECTION_DISCONNECTED:
 		leave("Connexion fermée. Retour à ta partie solo.")
 		return
-	if not authenticated and timeout>15:
+	if not authenticated and timeout>(60 if updates.state=="resuming" else 15):
 		if hosting:
 			if partner_id!=0: peer.disconnect_peer(partner_id,true); remove_partner()
 		else: leave("Connexion expirée : vérifie IP, mot de passe et port UDP 16383.")
@@ -118,7 +124,7 @@ func _process(delta: float) -> void:
 		count+=1
 		var sender := peer.get_packet_peer()
 		var bytes := peer.get_packet()
-		if bytes.size()>65536: continue
+		if bytes.size()>3000000: continue
 		var data=JSON.parse_string(bytes.get_string_from_utf8())
 		if data is Dictionary: receive(data,sender)
 	if not active: return
@@ -126,9 +132,9 @@ func _process(delta: float) -> void:
 	if timer>=0.1:
 		timer=0
 		if authenticated:
-			if hosting: send_world()
+			if hosting and updates.state.is_empty(): send_world()
 			else: send({"kind":"player","player":local_player()})
-	if not partner.is_empty():
+	if partner.has("x") and partner.has("room"):
 		var target := Vector2(float(partner.x),float(partner.y))
 		if partner_room!=str(partner.room): partner_position=target; partner_room=str(partner.room)
 		else: partner_position=partner_position.lerp(target,1.0-exp(-14.0*delta))
@@ -137,13 +143,17 @@ func _process(delta: float) -> void:
 func receive(data: Dictionary, sender: int) -> void:
 	if sender!=partner_id: return
 	var kind := str(data.get("kind",""))
+	if kind.begins_with("update_"):
+		updates.receive(data,sender)
+		return
 	if hosting:
 		if kind=="hello":
-			if str(data.get("version",""))!=VERSION or str(data.get("design",""))!=FileAccess.get_file_as_string("res://data/design.json").sha256_text() or str(data.get("password",""))!=password:
+			if str(data.get("version",""))!=VERSION or (not updates.matching_resume(data) and str(data.get("design",""))!=FileAccess.get_file_as_string("res://data/design.json").sha256_text()) or str(data.get("password",""))!=password:
 				send({"kind":"denied","message":"Mot de passe incorrect ou versions différentes."})
 				return
+			if not updates.on_connected(data): return
 			authenticated=true
-			partner={}
+			if updates.state.is_empty() and not partner.has("holding"): partner={}
 			last_command=0
 			status="Coop connectée · 2 joueurs"
 			send_world()
@@ -191,7 +201,11 @@ func apply_world(world: Dictionary) -> void:
 	game.customer_queue.restore(world.get("waiting_queue",{}))
 
 func request(action: String, args: Dictionary = {}) -> bool:
-	if not active or hosting: return false
+	if not active: return false
+	if not updates.state.is_empty():
+		game.say("Mise à jour commune en cours…")
+		return true
+	if hosting: return false
 	if not authenticated:
 		game.say("Attends la connexion au restaurant.")
 		return true
@@ -215,6 +229,9 @@ func near_station(id: String) -> bool:
 	return false
 
 func handle_action(data: Dictionary) -> void:
+	if not updates.state.is_empty():
+		send({"kind":"result","ok":false,"message":"Mise à jour commune en cours."})
+		return
 	if not (data.get("sequence") is int or data.get("sequence") is float): return
 	if not is_finite(float(data.sequence)): return
 	var number := int(data.get("sequence",0))
@@ -271,7 +288,7 @@ func handle_action(data: Dictionary) -> void:
 			if game.planters.plants.has(id) and near_station(id):
 				if action=="harvest" and not str(game.planters.plants[id]).is_empty() and game.planters.timer(id)<=0: game.planters.harvest(id); ok=true
 				elif action=="empty": game.planters.empty(id); ok=true
-				elif action=="plant" and str(game.planters.plants[id]).is_empty() and str(args.get("crop","")) in game.discovered: game.planters.plant(id,str(args.crop)); ok=true
+				elif action=="plant" and str(game.planters.plants[id]).is_empty() and str(args.get("crop","")) in game.discovered and not game.ingredient(str(args.get("crop",""))).get("pantry",false): game.planters.plant(id,str(args.crop)); ok=true
 		"upgrade":
 			if game.room=="restaurant" and absf(game.player.x-1090)<100 and not game.upgraded and game.coins>=35:
 				game.coins-=35
@@ -308,6 +325,11 @@ func handoff() -> void:
 	else: game.say("Approche-toi du coéquipier ; il doit avoir les mains libres.")
 
 func remove_partner() -> void:
+	if not updates.state.is_empty():
+		partner_id=0
+		authenticated=false
+		timeout=0
+		return
 	var carried := int(partner.get("holding",-1))
 	if hosting and carried>=0 and carried<game.sheet.recipes.size():
 		for id in game.recipe(carried).ingredients: game.inventory[id]+=1
@@ -320,6 +342,8 @@ func remove_partner() -> void:
 	if hosting: game.save_progress()
 
 func leave(message: String = "Retour au mode solo") -> void:
+	updates.state=""
+	DirAccess.remove_absolute(updates.path())
 	if hosting: remove_partner()
 	if peer: peer.close()
 	peer=null
@@ -334,6 +358,6 @@ func leave(message: String = "Retour au mode solo") -> void:
 	status=message
 
 func draw_partner() -> void:
-	if not active or not authenticated or partner.is_empty() or partner.room!=game.room: return
+	if not active or not authenticated or not partner.has("room") or not partner.has("x") or partner.room!=game.room: return
 	game.alien(partner_position-Vector2(game.camera_x,0),Color.WHITE,true,partner)
 	game.label_at("COÉQUIPIER",partner_position-Vector2(game.camera_x+36,132),12,Color("8fe2ff"))

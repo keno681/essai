@@ -39,9 +39,15 @@ Le restaurant de l'hôte partage les stocks, les wrapcoincoins, les clients et l
 
 L'hôte valide les achats, récoltes, recettes et ventes : deux joueurs ne peuvent pas récolter deux fois la même plante prête ou dépenser les mêmes stocks. Il conserve la progression du restaurant. L'invité retrouve sa partie solo en quittant la session ; sa sauvegarde personnelle n'est pas remplacée. Les ingrédients de sa commande portée sont rendus aux stocks de l'hôte lors d'une déconnexion normale. Une sauvegarde conserve aussi cette commande pour restituer ses ingrédients si elle est rechargée sans l'invité. Une coupure brutale du PC peut perdre les changements qui n'ont pas été sauvegardés.
 
-Quitter la coop avant de charger une ancienne partie, recommencer un service ou modifier les scripts par la Pokéball. La fermeture du salon renvoie l'invité au mode solo. Cette version utilise une connexion directe : elle ne propose pas de serveur public, de matchmaking ou de connexion automatique par code.
+Quitter la coop avant de charger une ancienne partie ou de recommencer un service. La fermeture du salon renvoie l'invité au mode solo. Cette version utilise une connexion directe : elle ne propose pas de serveur public, de matchmaking ou de connexion automatique par code.
 
-La mise à jour de la version précédente se trouve dans [Coop-Pokeball.json](downloads/Coop-Pokeball.json) : copier son texte entier dans la Pokéball. Les nouvelles installations peuvent utiliser le ZIP complet, qui contient déjà la coop. Les tests ENet ont été effectués sous Linux avec deux pairs ; la connexion entre deux PC Windows et à travers deux box Internet reste à vérifier.
+Pour installer la synchronisation sur une version précédente compatible avec le port 16383, quitter la coop puis appliquer [Synchronisation-Coop-Pokeball.json](downloads/Synchronisation-Coop-Pokeball.json) sur **les deux PC**. Rejoindre ensuite le même salon. L'hôte peut appliquer [Ingredients-Boissons-Pokeball.json](downloads/Ingredients-Boissons-Pokeball.json) une seule fois : le partenaire reçoit le même bloc, les deux jeux se relancent et se reconnectent automatiquement. Le ZIP actuel inclut déjà les deux mises à jour.
+
+Les modifications envoyées par la Pokéball de l'hôte se synchronisent si l'option correspondante est cochée dans le menu coop. Les fichiers concernés doivent être identiques avant la modification. Chaque PC vérifie le bloc dans une copie temporaire avant application. La progression et les commandes portées sont conservées ; si une application échoue, les deux PC tentent de restaurer la version précédente. Les modifications externes aux fichiers ne sont pas surveillées. Seuls les fichiers texte et SVG passent par ce système : les PNG et les sons demandent une distribution séparée. Les scripts de coordination (`coop_updates.gd`, `online_coop.gd`, `console.gd`, `patch_engine.gd`) doivent être mis à jour hors coop, sur les deux PC.
+
+Les boissons disposent de leurs ingrédients : eau minérale, thé lunaire séché et sirop de baies nébuleuses, disponibles au PC du bureau. Le thé utilise eau et thé ; le soda utilise eau, sirop et citron astral. Le citron peut aussi entrer dans les wraps. Les ingrédients du garde-manger ne se plantent pas ; les tables de préparation affichent uniquement les ingrédients de leur catégorie.
+
+Les tests automatisés sous Linux utilisent deux vrais lanceurs et vérifient la transmission du bloc, la relance, la reconnexion, les stocks, les commandes portées et le retour arrière après un échec. Cette relance coordonnée reste à essayer sur deux PC Windows.
 
 ## Graphismes
 
@@ -72,6 +78,8 @@ godot --headless --audio-driver Dummy --path . --script tests/offline_chat_test.
 godot --headless --audio-driver Dummy --path . --script tests/console_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/customer_queue_test.gd
 godot --headless --audio-driver Dummy --path . --script tests/online_coop_test.gd
+godot --headless --audio-driver Dummy --path . --script tests/drink_ingredients_test.gd
+python3 tests/run_coop_sync.py
 ```
 
 Le contrôle graphique nécessite un affichage : `godot --audio-driver Dummy --path . --script tests/visual_test.gd`. Il vérifie les bacs, les stocks, les recettes, la sauvegarde et le glisser-déposer, puis écrit des captures dans `user://captures`. Utiliser un profil de test séparé : ces tests modifient la progression et les réglages du profil courant.

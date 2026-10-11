@@ -175,9 +175,6 @@ func hide_page() -> void:
 	game.save_settings()
 
 func show_page(name: String) -> void:
-	if name=="console" and game.online and game.online.active:
-		game.say("Quitte la coop avant de modifier les fichiers du jeu.")
-		name="online"
 	CYAN=Color(game.console_node.config.accent)
 	page = name
 	game.menu = true
@@ -303,6 +300,11 @@ func show_page(name: String) -> void:
 			refresh_status.autostart=true
 			box.add_child(refresh_status)
 			refresh_status.timeout.connect(func(): connection_status.text=game.online.status)
+			var sync_option := CheckBox.new()
+			sync_option.text="Synchroniser les modifications de l’hôte et relancer ensemble"
+			sync_option.button_pressed=game.online.updates.enabled
+			box.add_child(sync_option)
+			sync_option.toggled.connect(func(value): game.online.updates.enabled=value)
 			if game.online.active:
 				if game.online.hosting:
 					box.add_child(label("IP LOCALE : "+game.online.local_addresses(),15))
@@ -358,8 +360,8 @@ func show_page(name: String) -> void:
 					content.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 					stack.add_child(content)
 					slot.tooltip_text = item.name
-				elif i==6 and game.holding>=0:
-					slot.add_child(label("WRAP\n× 1",14,Color("efd37d")))
+				elif i==game.sheet.ingredients.size() and game.holding>=0:
+					slot.add_child(label(("BOISSON" if game.recipe(game.holding).get("kind","wrap")=="drink" else "WRAP")+"\n× 1",12,Color("efd37d")))
 					slot.tooltip_text = game.recipe(game.holding).name
 			box.add_child(label("RECETTES / choisir pour la cuisine",18,CYAN))
 			for i in range(game.sheet.recipes.size()):
@@ -502,7 +504,9 @@ func build_console(_box: VBoxContainer) -> void:
 	overlay.add_child(problem)
 	problem.set_meta("console_decor",true)
 	var refresh:=func():
-		if not game.console_node.status.begins_with("PRÊT"):
+		send_button.disabled=game.console_node.progressing
+		send_button.text="MISE À JOUR EN COURS…" if game.console_node.progressing else "ENVOYER ET RELANCER LE JEU"
+		if not game.console_node.progressing and not game.console_node.status.begins_with("PRÊT"):
 			problem.dialog_text=game.console_node.status
 			problem.popup_centered(Vector2i(540,220))
 	game.console_node.changed.connect(refresh)

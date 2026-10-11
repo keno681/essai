@@ -59,6 +59,39 @@
       "regrow_seconds": 20,
       "buy_price": 7,
       "starter": false
+    },
+    {
+      "id": "mineralwater",
+      "name": "Eau minérale",
+      "short_name": "EAU",
+      "color": "8bdde8",
+      "x": 0,
+      "regrow_seconds": 0,
+      "buy_price": 1,
+      "starter": false,
+      "pantry": true
+    },
+    {
+      "id": "lunartea",
+      "name": "Thé lunaire séché",
+      "short_name": "THÉ",
+      "color": "afc18a",
+      "x": 0,
+      "regrow_seconds": 0,
+      "buy_price": 3,
+      "starter": false,
+      "pantry": true
+    },
+    {
+      "id": "nebulasyrup",
+      "name": "Sirop de baies nébuleuses",
+      "short_name": "SIROP",
+      "color": "ca91e1",
+      "x": 0,
+      "regrow_seconds": 0,
+      "buy_price": 4,
+      "starter": false,
+      "pantry": true
     }
   ],
   "recipes": [
@@ -118,8 +151,8 @@
       "id": "moon_tea",
       "name": "Thé lunaire",
       "ingredients": [
-        "moonleaf",
-        "sunfruit"
+        "mineralwater",
+        "lunartea"
       ],
       "price": 18,
       "joke": "Une infusion qui met en orbite.",
@@ -130,8 +163,9 @@
       "id": "nebula_soda",
       "name": "Soda nébuleuse",
       "ingredients": [
-        "starlime",
-        "firepepper"
+        "mineralwater",
+        "nebulasyrup",
+        "starlime"
       ],
       "price": 30,
       "joke": "Des bulles de supernova !",

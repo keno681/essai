@@ -20,6 +20,8 @@ static func object(index: int) -> AtlasTexture:
 	return region(OBJECTS, rects[index], "object_%d" % index)
 
 static func food(index: int) -> AtlasTexture:
+	if index>=6 and index<=8:
+		return region(preload("res://art/drink_ingredients.svg"),Rect2((index-6)*256,0,256,256),"drink_ingredient_%d" % index)
 	return object(4 + index if index < 6 else 10)
 
 static func crop(index: int) -> AtlasTexture:

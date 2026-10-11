@@ -16,7 +16,7 @@ func restore(saved: Variant) -> void:
 	if not saved is Dictionary: return
 	for id in defaults:
 		var crop=saved.get(id,defaults[id])
-		if crop is String and (crop.is_empty() or crop in game.discovered): plants[id]=crop
+		if crop is String and (crop.is_empty() or (crop in game.discovered and not game.ingredient(crop).get("pantry",false))): plants[id]=crop
 func timer(id: String) -> float:
 	return float(game.cooldowns[id] if game.cooldowns.has(id) else game.node_cooldowns.get(id,0))
 func set_timer(id: String, seconds: float) -> void:
@@ -36,7 +36,7 @@ func empty(id: String) -> void:
 	open(id)
 func plant(id: String, crop: String) -> void:
 	if game.online and game.online.request("plant",{"id":id,"crop":crop}): return
-	if not plants[id].is_empty() or crop not in game.discovered: return
+	if not plants[id].is_empty() or crop not in game.discovered or game.ingredient(crop).get("pantry",false): return
 	plants[id]=crop
 	set_timer(id,float(game.ingredient(crop).regrow_seconds))
 	game.save_progress()
@@ -65,7 +65,7 @@ func build(box: VBoxContainer) -> void:
 	else:
 		box.add_child(ui.label("Choisis une plante découverte. Les semences sont gratuites.",15))
 		for item in game.sheet.ingredients:
-			if item.id not in game.discovered: continue
+			if item.id not in game.discovered or item.get("pantry",false): continue
 			var crop: String=item.id
 			box.add_child(ui.button("PLANTER · "+item.name,func(): plant(id,crop)))
 func paint() -> void:

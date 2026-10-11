@@ -28,7 +28,7 @@ func open(id: String) -> void:
 		box.add_child(small_button("Vider", func(): empty(id)))
 	else:
 		for item in game.sheet.ingredients:
-			if item.id not in game.discovered: continue
+			if item.id not in game.discovered or item.get("pantry",false): continue
 			var crop: String = str(item.id)
 			box.add_child(small_button(str(item.name), func(): plant(id, crop)))
 	game.menu = true

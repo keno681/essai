@@ -43,11 +43,18 @@ func prepare(words: String) -> Dictionary:
 			var text=FileAccess.get_file_as_string(path) if exists else ""
 			before[relative]={"exists":exists,"text":text}
 			after[relative]=text
-		if operation.has("create"):
+		if operation.get("delete",false)==true:
+			if not before[relative].exists: error="Fichier absent : "+relative; return {}
+			after[relative]=null
+		elif operation.has("write"):
+			if not operation.write is String: error="Contenu invalide : "+relative; return {}
+			after[relative]=operation.write
+		elif operation.has("create"):
 			if before[relative].exists or not operation.create is String: error="Le fichier existe déjà ou contenu invalide : "+relative; return {}
 			after[relative]=operation.create
 		else:
 			if not operation.get("old") is String or not operation.get("new") is String or operation.old.is_empty(): error="Remplacement incomplet : "+relative; return {}
+			if not after[relative] is String: error="Fichier supprimé dans ce bloc : "+relative; return {}
 			if not before[relative].exists and after[relative].is_empty(): error="Fichier absent : "+relative; return {}
 			if after[relative].count(operation.old)!=1: error="Version différente : texte absent ou non unique dans "+relative; return {}
 			after[relative]=after[relative].replace(operation.old,operation.new)
@@ -57,7 +64,7 @@ func write_map(files: Dictionary, restore: bool=false) -> bool:
 	for relative in files:
 		var path=path_for(relative)
 		if path.is_empty(): return false
-		if restore and not files[relative].exists:
+		if (restore and not files[relative].exists) or (not restore and files[relative]==null):
 			if FileAccess.file_exists(path) and DirAccess.remove_absolute(path)!=OK: return false
 			continue
 		if DirAccess.make_dir_recursive_absolute(path.get_base_dir())!=OK: return false
@@ -83,7 +90,7 @@ func apply(transaction: Dictionary, executable: String) -> bool:
 	var logs: Array=[]
 	var code=OS.execute(executable,["--headless","--audio-driver","Dummy","--path",root_path,"--editor","--quit"],logs,true)
 	for relative in transaction.after:
-		if relative.get_extension()!="gd": continue
+		if relative.get_extension()!="gd" or transaction.after[relative]==null: continue
 		var output: Array=[]
 		var result=OS.execute(executable,["--headless","--audio-driver","Dummy","--path",root_path,"--check-only","--script",path_for(relative)],output,true)
 		logs.append_array(output)
@@ -111,8 +118,43 @@ func undo_latest() -> bool:
 		var data=JSON.parse_string(FileAccess.get_file_as_string(path))
 		if not data is Dictionary or not data.get("before") is Dictionary or not data.get("after") is Dictionary: continue
 		for relative in data.after:
-			if path_for(relative).is_empty() or FileAccess.get_file_as_string(path_for(relative))!=data.after[relative]: error="Les fichiers ont changé depuis cette modification. Annulation refusée pour préserver tes changements."; return false
+			if path_for(relative).is_empty() or (FileAccess.file_exists(path_for(relative)) if data.after[relative]==null else FileAccess.get_file_as_string(path_for(relative))!=data.after[relative]): error="Les fichiers ont changé depuis cette modification. Annulation refusée pour préserver tes changements."; return false
 		if not write_map(data.before,true): error="Restauration impossible."; return false
 		DirAccess.rename_absolute(path,path+".undone")
 		return true
 	error="Aucune modification à annuler."; return false
+
+func clone_sources(source: String, destination: String) -> bool:
+	var dir=DirAccess.open(source)
+	if not dir: return false
+	if DirAccess.make_dir_recursive_absolute(destination)!=OK: return false
+	for name in dir.get_files():
+		if name.begins_with(".") or name.get_extension() not in EXTENSIONS+["png","wav","uid"]: continue
+		if dir.is_link(name): continue
+		if DirAccess.copy_absolute(source+"/"+name,destination+"/"+name)!=OK: return false
+	for name in dir.get_directories():
+		if name.begins_with(".") or name in ["downloads","build","launcher","tests","tools","developer"] or dir.is_link(name): continue
+		if not clone_sources(source+"/"+name,destination+"/"+name): return false
+	return true
+
+func remove_tree(path: String) -> void:
+	var dir=DirAccess.open(path)
+	if not dir: return
+	for name in dir.get_files(): DirAccess.remove_absolute(path+"/"+name)
+	for name in dir.get_directories(): remove_tree(path+"/"+name)
+	DirAccess.remove_absolute(path)
+
+func preflight(transaction: Dictionary, executable: String) -> bool:
+	error=""
+	var stage_path=OS.get_user_data_dir()+"/coop-validation-"+Crypto.new().generate_random_bytes(8).hex_encode()
+	if not clone_sources(root_path,stage_path):
+		remove_tree(stage_path)
+		error="Copie de validation impossible. Aucun fichier du jeu modifié."
+		return false
+	var checker=load("res://patch_engine.gd").new()
+	checker.root_path=stage_path
+	var ok: bool=checker.write_map(transaction.after)
+	if ok: ok=checker.apply({"before":{},"after":transaction.after},executable)
+	if not ok: error=checker.error
+	remove_tree(stage_path)
+	return ok

@@ -30,6 +30,17 @@ func run() -> void:
 	prepared=engine.prepare(JSON.stringify(patch))
 	assert(engine.apply(prepared,OS.get_executable_path()))
 	assert(engine.undo_latest() and not FileAccess.file_exists(engine.root_path+"/new.gd"))
+	patch.files=[{"path":"created.json","write":"{\"value\":1}"}]
+	prepared=engine.prepare(JSON.stringify(patch))
+	assert(engine.preflight(prepared,OS.get_executable_path()))
+	assert(not FileAccess.file_exists(engine.root_path+"/created.json"))
+	assert(engine.apply(prepared,OS.get_executable_path()))
+	patch.files=[{"path":"created.json","delete":true}]
+	prepared=engine.prepare(JSON.stringify(patch))
+	assert(engine.apply(prepared,OS.get_executable_path()))
+	assert(not FileAccess.file_exists(engine.root_path+"/created.json"))
+	assert(engine.undo_latest())
+	assert(FileAccess.get_file_as_string(engine.root_path+"/created.json")=="{\"value\":1}")
 	var game=load("res://main.gd").new()
 	root.add_child(game)
 	game.ui.hide_page()

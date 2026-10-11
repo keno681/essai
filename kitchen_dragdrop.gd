@@ -45,14 +45,14 @@ class Wrap extends Control:
 		return ((at-size*0.5)/Vector2(120,94)).length()<1.0
 	func _draw() -> void:
 		var c=size*0.5
-		if view.kind=="wrap": draw_texture_rect(view.art(6),Rect2(c-Vector2(126,101),Vector2(252,202)),false)
+		if view.kind=="wrap": draw_texture_rect(preload("res://visual_library.gd").object(10),Rect2(c-Vector2(126,101),Vector2(252,202)),false)
 		else:
 			draw_texture_rect(preload("res://visual_library.gd").object(11), Rect2(c-Vector2(72,98),Vector2(144,196)), false)
 		for id in view.chosen:
 			var at: Vector2=view.positions.get(id,c)
 			draw_texture_rect(view.art(view.index_of(id)),Rect2(at-Vector2(27,27),Vector2(54,54)),false)
 	func _can_drop_data(at: Vector2, data: Variant) -> bool:
-		return inside(at) and data is Dictionary and data.get("kitchen")==view and view.game.inventory.get(data.get("ingredient",""),0)>0
+		return inside(at) and data is Dictionary and data.get("kitchen")==view and data.get("ingredient","") in view.allowed and view.game.inventory.get(data.get("ingredient",""),0)>0
 	func _drop_data(at: Vector2, data: Variant) -> void:
 		var id: String=data.ingredient
 		if id not in view.chosen: view.chosen.append(id)
@@ -83,6 +83,8 @@ class Kitchen extends VBoxContainer:
 	var prepare: Button
 	var match_index=-1
 	var textures: Array=[]
+	var allowed: Array[String]=[]
+	var shown: Array[String]=[]
 	func art(index: int) -> Texture2D: return textures[index]
 	func index_of(id: String) -> int:
 		for i in range(game.sheet.ingredients.size()):
@@ -90,13 +92,18 @@ class Kitchen extends VBoxContainer:
 		return 0
 	func _ready() -> void:
 		game=ui.game
-		chosen=ui.get_meta("wrap_composition",[]).duplicate()
+		for recipe in game.sheet.recipes:
+			if recipe.get("kind","wrap")==kind:
+				for id in recipe.ingredients:
+					if id not in allowed: allowed.append(id)
+		chosen=ui.get_meta("wrap_composition",[]).filter(func(id): return id in allowed)
 		add_theme_constant_override("separation",8)
-		for i in range(7): textures.append(preload("res://visual_library.gd").food(i))
+		for i in range(game.sheet.ingredients.size()): textures.append(preload("res://visual_library.gd").food(i))
 		var list=HBoxContainer.new()
 		list.add_theme_constant_override("separation",5)
 		add_child(list)
 		for item in game.sheet.ingredients:
+			if item.id not in allowed: continue
 			var label=ui.label(item.short_name+" × "+str(game.inventory[item.id]),13)
 			label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 			label.custom_minimum_size.y=26
@@ -122,10 +129,13 @@ class Kitchen extends VBoxContainer:
 		table.add_child(plate)
 		for i in range(game.sheet.ingredients.size()):
 			var item: Dictionary=game.sheet.ingredients[i]
+			if item.id not in allowed: continue
+			var slot := shown.size()
+			shown.append(item.id)
 			var food=Food.new()
 			food.view=self
 			food.id=item.id
-			food.position=Vector2(26+(i%3)*81+(0 if i<3 else 581),88)
+			food.position=Vector2(26+(slot%3)*81+(0 if slot<3 else 581),88)
 			food.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 			food.size=Vector2(76,76)
 			food.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -145,7 +155,7 @@ class Kitchen extends VBoxContainer:
 			if game.cook(): ui.hide_page()
 			else: caption.text=game.message)
 		add_child(prepare)
-		var help=ui.label("Dépose dans la galette. Pour retirer un ingrédient, ramène-le sur la table.",14)
+		var help=ui.label("Dépose dans le verre. Pour retirer un ingrédient, ramène-le sur la table." if kind=="drink" else "Dépose dans la galette. Pour retirer un ingrédient, ramène-le sur la table.",14)
 		help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		add_child(help)
 		if game.holding>=0: add_child(ui.button("RANGER LA COMMANDE",func(): game.return_wrap(); refresh()))
@@ -172,7 +182,7 @@ class Kitchen extends VBoxContainer:
 		prepare.disabled=match_index<0 or game.holding>=0
 		if match_index>=0: prepare.disabled=prepare.disabled or not game.recipe_unlocked(match_index)
 		for i in range(icons.size()):
-			var id: String=game.sheet.ingredients[i].id
+			var id: String=shown[i]
 			icons[i].modulate=Color(1,1,1,0.25) if id in chosen or game.inventory[id]<1 else Color.WHITE
 			stocks[i].text=game.ingredient(id).short_name+" × "+str(game.inventory[id])
 		plate.queue_redraw()

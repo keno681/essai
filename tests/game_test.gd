@@ -92,7 +92,7 @@ func run_tests() -> void:
 	game.player.x = 1720
 	game.interact()
 	assert(game.recipe_unlocked(4))
-	assert(game.discovered.size() == 6)
+	assert(game.discovered.size() == 9)
 	game.travel("office",830)
 	game.coins = 60
 	var old = game.inventory.starlime
@@ -114,7 +114,7 @@ func run_tests() -> void:
 	assert(game.load_at_sofa())
 	assert(game.coins == 23 and game.inventory.starlime == old+3)
 	assert(game.deliveries.size() == 1, "Les livraisons en attente doivent être restaurées")
-	assert(game.discovered.size() == 6)
+	assert(game.discovered.size() == 9)
 	assert(game.room == "office" and game.player.x == 440)
 	game.actor_customer = 0
 	game.speak_dialogue("greeting")
@@ -155,7 +155,7 @@ func run_tests() -> void:
 	assert(game.ui.page=="cookdrink")
 	assert(game.cook())
 	game.ui.hide_page()
-	assert(game.holding==5 and game.inventory.moonleaf==0)
+	assert(game.holding==5 and game.inventory.mineralwater==0 and game.inventory.lunartea==0)
 	game.customer_state="waiting"
 	game.order=5
 	assert(game.serve())

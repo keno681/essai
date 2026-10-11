@@ -45,7 +45,7 @@ var sound_player: AudioStreamPlayer
 var room := "restaurant"
 var camera_x := 0.0
 var room_textures: Dictionary = {}
-var discovered: Array = ["moonleaf","sunfruit","mushroom"]
+var discovered: Array = ["moonleaf","sunfruit","mushroom","mineralwater","lunartea","nebulasyrup"]
 var node_cooldowns: Dictionary = {}
 var deliveries: Array = []
 var voice_enabled := true
@@ -269,7 +269,7 @@ func new_service() -> void:
 	reset_customer_conversation()
 	room = "restaurant"
 	player.x = 565
-	discovered = ["moonleaf","sunfruit","mushroom"]
+	discovered = ["moonleaf","sunfruit","mushroom","mineralwater","lunartea","nebulasyrup"]
 	planters.reset()
 	deliveries.clear()
 	chat_log.clear()
@@ -318,14 +318,14 @@ func _process(delta: float) -> void:
 	ambient_clock+=delta
 	if is_instance_valid(music_player): music_player.volume_db=float(sheet.ambience[0].volume_db)-(6 if menu else 0)
 	var connected: bool = online != null and online.active
-	var authority: bool = not connected or online.hosting
+	var authority: bool = (not connected or online.hosting) and (not connected or online.updates.state.is_empty())
 	if not menu or connected:
 		clock += delta
 		if authority and (room=="restaurant" or connected): update_customers(delta)
 		speech_time = maxf(0.0,speech_time-delta)
 		speech_elapsed += delta
 		if authority: update_deliveries(delta)
-		if not menu:
+		if not menu and (not connected or online.updates.state.is_empty()):
 			var axis := float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_Q) or Input.is_physical_key_pressed(KEY_LEFT))
 			if absf(axis)>0:
 				move_goal=-1
@@ -684,7 +684,7 @@ func apply_snapshot(data: Dictionary) -> void:
 	if coop_carried>=0 and coop_carried<sheet.recipes.size():
 		for id in recipe(coop_carried).ingredients: inventory[id]+=1
 	for id in node_cooldowns: node_cooldowns[id] = maxf(0,float(data.get("node_cooldowns",{}).get(id,0)))
-	discovered = ["moonleaf","sunfruit","mushroom"]
+	discovered = ["moonleaf","sunfruit","mushroom","mineralwater","lunartea","nebulasyrup"]
 	for id in data.get("discovered",[]):
 		if id in inventory and not id in discovered: discovered.append(id)
 	planters.restore(data.get("plantings",{}))
@@ -748,7 +748,7 @@ func draw_other_room() -> void:
 			draw_texture_rect(ART.crop(crop_index),Rect2(x-55*scale,536-height,110*scale,height),false,Color(brightness,brightness,brightness))
 	if room=="planet":
 		label_at("VALLÉE DES COMÈTES · %d m" % int(player.x/10),Vector2(32,184),16,Color("bce9dc"))
-		label_at("DÉCOUVERTES : %d / 3" % (discovered.size()-3),Vector2(930,184),16,Color("bce9dc"))
+		label_at("DÉCOUVERTES : %d / 3" % discovered.filter(func(id): return id in system("exploration").new_ingredients).size(),Vector2(930,184),16,Color("bce9dc"))
 	alien(Vector2(player.x-camera_x,player.y),Color("bca2e9"),true)
 	draw_doors()
 	draw_interaction_markers()
