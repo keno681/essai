@@ -122,7 +122,7 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",16)
 	header.add_child(row)
-	row.add_child(label("COSMO WRAP",22,CYAN))
+	row.add_child(label("COSMO WRAP BALL",18,CYAN))
 	var vitals := VBoxContainer.new()
 	vitals.custom_minimum_size.x = 150
 	row.add_child(vitals)
@@ -184,6 +184,8 @@ func _ready() -> void:
 	root.add_child(trim)
 
 func clear_window(title: String) -> VBoxContainer:
+	for child in overlay.get_children():
+		if child.has_meta("console_decor"): child.queue_free()
 	if is_instance_valid(window):
 		overlay.remove_child(window)
 		window.queue_free()
@@ -218,16 +220,16 @@ func hide_page() -> void:
 	game.save_settings()
 
 func show_page(name: String) -> void:
-	CYAN=Color(game.creator.config.accent)
+	CYAN=Color(game.console_node.config.accent)
 	page = name
 	game.menu = true
 	overlay.show()
-	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","creator":"CRÉATEUR IA / "+game.creator.PROVIDERS[game.creator.provider].name.to_upper(),"menu":game.creator.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
+	var box := clear_window({"chat":"CANAL CLIENT","progress":"ÉVOLUTION DU RESTAURANT","console":"CONSOLE POKÉBALL","menu":game.console_node.config.title+" / COMMANDE","inventory":"INVENTAIRE","options":"OPTIONS DE JEU","races":"CHOISIR UNE RACE","confirm":"NOUVEAU SERVICE","save":"CANAPÉ / SAUVEGARDE","shop":"PC / APPROVISIONNEMENT"}.get(name,"MENU"))
 	if name=="inventory": window.position.y = 82
 	elif name=="races": window.position.y = 100
 	match name:
-		"creator":
-			build_creator(box)
+		"console":
+			build_console(box)
 		"chat":
 			box.add_child(label("Conversation avec le client au comptoir",16,CYAN))
 			box.add_child(label("Chat autonome · Hors ligne · Gratuit",15,CYAN))
@@ -313,7 +315,7 @@ func show_page(name: String) -> void:
 			box.add_child(button("ÉVOLUTION DU RESTAURANT",func(): show_page("progress")))
 			box.add_child(button("INVENTAIRE",func(): show_page("inventory")))
 			box.add_child(button("PERSONNAGE ET RACES",func(): show_page("races")))
-			box.add_child(button("CRÉATEUR IA",func(): show_page("creator")))
+			box.add_child(button("CONSOLE POKÉBALL",func(): show_page("console")))
 			box.add_child(button("OPTIONS",func(): show_page("options")))
 			box.add_child(button("NOUVEAU SERVICE",func(): show_page("confirm")))
 			box.add_child(button("QUITTER LE JEU",func(): game.save_progress(); get_tree().quit()))
@@ -410,7 +412,7 @@ func show_page(name: String) -> void:
 			box.add_child(button("RETOUR AU MENU",func(): show_page("menu")))
 
 func _process(_delta: float) -> void:
-	CYAN=Color(game.creator.config.accent)
+	CYAN=Color(game.console_node.config.accent)
 	header.add_theme_stylebox_override("panel",skin(Color("101d2e"),CYAN))
 	credits.text = "%d wrapcoincoins" % game.coins
 	var rank: int = game.restaurant_level()
@@ -437,68 +439,76 @@ class SpaceButtonTrim extends Control:
 		for index in range(3):
 			draw_circle(Vector2(size.x-8-index*4,9),0.8,tint)
 
-func build_creator(box: VBoxContainer) -> void:
-	var provider_select:=OptionButton.new()
-	provider_select.add_item("Groq",0)
-	provider_select.add_item("OpenAI",1)
-	provider_select.selected=0 if game.creator.provider=="groq" else 1
-	provider_select.disabled=game.creator.request.get_http_client_status()!=HTTPClient.STATUS_DISCONNECTED
-	provider_select.item_selected.connect(func(index):
-		if game.creator.select_provider("groq" if index==0 else "openai"): show_page("creator"))
-	box.add_child(provider_select)
-	box.add_child(label("Clé privée : mémoire uniquement, jamais sauvegardée dans le jeu.",14))
-	var key_input:=LineEdit.new()
-	key_input.secret=true
-	key_input.placeholder_text="Clé "+game.creator.PROVIDERS[game.creator.provider].name+" (ou "+game.creator.PROVIDERS[game.creator.provider].env+")"
-	key_input.text=game.creator.key
-	key_input.text_changed.connect(func(value): game.creator.key=value)
-	box.add_child(key_input)
-	var model_input:=LineEdit.new()
-	model_input.text=game.creator.model
-	model_input.placeholder_text="Modèle du fournisseur sélectionné"
-	model_input.text_changed.connect(func(value): game.creator.model=value)
-	box.add_child(model_input)
-	box.add_child(button("CHARGER LES MODÈLES DISPONIBLES",func(): game.creator.load_models()))
-	var model_select:=OptionButton.new()
-	model_select.add_item("Choisir un modèle disponible")
-	for id in game.creator.available_models: model_select.add_item(id)
-	model_select.item_selected.connect(func(index):
-		if index>0:
-			game.creator.model=model_select.get_item_text(index)
-			model_input.text=game.creator.model)
-	box.add_child(model_select)
-	box.add_child(label("Groq : offre gratuite selon quotas. Une demande = un appel." if game.creator.provider=="groq" else "OpenAI : API facturée séparément de ChatGPT. Une demande = un appel.",14))
-	var prompt:=TextEdit.new()
-	prompt.custom_minimum_size=Vector2(0,80)
-	prompt.placeholder_text="Ex. : une planète violette, des cristaux et des noms de clients amusants"
-	box.add_child(prompt)
-	var console_scroll:=ScrollContainer.new()
-	console_scroll.custom_minimum_size=Vector2(0,160)
-	console_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-	box.add_child(console_scroll)
-	var transcript:=Label.new()
-	transcript.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	transcript.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	transcript.text=game.creator.console_text() if not game.creator.console_log.is_empty() else "Console prête. Décris une modification puis demande un aperçu."
-	console_scroll.add_child(transcript)
-	var output:=Label.new()
+class OpenBall extends Control:
+	func _draw() -> void:
+		var center=Vector2(400,330)
+		draw_circle(center+Vector2(0,26),322,Color("131b25"))
+		draw_circle(center+Vector2(0,18),308,Color("e9e8dd"))
+		draw_arc(center+Vector2(0,18),298,0,PI,80,Color("b9c7ca"),12,true)
+		var cap:=PackedVector2Array([Vector2(96,155)])
+		for i in range(65):
+			var angle=PI+PI*float(i)/64.0
+			cap.append(Vector2(400+304*cos(angle),155+118*sin(angle)))
+		cap.append(Vector2(704,155))
+		draw_colored_polygon(cap,Color("cf3f52"))
+		var shine:=PackedVector2Array()
+		for i in range(41):
+			var angle=PI*1.12+PI*0.76*float(i)/40.0
+			shine.append(Vector2(400+294*cos(angle),155+108*sin(angle)))
+		draw_polyline(shine,Color("f6858e"),3,true)
+		draw_line(Vector2(100,156),Vector2(700,156),Color("17283a"),12,true)
+		draw_circle(Vector2(400,156),34,Color("15283b"))
+		draw_circle(Vector2(400,156),25,Color("8ce4da"))
+		draw_circle(Vector2(400,156),17,Color("e8f6f0"))
+
+func build_console(_box: VBoxContainer) -> void:
+	overlay.remove_child(window)
+	window.queue_free()
+	window=PanelContainer.new()
+	window.position=Vector2(270,185)
+	window.size=Vector2(660,426)
+	window.add_theme_stylebox_override("panel",skin(Color("102137"),Color("79dacc")))
+	var ball:=OpenBall.new()
+	ball.position=Vector2(200,6)
+	ball.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(ball)
+	ball.set_meta("console_decor",true)
+	overlay.add_child(window)
+	var box:=VBoxContainer.new()
+	box.add_theme_constant_override("separation",8)
+	window.add_child(box)
+	var top:=HBoxContainer.new()
+	box.add_child(top)
+	var title:=label("POKÉBALL · CONSOLE DU JEU",21,Color("8ce4da"))
+	title.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	top.add_child(button("FERMER",hide_page))
+	var scroll:=ScrollContainer.new()
+	scroll.custom_minimum_size=Vector2(0,64)
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	box.add_child(scroll)
+	var history:=label(game.console_node.transcript,15)
+	history.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	history.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	scroll.add_child(history)
+	box.add_child(label("Colle le bloc de modification fourni dans notre conversation.",14,Color("a6c9d4")))
+	var composer:=TextEdit.new()
+	composer.custom_minimum_size=Vector2(0,80)
+	composer.placeholder_text="Ton bloc de modification…"
+	composer.text=game.console_node.draft
+	box.add_child(composer)
+	var output:=label(game.console_node.status,14)
 	output.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	output.text=game.creator.status
 	box.add_child(output)
+	var actions:=HBoxContainer.new()
+	box.add_child(actions)
+	actions.add_child(button("VÉRIFIER LE BLOC",func(): game.console_node.preview(composer.text)))
+	actions.add_child(button("ANNULER LA MODIFICATION",func(): game.console_node.undo()))
+	box.add_child(button("ENVOYER ET RELANCER LE JEU",func(): game.console_node.draft=composer.text; game.console_node.send_and_restart()))
 	var refresh:=func():
 		if is_instance_valid(output):
-			output.text=game.creator.status
-			model_select.clear()
-			model_select.add_item("Choisir un modèle disponible")
-			for id in game.creator.available_models: model_select.add_item(id)
-			transcript.text=game.creator.console_text()
-			console_scroll.set_deferred("scroll_vertical",100000)
-	game.creator.changed.connect(refresh)
+			output.text=game.console_node.status.left(240)
+			history.text=game.console_node.transcript
+	game.console_node.changed.connect(refresh)
 	output.tree_exiting.connect(func():
-		if game.creator.changed.is_connected(refresh): game.creator.changed.disconnect(refresh))
-	box.add_child(button("DEMANDER UN APERÇU",func(): game.creator.ask(prompt.text)))
-	box.add_child(button("APPLIQUER LA PROPOSITION",func(): game.creator.apply_pending(); show_page("creator")))
-	box.add_child(button("ANNULER LA DERNIÈRE MODIFICATION",func(): game.creator.undo(); show_page("creator")))
-	box.add_child(label("Destinations créées : carte existante, couleur personnalisée.",14))
-	for planet in game.creator.config.planets:
-		box.add_child(button("EXPLORER : "+planet.name,func(): game.creator.visit(planet)))
+		if game.console_node.changed.is_connected(refresh): game.console_node.changed.disconnect(refresh))

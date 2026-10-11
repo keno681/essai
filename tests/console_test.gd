@@ -1,0 +1,44 @@
+extends SceneTree
+func _initialize() -> void: call_deferred("run")
+func run() -> void:
+	var engine=load("res://patch_engine.gd").new()
+	engine.root_path="/tmp/console-fixture-"+str(Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(engine.root_path)
+	var file=FileAccess.open(engine.root_path+"/project.godot",FileAccess.WRITE)
+	file.store_string('config_version=5\n[application]\nconfig/name="Console fixture"\nrun/main_scene="res://main.tscn"\n'); file.close()
+	file=FileAccess.open(engine.root_path+"/main.gd",FileAccess.WRITE)
+	file.store_string('extends Node\nvar border = Color("edc478")\n'); file.close()
+	file=FileAccess.open(engine.root_path+"/main.tscn",FileAccess.WRITE)
+	file.store_string('[gd_scene load_steps=2 format=3]\n[ext_resource type="Script" path="res://main.gd" id="1"]\n[node name="Game" type="Node"]\nscript=ExtResource("1")\n'); file.close()
+	var patch={"format":"cosmowrap-patch-v1","title":"Cadre vert","files":[{"path":"main.gd","old":"edc478","new":"55cc77"}]}
+	var prepared=engine.prepare(JSON.stringify(patch))
+	assert(not prepared.is_empty())
+	assert(FileAccess.get_file_as_string(engine.root_path+"/main.gd").contains("edc478"))
+	assert(engine.apply(prepared,OS.get_executable_path()))
+	assert(FileAccess.get_file_as_string(engine.root_path+"/main.gd").contains("55cc77"))
+	assert(engine.undo_latest())
+	assert(FileAccess.get_file_as_string(engine.root_path+"/main.gd").contains("edc478"))
+	patch.files[0].new="bad syntax !!!"
+	patch.files[0].old='var border = Color("edc478")'
+	prepared=engine.prepare(JSON.stringify(patch))
+	assert(not engine.apply(prepared,OS.get_executable_path()))
+	assert(FileAccess.get_file_as_string(engine.root_path+"/main.gd").contains("edc478"))
+	patch.files=[{"path":"../outside.gd","create":"extends Node"}]
+	assert(engine.prepare(JSON.stringify(patch)).is_empty())
+	assert(engine.prepare("met le cadre en vert").is_empty())
+	patch.files=[{"path":"new.gd","create":"extends Node\n"}]
+	prepared=engine.prepare(JSON.stringify(patch))
+	assert(engine.apply(prepared,OS.get_executable_path()))
+	assert(engine.undo_latest() and not FileAccess.file_exists(engine.root_path+"/new.gd"))
+	var game=load("res://main.gd").new()
+	root.add_child(game)
+	game.ui.hide_page()
+	assert(game.start_click_action(Vector2(1045,377)))
+	assert(game.ui.page=="console")
+	assert(not game.console_node.managed)
+	game.console_node.queue_restart({"action":"undo"})
+	assert(game.console_node.status.contains("JOUER.cmd"))
+	game.queue_free()
+	await process_frame
+	print("CONSOLE PASS: preview, apply, startup verification, rollback, undo, path confinement, Pokéball window, unmanaged restart refusal")
+	quit()

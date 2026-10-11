@@ -59,10 +59,11 @@ var click_target: Dictionary = {}
 var ambient_clock := 0.0
 var ambience_enabled := true
 var music_player: AudioStreamPlayer
-var creator: Node
+var console_node: Node
 var saving_notice := "Aucune sauvegarde sur ce canapé."
 
 func _ready() -> void:
+	migrate_previous_saves()
 	get_tree().auto_accept_quit = false
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
 	for item in sheet.ingredients:
@@ -84,13 +85,14 @@ func _ready() -> void:
 	sound_player = AudioStreamPlayer.new()
 	add_child(sound_player)
 	setup_ambience()
-	creator = load("res://creator.gd").new()
-	add_child(creator)
+	console_node = load("res://console.gd").new()
+	add_child(console_node)
 	ui = load("res://ui.gd").new()
 	add_child(ui)
 	var art_path: String = "res://" + sheet.visuals[0].asset
 	if ResourceLoader.exists(art_path):
 		backdrop = load(art_path)
+	if console_node.reopen: ui.show_page("console")
 
 func animation(id: String) -> Dictionary:
 	for row in sheet.animations:
@@ -677,12 +679,12 @@ func draw_other_room() -> void:
 	var texture: Texture2D = room_textures.get(room)
 	if texture:
 		if room=="planet":
-			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness)*Color(creator.config.planet_color))
+			for i in range(3): draw_texture_rect(texture,Rect2(i*1200-camera_x,0,1200,768),false,Color(brightness,brightness,brightness)*Color(console_node.config.planet_color))
 		else: draw_texture_rect(texture,Rect2(0,0,1200,768),false,Color(brightness,brightness,brightness))
 	draw_ambient_decor()
 	if room=="planet":
-		label_at(creator.config.planet_name,Vector2(25,165),24)
-		for prop in creator.config.decor:
+		label_at(console_node.config.planet_name,Vector2(25,165),24)
+		for prop in console_node.config.decor:
 			draw_circle(Vector2(prop.x-camera_x,prop.y),prop.size,Color(prop.color))
 	var nodes: Array = sheet.wild_nodes if room=="planet" else (sheet.beds if room=="garden" else [])
 	for node in nodes:
@@ -784,7 +786,7 @@ func draw_drink(at: Vector2, tint: Color) -> void:
 	draw_line(at+Vector2(3,-8),at+Vector2(6,-25),Color("e8c599"),2,true)
 
 func draw_restaurant_details() -> void:
-	# Hidden creator-chat shortcut on the shelf.
+	# Pokéball console shortcut on the shelf.
 	var ball := Vector2(1045,377)
 	draw_circle(ball+Vector2(1,2),6,Color(0,0,0,0.45))
 	draw_circle(ball,5,Color("dad8ce"))
@@ -834,7 +836,7 @@ func interaction_targets() -> Array[Dictionary]:
 
 func clicked_target(at: Vector2) -> Dictionary:
 	if room=="restaurant" and Rect2(1032,364,26,26).has_point(at):
-		return {"id":"creator","label":"CRÉATEUR IA","rect":Rect2(1032,364,26,26),"x":1045.0,"action":"creator"}
+		return {"id":"console","label":"CONSOLE POKÉBALL","rect":Rect2(1032,364,26,26),"x":1045.0,"action":"console"}
 	var world := at+Vector2(camera_x,0)
 	for target in interaction_targets():
 		if target.rect.has_point(world): return target
@@ -842,8 +844,8 @@ func clicked_target(at: Vector2) -> Dictionary:
 
 func start_click_action(at: Vector2) -> bool:
 	if menu: return false
-	if clicked_target(at).get("action", "")=="creator":
-		ui.show_page("creator")
+	if clicked_target(at).get("action", "")=="console":
+		ui.show_page("console")
 		return true
 	click_target=clicked_target(at)
 	if not click_target.is_empty():
@@ -954,3 +956,12 @@ func draw_ambient_decor() -> void:
 		if room=="planet":
 			var fall:=fmod(t*40,1400)
 			draw_line(Vector2(1200-fall,165+fall*0.1),Vector2(1225-fall,161+fall*0.1),Color(0.7,0.85,1,0.35),2,true)
+
+func migrate_previous_saves() -> void:
+	var current=ProjectSettings.globalize_path("user://").trim_suffix("/")
+	var previous=current.get_base_dir()+"/Cosmo Wrap — Premier service"
+	if not DirAccess.dir_exists_absolute(previous): return
+	DirAccess.make_dir_recursive_absolute(current)
+	for name in ["progress.json","sofa-save.json","settings.json","creator-world.json"]:
+		if not FileAccess.file_exists(current+"/"+name) and FileAccess.file_exists(previous+"/"+name):
+			DirAccess.copy_absolute(previous+"/"+name,current+"/"+name)
