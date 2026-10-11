@@ -61,6 +61,18 @@ func run() -> void:
 	assert(host_game.served==1)
 	await wait_for(func(): return guest_game.served==1 and guest_game.holding==-1)
 	assert(host_game.coins==12)
+	# An incorrect drink served by the guest is consumed, without revenue.
+	host_game.customer_state="waiting"
+	host_game.order=0
+	host_game.online.partner.holding=5
+	host_game.online.send_world()
+	await wait_for(func(): return guest_game.holding==5 and guest_game.customer_state=="waiting")
+	guest_game.player=Vector2(host_game.customer_x,505)
+	guest_game.serve()
+	await wait_for(func(): return not guest_game.online.pending and guest_game.holding==-1)
+	assert(host_game.customer_emotion=="angry" and host_game.customer_state=="leaving")
+	assert(host_game.coins==12 and host_game.served==1)
+	await wait_for(func(): return guest_game.customer_emotion=="angry")
 	# Pass a wrap to the other chef, then back, without duplicating ingredients.
 	host_game.inventory.moonleaf=1
 	host_game.inventory.sunfruit=1

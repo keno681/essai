@@ -27,6 +27,8 @@ Seul ou avec un ami, sers des extraterrestres qui ont du caractère.
 | **🌱 Cultiver** | **🪐 Explorer** | **🦆 Développer le restaurant** |
 | Achète tes graines au PC : une graine donne 3 ingrédients, puis le bac devient vide. | Pars sur la planète pour trouver de nouveaux ingrédients et débloquer des recettes. | Gagne des wrapcoincoins, commande tes graines au PC et sauvegarde depuis le canapé. |
 
+Une mauvaise commande peut être remise au client : wrap ou boisson incorrect, il part furieux sans payer. La commande est consommée, et le client suivant arrive après son départ.
+
 ## Un univers à découvrir
 
 Les décors mêlent bois, métal, lumière chaude et vues sur l’espace. Ces images présentent les décors du jeu ; l’interface et les personnages s’ajoutent pendant la partie.

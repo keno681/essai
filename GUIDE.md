@@ -49,6 +49,8 @@ Les boissons utilisent de l’eau minérale, des feuilles de thé lunaire, des b
 
 Les tests automatisés sous Linux utilisent deux vrais lanceurs et vérifient la transmission du bloc, la relance, la reconnexion, les stocks, les commandes portées et le retour arrière après un échec. Cette relance coordonnée reste à essayer sur deux PC Windows.
 
+Une mauvaise commande peut être remise au client : wrap ou boisson incorrect, il part furieux sans payer. La commande est consommée, et le client suivant arrive après son départ.
+
 ## Graphismes
 
 Les ingrédients, plantes, accessoires, portes, boissons, distributeur, wraps, monnaie et console utilisent des images détaillées assorties au décor : métal patiné, bois, lumière chaude et reflets. Les plantes sont séparées des fonds du restaurant et de la serre : un bac vidé devient réellement vide, et une plante repousse progressivement. Les fonds, personnages et nouveaux éléments se trouvent dans `art/` ; `visual_library.gd` définit les régions des planches d'images.

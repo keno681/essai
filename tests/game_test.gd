@@ -46,7 +46,8 @@ func run_tests() -> void:
 	game.selected = (game.order+1)%3
 	for id in game.recipe(game.selected).ingredients: game.inventory[id] += 1
 	assert(game.cook())
-	assert(not game.serve(), "Une mauvaise commande ne doit pas être vendue")
+	assert(game.serve(), "Une mauvaise commande est remise mais non payée")
+	assert(game.customer_emotion=="angry" and game.holding==-1)
 	game.player.x = 130
 	game.cooldowns.moonleaf = 0
 	var before = game.inventory.moonleaf

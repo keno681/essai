@@ -156,8 +156,19 @@ func serve() -> bool:
 		say("Votre client attend " + recipe(order).name + ".")
 		return false
 	if holding != order:
-		say("Le client attend "+recipe(order).name+". R : ranger cette commande, puis retourne en cuisine.")
-		return false
+		var wanted: String=recipe(order).name
+		var received: String=recipe(holding).name
+		holding=-1
+		reset_customer_conversation()
+		dismiss_customer()
+		speech="J’ai demandé "+wanted+", pas "+received+" ! Garde tes recettes, je ne paierai pas !"
+		speech_elapsed=0
+		speech_time=maxf(5,speech.length()/12.0)
+		action_time=float(animation("serve").duration)
+		play_sound(180)
+		say("Mauvaise commande ! Le client part furieux, sans payer. La commande est perdue.")
+		save_progress()
+		return true
 	var previous_level := restaurant_level()
 	coins += int(recipe(order).price) + (5 if upgraded else 0) + int(sheet.progression[previous_level].bonus)
 	served += 1
@@ -922,7 +933,7 @@ func guide_step() -> Dictionary:
 	if room=="planet": return {"text":"Cliquez sur les plantes sauvages pour découvrir de nouveaux ingrédients.","target":""}
 	if customer_state!="waiting": return {"text":"Un client arrive. Profitez-en pour récolter ou visiter le bureau.","target":"moonleaf"}
 	if holding>=0:
-		if holding!=order: return {"text":"Vous portez une autre recette : R pour la ranger, puis choisissez la commande.","target":""}
+		if holding!=order: return {"text":"Ce n’est pas sa commande ! Clique pour la donner quand même (client furieux), ou R pour la ranger.","target":""}
 		return {"text":"Commande prête ! Clique sur le client pour lui donner.","target":"client"}
 	for id in recipe(order).ingredients:
 		if inventory[id]<1:
