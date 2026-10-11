@@ -23,7 +23,7 @@ Seul ou avec un ami, sers des extraterrestres qui ont du caractère.
 
 | 🌯 Cuisiner | 🥤 Préparer des boissons | 👽 Accueillir les clients |
 | :--- | :--- | :--- |
-| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. | Eau minérale, thé lunaire, baies nébuleuses et citron astral : chaque boisson a ses ingrédients. | Des apparences aléatoires, des conversations et une file d’attente qui avance au rythme du service. |
+| Glisse les ingrédients dans ta galette, compose une recette et sers ta commande. Les ingrédients déposés sont définitifs ; la poubelle permet de recommencer. | Eau minérale, thé lunaire, baies nébuleuses et citron astral : chaque boisson a ses ingrédients. | Des apparences aléatoires, des conversations et une file d’attente qui avance au rythme du service. |
 | **🌱 Cultiver** | **🪐 Explorer** | **🦆 Développer le restaurant** |
 | Achète tes graines au PC : une graine donne 3 ingrédients, puis le bac devient vide. | Pars sur la planète pour trouver de nouveaux ingrédients et débloquer des recettes. | Gagne des wrapcoincoins, commande tes graines au PC et sauvegarde depuis le canapé. |
 

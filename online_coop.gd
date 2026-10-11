@@ -1,5 +1,5 @@
 extends Node
-const VERSION := "cosmo-coop-2"
+const VERSION := "cosmo-coop-3"
 const PORT := 16383
 var game: Node
 var peer: ENetMultiplayerPeer
@@ -179,7 +179,15 @@ func receive(data: Dictionary, sender: int) -> void:
 			pending=false
 			game.say(str(data.get("message","")))
 			if bool(data.get("ok",false)):
-				if str(data.get("action",""))=="cook": game.ui.hide_page()
+				if str(data.get("action",""))=="cook":
+					var crafted_kind: String=game.recipe(int(data.get("args",{}).get("recipe",0))).get("kind","wrap")
+					game.ui.set_meta("composition_"+crafted_kind,[])
+					game.ui.hide_page()
+				elif str(data.get("action",""))=="discard_preparation":
+					var discard_kind: String=str(data.get("args",{}).get("kind","wrap"))
+					game.ui.set_meta("composition_"+discard_kind,[])
+					game.ui.show_page("cookdrink" if discard_kind=="drink" else "cookwrap")
+				elif str(data.get("action",""))=="discard_order": game.ui.show_page("cookdrink" if game.ui.page=="cookdrink" else "cookwrap")
 				elif str(data.get("action",""))=="chat":
 					if game.customer_state=="leaving": game.ui.hide_page()
 					else: game.ui.show_page("chat")
@@ -268,6 +276,11 @@ func handle_action(data: Dictionary) -> void:
 				if absf(game.player.x-station)<100:
 					game.selected=index
 					ok=game.cook()
+		"discard_preparation":
+			var kind: String=str(args.get("kind",""))
+			var station := 745.0 if kind=="drink" else 650.0
+			if game.room=="restaurant" and absf(game.player.x-station)<100 and args.get("ingredients") is Array: ok=game.discard_preparation(kind,args.ingredients)
+		"discard_order": ok=game.discard_order()
 		"serve":
 			if game.room=="restaurant" and absf(game.player.x-game.customer_x)<110: ok=game.serve()
 		"return": game.return_wrap(); ok=true

@@ -371,6 +371,7 @@ func show_page(name: String) -> void:
 			for i in range(game.sheet.recipes.size()):
 				var index := i
 				var recipe: Dictionary = game.recipe(i)
+				if recipe.get("custom",false): continue
 				var recipe_button := button(str(i+1)+" · "+recipe.name+"  /  "+str(int(recipe.price))+" WCC",func(): game.selected=index; hide_page())
 				recipe_button.disabled = not game.recipe_unlocked(i)
 				var names: Array[String] = []
@@ -380,7 +381,7 @@ func show_page(name: String) -> void:
 				recipe_button.tooltip_text = " + ".join(names)
 				box.add_child(recipe_button)
 			if game.holding>=0:
-				box.add_child(button("RANGER LE WRAP / récupérer les ingrédients",func(): game.return_wrap(); show_page("inventory")))
+				box.add_child(button("JETER LA COMMANDE / ingrédients perdus",func(): game.discard_order(); show_page("inventory")))
 		"races":
 			box.add_child(label("Sept races • Choix visuel, les recettes restent les mêmes",15,Color("9fb9cb")))
 			for i in range(game.sheet.races.size()):

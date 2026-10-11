@@ -7,7 +7,7 @@ class Food extends TextureRect:
 	var view: Node
 	var id: String
 	func _get_drag_data(_at: Vector2):
-		if view.game.inventory[id]<1 or id in view.chosen: return null
+		if view.game.holding>=0 or view.game.inventory[id]<1 or id in view.chosen: return null
 		var preview=TextureRect.new()
 		preview.texture=texture
 		preview.custom_minimum_size=Vector2(64,64)
@@ -15,10 +15,6 @@ class Food extends TextureRect:
 		preview.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		set_drag_preview(preview)
 		return {"ingredient":id,"kitchen":view,"from_wrap":false}
-	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
-		return data is Dictionary and data.get("kitchen")==view and data.get("from_wrap",false) and data.get("ingredient")==id
-	func _drop_data(_at: Vector2, data: Variant) -> void:
-		view.remove_ingredient(data.ingredient)
 
 class Table extends Control:
 	var view: Node
@@ -34,10 +30,6 @@ class Table extends Control:
 		wood.fill_to=Vector2(0,1)
 	func _draw() -> void:
 		draw_texture_rect(preload("res://visual_library.gd").interface(2), Rect2(Vector2.ZERO, size), false)
-	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
-		return data is Dictionary and data.get("kitchen")==view and data.get("from_wrap",false)
-	func _drop_data(_at: Vector2, data: Variant) -> void:
-		view.remove_ingredient(data.ingredient)
 
 class Wrap extends Control:
 	var view: Node
@@ -52,23 +44,13 @@ class Wrap extends Control:
 			var at: Vector2=view.positions.get(id,c)
 			draw_texture_rect(view.art(view.index_of(id)),Rect2(at-Vector2(27,27),Vector2(54,54)),false)
 	func _can_drop_data(at: Vector2, data: Variant) -> bool:
-		return inside(at) and data is Dictionary and data.get("kitchen")==view and data.get("ingredient","") in view.allowed and view.game.inventory.get(data.get("ingredient",""),0)>0
+		return inside(at) and data is Dictionary and data.get("kitchen")==view and data.get("ingredient","") in view.allowed and data.get("ingredient","") not in view.chosen and not data.get("from_wrap",false) and view.game.holding<0 and view.game.inventory.get(data.get("ingredient",""),0)>0
 	func _drop_data(at: Vector2, data: Variant) -> void:
 		var id: String=data.ingredient
 		if id not in view.chosen: view.chosen.append(id)
 		view.positions[id]=at
 		view.refresh()
-	func _get_drag_data(at: Vector2):
-		for i in range(view.chosen.size()-1,-1,-1):
-			var id: String=view.chosen[i]
-			if at.distance_to(view.positions.get(id,size*0.5))>30: continue
-			var preview=TextureRect.new()
-			preview.texture=view.art(view.index_of(id))
-			preview.custom_minimum_size=Vector2(54,54)
-			preview.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
-			set_drag_preview(preview)
-			return {"ingredient":id,"kitchen":view,"from_wrap":true}
-		return null
+	func _get_drag_data(_at: Vector2): return null
 
 class Kitchen extends VBoxContainer:
 	var ui: Node
@@ -96,7 +78,7 @@ class Kitchen extends VBoxContainer:
 			if recipe.get("kind","wrap")==kind:
 				for id in recipe.ingredients:
 					if id not in allowed: allowed.append(id)
-		chosen=ui.get_meta("wrap_composition",[]).filter(func(id): return id in allowed)
+		chosen=ui.get_meta("composition_"+kind,[]).filter(func(id): return id in allowed)
 		add_theme_constant_override("separation",8)
 		for i in range(game.sheet.ingredients.size()): textures.append(preload("res://visual_library.gd").food(i))
 		var list=HBoxContainer.new()
@@ -152,20 +134,28 @@ class Kitchen extends VBoxContainer:
 		prepare=ui.button("FABRIQUER LA BOISSON" if kind=="drink" else "ROULER ET CUISINER LE WRAP",func():
 			if match_index<0: return
 			game.selected=match_index
-			if game.cook(): ui.hide_page()
+			if game.cook(): clear_preparation(); ui.hide_page()
 			else: caption.text=game.message)
 		add_child(prepare)
-		var help=ui.label("Dépose dans le verre. Pour retirer un ingrédient, ramène-le sur la table." if kind=="drink" else "Dépose dans la galette. Pour retirer un ingrédient, ramène-le sur la table.",14)
+		var help=ui.label("Dépose dans le verre. Les ingrédients déposés ne peuvent plus être retirés." if kind=="drink" else "Dépose dans la galette. Les ingrédients déposés ne peuvent plus être retirés.",14)
 		help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		add_child(help)
-		if game.holding>=0: add_child(ui.button("RANGER LA COMMANDE",func(): game.return_wrap(); refresh()))
+		add_child(ui.button("JETER LA PRÉPARATION",func():
+			if chosen.is_empty(): return
+			if game.discard_preparation(kind,chosen.duplicate()): clear_preparation(); refresh()
+			else: caption.text=game.message))
+		if game.holding>=0: add_child(ui.button("JETER LA COMMANDE PORTÉE",func():
+			if game.discard_order(): refresh()))
 		refresh()
-	func remove_ingredient(id: String) -> void:
-		chosen.erase(id)
-		positions.erase(id)
-		refresh()
+	func remove_ingredient(_id: String) -> void:
+		# Deposited ingredients are permanent until the entire preparation is discarded.
+		pass
+	func clear_preparation() -> void:
+		chosen.clear()
+		positions.clear()
+		ui.set_meta("composition_"+kind,[])
 	func refresh() -> void:
-		ui.set_meta("wrap_composition",chosen.duplicate())
+		ui.set_meta("composition_"+kind,chosen.duplicate())
 		var target=chosen.duplicate()
 		target.sort()
 		match_index=-1
@@ -176,7 +166,8 @@ class Kitchen extends VBoxContainer:
 			required.sort()
 			if required==target: match_index=i; break
 		caption.text="Glisse les ingrédients de la table dans le wrap." if kind=="wrap" else "Glisse les ingrédients dans le verre."
-		if match_index>=0:
+		if game.holding>=0: caption.text="Tu portes déjà une commande : sers-la ou jette-la avant de cuisiner."
+		elif match_index>=0:
 			caption.text=game.recipe(match_index).name
 			if not game.recipe_unlocked(match_index): caption.text+=" · recette verrouillée"
 		prepare.disabled=match_index<0 or game.holding>=0

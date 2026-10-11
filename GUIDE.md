@@ -23,7 +23,7 @@ Ce nouveau conditionnement évite la redistribution de l'exécutable ; **il ne c
 - I : inventaire ; T : discuter avec les clients ; Échap : menu.
 - Cliquer sur une porte permet de rejoindre la pièce correspondante.
 - Cliquer sur un bac ouvre un petit choix près du curseur : récolter, vider ou planter une variété découverte.
-- Cliquer sur la cuisine ou le distributeur ouvre la préparation. Glisser les ingrédients de la table dans la galette ou le verre, puis fabriquer la commande. Ramener un ingrédient sur la table permet de le retirer.
+- Cliquer sur la cuisine ou le distributeur ouvre la préparation. Glisser les ingrédients de la table dans la galette ou le verre, puis fabriquer la commande. Un ingrédient déposé ne peut plus être retiré. JETER LA PRÉPARATION supprime toute la composition et consomme ses ingrédients. JETER LA COMMANDE PORTÉE (ou R) détruit la commande fabriquée sans remboursement. Une composition hors menu produit une commande improvisée, que les clients ne demandent jamais. Les recettes nommées restent soumises à leur progression.
 - Cliquer sur le client lui remet la commande préparée ; le chat reste accessible avec T et le bouton du HUD. Trois clients attendent derrière lui, avec des apparences aléatoires. Ils avancent dans l’ordre après son départ ; la file est conservée dans les sauvegardes.
 - Le canapé du bureau sert à sauvegarder et charger ; le PC permet de commander uniquement des graines, par lots de 3. Une graine produit 3 ingrédients en une récolte, puis le bac devient vide. Vider un plant avant sa récolte ne rend pas la graine. Trois graines de chaque variété de départ sont offertes ; les plants déjà présents restent utilisables. Les semences sont conservées dans les sauvegardes et partagées en coop.
 
@@ -94,3 +94,5 @@ python3 tools/package_windows.py
 ```
 
 Le nouveau pack distribue uniquement les sources, les images, les sons et les lanceurs texte. Une empreinte SHA256 du ZIP est publiée à côté de celui-ci. Le lancement et les contrôles ont été vérifiés avec Godot sous Linux ; l'installation automatique et le démarrage sous Windows restent à vérifier sur un PC Windows.
+
+La mise à jour [Cuisine-Definitive-Pokeball.json](downloads/Cuisine-Definitive-Pokeball.json) modifie aussi le protocole de coop : quitter le salon et l’appliquer séparément sur les deux PC. Les recettes improvisées ont des identifiants déterministes communs aux deux joueurs.

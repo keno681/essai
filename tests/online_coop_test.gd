@@ -101,6 +101,25 @@ func run() -> void:
 	assert("starlime" in host_game.discovered)
 	await wait_for(func(): return "starlime" in guest_game.discovered)
 	assert(host_game.inventory.starlime==2)
+	# Guest discards use the host stocks and never refund ingredients.
+	guest_game.room="restaurant"
+	guest_game.player=Vector2(650,505)
+	host_game.inventory.moonleaf=3
+	host_game.online.send_world()
+	await wait_for(func(): return guest_game.inventory.moonleaf==3)
+	guest_game.discard_preparation("wrap",["moonleaf"])
+	await wait_for(func(): return not guest_game.online.pending)
+	assert(host_game.inventory.moonleaf==2)
+	await wait_for(func(): return guest_game.inventory.moonleaf==2)
+	guest_game.selected=0
+	guest_game.cook()
+	await wait_for(func(): return not guest_game.online.pending and guest_game.holding==0)
+	var after_cooking: int=host_game.inventory.moonleaf
+	guest_game.discard_order()
+	await wait_for(func(): return not guest_game.online.pending and guest_game.holding==-1)
+	assert(host_game.inventory.moonleaf==after_cooking)
+	host_game.inventory.moonleaf=1
+	host_game.inventory.sunfruit=1
 	# Return to offline play must restore the guest's solo save.
 	guest_game.online.leave()
 	assert(guest_game.coins==solo_coins)

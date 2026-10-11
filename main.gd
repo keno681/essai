@@ -70,6 +70,7 @@ func _ready() -> void:
 	migrate_previous_saves()
 	get_tree().auto_accept_quit = false
 	sheet = JSON.parse_string(FileAccess.get_file_as_string("res://data/design.json"))
+	add_improvised_recipes()
 	for item in sheet.ingredients:
 		inventory[item.id] = 0
 		if not item.get("pantry",false): inventory["seed_"+item.id]=3 if item.starter else 0
@@ -126,6 +127,48 @@ func recipe(index: int) -> Dictionary:
 func say(words: String) -> void:
 	message = words
 	message_time = 5.0
+
+func add_improvised_recipes() -> void:
+	for kind in ["wrap","drink"]:
+		var ids: Array=[]
+		for row in sheet.recipes:
+			if row.get("kind","wrap")==kind:
+				for id in row.ingredients:
+					if id not in ids: ids.append(id)
+		for mask in range(1,1<<ids.size()):
+			var parts: Array=[]
+			for i in range(ids.size()):
+				if mask & (1<<i): parts.append(ids[i])
+			var sorted=parts.duplicate(); sorted.sort()
+			var exists=false
+			for row in sheet.recipes:
+				var required=row.ingredients.duplicate(); required.sort()
+				if row.get("kind","wrap")==kind and required==sorted: exists=true; break
+			if not exists: sheet.recipes.append({"id":"custom_"+kind+"_"+str(mask),"name":"Boisson improvisée" if kind=="drink" else "Wrap improvisé","kind":kind,"ingredients":parts,"price":0,"custom":true,"joke":"Une création hors menu."})
+
+func discard_preparation(kind: String, ids: Array) -> bool:
+	if online and online.request("discard_preparation",{"kind":kind,"ingredients":ids}): return false
+	if kind not in ["wrap","drink"] or ids.is_empty() or ids.size()>sheet.ingredients.size(): return false
+	var seen: Array=[]
+	for id in ids:
+		if not id is String or id in seen or inventory.get(id,0)<1: say("Stock insuffisant pour cette préparation."); return false
+		var allowed=false
+		for row in sheet.recipes:
+			if row.get("kind","wrap")==kind and id in row.ingredients: allowed=true; break
+		if not allowed: return false
+		seen.append(id)
+	for id in seen: inventory[id]-=1
+	say("Préparation jetée. Les ingrédients sont perdus.")
+	save_progress()
+	return true
+
+func discard_order() -> bool:
+	if online and online.request("discard_order"): return false
+	if holding<0: return false
+	holding=-1
+	say("Commande jetée, sans récupérer les ingrédients.")
+	save_progress()
+	return true
 
 func cook() -> bool:
 	if online and online.request("cook",{"recipe":selected}): return false
@@ -261,7 +304,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			KEY_E: interact()
 			KEY_SPACE:
 				if player.y >= 505: vertical = -450
-			KEY_R: return_wrap()
+			KEY_R: discard_order()
 			KEY_N: ui.show_page("confirm")
 
 func return_wrap() -> void:
@@ -558,7 +601,7 @@ func choose_customer() -> void:
 func next_order() -> void:
 	var choices: Array[int] = []
 	for index in range(sheet.recipes.size()):
-		if recipe_unlocked(index): choices.append(index)
+		if not recipe(index).get("custom",false) and recipe_unlocked(index): choices.append(index)
 	order = choices[customer_rng.randi_range(0,choices.size()-1)]
 
 func recipe_unlocked(index: int) -> bool:
@@ -933,7 +976,7 @@ func guide_step() -> Dictionary:
 	if room=="planet": return {"text":"Cliquez sur les plantes sauvages pour découvrir de nouveaux ingrédients.","target":""}
 	if customer_state!="waiting": return {"text":"Un client arrive. Profitez-en pour récolter ou visiter le bureau.","target":"moonleaf"}
 	if holding>=0:
-		if holding!=order: return {"text":"Ce n’est pas sa commande ! Clique pour la donner quand même (client furieux), ou R pour la ranger.","target":""}
+		if holding!=order: return {"text":"Ce n’est pas sa commande ! Clique pour la donner quand même (client furieux), ou R pour la jeter.","target":""}
 		return {"text":"Commande prête ! Clique sur le client pour lui donner.","target":"client"}
 	for id in recipe(order).ingredients:
 		if inventory[id]<1:
