@@ -22,7 +22,7 @@ func _process(_delta: float) -> void:
 	visible=false
 	if game.menu: return
 	var target=game.clicked_target(game.get_global_mouse_position())
-	if target.is_empty(): return
+	if target.is_empty() or target.get("id")=="console": return
 	var bounds: Rect2=target.rect
 	position=bounds.position-Vector2(game.camera_x,0)
 	size=bounds.size

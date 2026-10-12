@@ -1060,7 +1060,7 @@ func draw_interaction_markers() -> void:
 	if menu: return
 	var hover:=clicked_target(get_global_mouse_position())
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND if not hover.is_empty() else Input.CURSOR_ARROW)
-	if not hover.is_empty():
+	if not hover.is_empty() and hover.get("id")!="console":
 		var object_name:=object_hover_name(hover)
 		var width:=maxf(120,ThemeDB.fallback_font.get_string_size(object_name,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+20)
 		var at:=get_global_mouse_position()
