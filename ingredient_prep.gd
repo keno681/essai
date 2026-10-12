@@ -2,7 +2,12 @@ extends RefCounted
 const ART=preload("res://visual_library.gd")
 const TOOLS={"moonleaf":"knife","sunfruit":"knife","mushroom":"knife","firepepper":"knife","starlime":"press","nebulasyrup":"press","crystalrice":"sieve","lunartea":"sieve"}
 const NAMES={"knife":"Couteau","press":"Presse-agrumes","sieve":"Passoire"}
+const READY_NAMES={"moonleaf":"SALADE COUPÉE","sunfruit":"TOMATE EN RONDELLES","mushroom":"CHAMPI ÉMINCÉ","firepepper":"PIMENT COUPÉ","starlime":"JUS DE CITRON","nebulasyrup":"JUS DE BAIES","crystalrice":"RIZ RINCÉ","lunartea":"THÉ NETTOYÉ"}
 static func tool_for(id: String) -> String: return TOOLS.get(id,"")
+static func prepared_texture(index: int) -> Texture2D:
+	if index==0 or index==7: return preload("res://art/prepared_salad.svg")
+	if index==3: return preload("res://art/prepared_lemon.svg")
+	return ART.food(index)
 static func build(ui: Node, box: VBoxContainer) -> void:
 	var bench=Bench.new(); bench.ui=ui; box.add_child(bench)
 class Item extends TextureRect:
@@ -27,41 +32,41 @@ class Board extends Control:
 	var direction=Vector2.ZERO
 	var swipe_from=Vector2.ZERO
 	var swipe_to=Vector2.ZERO
-	func center() -> Vector2: return Vector2(size.x*0.44,155)
+	func center() -> Vector2: return Vector2(size.x*0.28,151)
 	func rack(index: int) -> Rect2: return Rect2(18+index*128,14,110,54)
 	func _draw() -> void:
 		draw_texture_rect(ART.interface(2),Rect2(Vector2.ZERO,size),false)
 		var font=ThemeDB.fallback_font
-		draw_string(font,Vector2(20,42),"BOUGE LA SOURIS SUR L’ALIMENT !",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("f9e5af"))
+		for i in range(3):
+			var rect=rack(i); var tool: String=["knife","press","sieve"][i]
+			draw_style_box(bench.ui.skin(Color("21313a"),Color("6ce4bf") if bench.selected_tool==tool else Color("876845")),rect)
+			draw_texture_rect(bench.tool_icon(i),Rect2(rect.position+Vector2(26,0),Vector2(58,40)),false)
+			draw_string(font,rect.position+Vector2(8,48),NAMES[tool],HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("f5e4c9"))
 		var at=center()
-		draw_arc(at,76,0,TAU,48,Color("9fc5b0"),1.5,true)
+		draw_arc(at,61,0,TAU,48,Color("9fc5b0"),1.5,true)
 		if bench.crop.is_empty():
-			draw_string(font,at+Vector2(-81,0),"POSE TON ALIMENT ICI",HORIZONTAL_ALIGNMENT_LEFT,-1,13,Color("f3ddae"))
+			draw_string(font,at+Vector2(-44,0),"ALIMENT BRUT",HORIZONTAL_ALIGNMENT_LEFT,-1,13,Color("f3ddae"))
 		else:
 			var texture: Texture2D=bench.raw_texture(bench.crop)
 			if not bench.processed: draw_texture_rect(texture,Rect2(at-Vector2(54,54),Vector2(108,108)),false)
 			else:
 				for i in range(5): draw_texture_rect(ART.food(bench.index_of(bench.crop)),Rect2(at+Vector2((i%3-1)*30-18,(floori(i/3.0)-0.5)*32-15),Vector2(36,30)),false)
-			var progress: float=bench.progress
-			draw_rect(Rect2(24,247,230,9),Color("342c24"))
-			draw_rect(Rect2(24,247,230*progress,9),Color("6de3b4"))
+		var preview_id: String=bench.crop if not bench.crop.is_empty() else bench.last_crop
+		draw_string(font,Vector2(50,231),"BRUT / RÉCOLTÉ",HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("efc782"))
+		draw_string(font,Vector2(194,155),"→",HORIZONTAL_ALIGNMENT_LEFT,-1,27,Color("f0d28a"))
+		if not preview_id.is_empty():
+			draw_texture_rect(bench.ready_texture(preview_id),Rect2(247,92,110,90),false,Color(1,1,1,0.4 if not bench.crop.is_empty() else 1.0))
+			draw_string(font,Vector2(237,85),"PRÉPARÉ / RECETTE",HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("82eab8"))
 		if bench.flash>0: draw_arc(at,78,0,TAU,48,Color(0.4,1,0.7,bench.flash),3,true)
-		if bench.flash>0:
-			draw_line(swipe_from,swipe_to,Color(0.8,1,0.92,bench.flash),4,true)
 		for piece in bench.pieces:
-			draw_texture_rect(ART.food(bench.index_of(str(piece.id))),Rect2(piece.position,Vector2(24,20)),false,Color(1,1,1,piece.life))
+			draw_texture_rect(bench.ready_texture(str(piece.id)),Rect2(piece.position,Vector2(24,20)),false,Color(1,1,1,piece.life))
 		if bench.crop.is_empty() and bench.flash>0.55: draw_string(font,Vector2(290,174),"+1 PRÊT !",HORIZONTAL_ALIGNMENT_LEFT,-1,16,Color("7affbc"))
 		draw_string(font,Vector2(286,270),"BAC DES PRÊTS",HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("f7e3b5"))
 	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseMotion:
-			cursor=event.position
-			var start: Vector2=cursor-event.relative
-			var contact: Vector2=Geometry2D.get_closest_point_to_segment(center(),start,cursor)
-			if contact.distance_to(center())<65 and event.relative.length()>=12 and (not touching or event.relative.dot(direction)<0):
-				swipe_from=start; swipe_to=cursor; bench.gesture(event.relative)
-				direction=event.relative.normalized()
-			touching=cursor.distance_to(center())<65
-			queue_redraw()
+		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
+			for i in range(3):
+				if rack(i).has_point(event.position): bench.use_tool(["knife","press","sieve"][i]); accept_event(); return
+			if event.position.distance_to(center())<65: bench.transform(); accept_event()
 	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
 		if not data is Dictionary or data.get("bench")!=bench: return false
 		if data.get("type")=="raw": return bench.crop.is_empty() and bench.game.inventory.get("raw_"+str(data.id),0)>0
@@ -87,6 +92,7 @@ class Bench extends VBoxContainer:
 	var cells: Dictionary={}
 	var ui: Node
 	var game: Node
+	var last_crop=""
 	var crop=""
 	var processed=false
 	var busy=false
@@ -102,7 +108,13 @@ class Bench extends VBoxContainer:
 		for i in range(game.sheet.ingredients.size()):
 			if game.sheet.ingredients[i].id==id: return i
 		return 0
+	func ready_texture(id: String) -> Texture2D:
+		if id=="moonleaf" or id=="lunartea": return preload("res://art/prepared_salad.svg")
+		if id=="starlime": return preload("res://art/prepared_lemon.svg")
+		return ART.food(index_of(id))
 	func raw_texture(id: String) -> Texture2D:
+		if id=="starlime": return preload("res://art/raw_lemon.svg")
+		if id in ["mushroom","firepepper","crystalrice"]: return ART.crop(int(game.ingredient(id).get("crop_visual",0)))
 		if id=="sunfruit": return preload("res://art/prep_tomato.svg")
 		if id=="lunartea": return ART.food(0)
 		if id=="nebulasyrup": return ART.crop(1)
@@ -123,7 +135,7 @@ class Bench extends VBoxContainer:
 		board=Board.new(); board.bench=self; board.custom_minimum_size=Vector2(410,282); add_child(board)
 		bowl=Bowl.new(); bowl.mouse_filter=Control.MOUSE_FILTER_PASS; bowl.bench=self; bowl.texture=tool_icon(3); bowl.position=Vector2(286,176); bowl.size=Vector2(112,82)
 		bowl.expand_mode=TextureRect.EXPAND_IGNORE_SIZE; bowl.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED; bowl.size=Vector2(112,82)
-		bowl.tooltip_text="Glisse le résultat ici, ou clique pour le ranger"; board.add_child(bowl)
+		bowl.tooltip_text="Glisse le résultat ici, ou clique pour le ranger"; board.add_child(bowl); bowl.set_deferred("size",Vector2(112,82))
 		caption=ui.label("",14); caption.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART; add_child(caption)
 		refresh()
 	func place_crop(id: String) -> void:
@@ -135,13 +147,13 @@ class Bench extends VBoxContainer:
 		selected_tool=id
 		if not crop.is_empty() and id!=TOOLS.get(crop,""): game.say("Cet aliment demande : "+NAMES[TOOLS.get(crop,"")])
 		refresh()
-	func gesture(relative: Vector2) -> void:
-		if crop.is_empty() or busy or processed or relative.length()<12: return
-		progress=minf(1,progress+1.0/3.0)
-		game.play_sound(450+int(progress*300)); flash=0.8
-		for i in range(3): pieces.append({"id":crop,"position":board.center()+Vector2(i*12-18,-12),"velocity":Vector2(70+i*30,-65+i*25),"life":1.0})
-		if progress>=0.99: processed=true; flash=1.0; commit_current()
-		refresh()
+	func gesture(_relative: Vector2) -> void: pass
+	func transform() -> void:
+		if crop.is_empty() or busy or processed: return
+		if selected_tool!=TOOLS.get(crop,""): game.say("Choisis : "+NAMES[TOOLS.get(crop,"")]); return
+		last_crop=crop; processed=true; flash=1.0; game.play_sound(660)
+		for i in range(5): pieces.append({"id":crop,"position":board.center()+Vector2(i*9-18,-12),"velocity":Vector2(70+i*30,-65+i*20),"life":1.0})
+		commit_current()
 	func commit_current() -> void:
 		if not processed or busy or crop.is_empty(): return
 		if game.prepare_crop(crop): clear_crop(); flash=1.0
@@ -151,11 +163,11 @@ class Bench extends VBoxContainer:
 	func refresh() -> void:
 		for id in cells:
 			var raw: int=int(game.inventory.get("raw_"+id,0))
-			cells[id].label.text="%s · %d bruts" % [game.ingredient(id).short_name,raw]
+			cells[id].label.text="%s BRUT · %d" % [game.ingredient(id).short_name,raw]
 			cells[id].food.modulate=Color(1,1,1,1 if raw>0 else 0.4)
-		caption.text="Pose un aliment, puis fais 3 passages rapides de souris dessus."
-		if not crop.is_empty(): caption.text="SWISH ! Passe et repasse sur l’aliment · %d/3" % roundi(progress*3)
-		if processed: caption.text="Rangement automatique dans le bac…"
+		caption.text="Pose un aliment brut → choisis l’outil → clique sur l’aliment."
+		if not crop.is_empty(): caption.text="Choisis : "+NAMES[TOOLS.get(crop,"")] if selected_tool!=TOOLS.get(crop,"") else "Clique sur l’aliment pour le transformer."
+		elif not last_crop.is_empty(): caption.text="✓ "+READY_NAMES.get(last_crop,"INGRÉDIENT PRÉPARÉ")+" disponible dans la composition →"
 		if busy: caption.text="Rangement en cours…"
 		board.queue_redraw()
 	func _process(delta: float) -> void:

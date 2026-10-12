@@ -18,7 +18,7 @@ func run() -> void:
 	assert(bench.cells.sunfruit.food.visible and game.inventory.sunfruit==0)
 	game.inventory.raw_crystalrice=2
 	await process_frame
-	assert(bench.cells.crystalrice.food.visible and "2 bruts" in bench.cells.crystalrice.label.text)
+	assert(bench.cells.crystalrice.food.visible and "BRUT · 2" in bench.cells.crystalrice.label.text)
 	var board: Control=bench.board
 	var raw={"bench":bench,"type":"raw","id":"sunfruit"}
 	assert(board._can_drop_data(Vector2.ZERO,raw)); board._drop_data(Vector2.ZERO,raw)
@@ -26,18 +26,18 @@ func run() -> void:
 	assert(board._get_drag_data(Vector2.ZERO)==null)
 	var knife={"bench":bench,"type":"tool","id":"knife"}
 	assert(board._can_drop_data(Vector2.ZERO,knife)); board._drop_data(Vector2.ZERO,knife)
-	for i in range(2): bench.gesture(Vector2(0,40))
+	bench.gesture(Vector2(0,40))
 	assert(not bench.processed and game.inventory.sunfruit==0)
 	var bowl: Control=bench.bowl
 	var result={"bench":bench,"type":"processed","id":"sunfruit"}
-	assert(not bowl._can_drop_data(Vector2.ZERO,result)); bench.gesture(Vector2(0,40))
+	assert(not bowl._can_drop_data(Vector2.ZERO,result)); bench.transform()
 	assert(game.inventory.sunfruit==1 and game.inventory.raw_sunfruit==2 and bench.crop=="")
 	assert(not bowl._can_drop_data(Vector2.ZERO,result))
 	await process_frame
-	assert("2 bruts" in bench.cells.sunfruit.label.text and game.ui.page=="cookwrap")
+	assert("BRUT · 2" in bench.cells.sunfruit.label.text and game.ui.page=="cookwrap")
 	var kitchen=find_kitchen(game.ui)
 	assert(kitchen!=null and kitchen.compact)
-	assert(kitchen.stocks[1].text=="TOMATE × 1" and kitchen.icons[1].modulate.a==1.0)
+	assert(kitchen.stocks[1].text=="TOMATE PRÊT × 1" and kitchen.icons[1].modulate.a==1.0)
 	for id in PREP.TOOLS:
 		game.inventory["raw_"+id]=1
 		assert(game.prepare_crop(id)); assert(game.inventory["raw_"+id]==0)

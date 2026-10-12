@@ -95,14 +95,14 @@ class Kitchen extends VBoxContainer:
 					if id not in allowed: allowed.append(id)
 		chosen=ui.get_meta("composition_"+kind,[]).filter(func(id): return id in allowed)
 		add_theme_constant_override("separation",8)
-		for i in range(game.sheet.ingredients.size()): textures.append(preload("res://visual_library.gd").food(i))
+		for i in range(game.sheet.ingredients.size()): textures.append(preload("res://ingredient_prep.gd").prepared_texture(i))
 		var list=GridContainer.new()
 		list.columns=3 if compact else 6
 		list.add_theme_constant_override("separation",5)
 		add_child(list)
 		for item in game.sheet.ingredients:
 			if item.id not in allowed: continue
-			var label=ui.label(item.short_name+" × "+str(game.inventory[item.id]),13)
+			var label=ui.label(item.short_name+" PRÊT × "+str(game.inventory[item.id]),12)
 			label.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 			label.custom_minimum_size.y=26
 			label.tooltip_text=item.name+" préparé · bruts : "+str(game.inventory.get("raw_"+item.id,0))
@@ -238,7 +238,7 @@ class Kitchen extends VBoxContainer:
 			var id: String=shown[i]
 			icons[i].modulate=Color(1,1,1,0.25) if id in chosen or game.inventory[id]<1 else Color.WHITE
 			icons[i].queue_redraw()
-			stocks[i].text=game.ingredient(id).short_name+" × "+str(game.inventory[id])
+			stocks[i].text=game.ingredient(id).short_name+" PRÊT × "+str(game.inventory[id])
 		var order_entry: Dictionary=game.tables.person(game.tables.selected)
 		if not order_entry.is_empty():
 			var needed: Array=game.recipe(int(order_entry.recipe)).ingredients
