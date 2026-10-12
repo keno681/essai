@@ -22,15 +22,15 @@ func run() -> void:
 	var board: Control=bench.board
 	var raw={"bench":bench,"type":"raw","id":"sunfruit"}
 	assert(board._can_drop_data(Vector2.ZERO,raw)); board._drop_data(Vector2.ZERO,raw)
-	bench.use_tool("press"); bench.gesture(Vector2(40,0)); assert(not bench.processed and bench.progress==0)
+	bench.gesture(Vector2(1,1)); assert(not bench.processed and bench.progress==0)
 	assert(board._get_drag_data(Vector2.ZERO)==null)
 	var knife={"bench":bench,"type":"tool","id":"knife"}
 	assert(board._can_drop_data(Vector2.ZERO,knife)); board._drop_data(Vector2.ZERO,knife)
-	for i in range(4): bench.gesture(Vector2(0,40))
-	assert(bench.processed and game.inventory.sunfruit==0)
+	for i in range(2): bench.gesture(Vector2(0,40))
+	assert(not bench.processed and game.inventory.sunfruit==0)
 	var bowl: Control=bench.bowl
 	var result={"bench":bench,"type":"processed","id":"sunfruit"}
-	assert(bowl._can_drop_data(Vector2.ZERO,result)); bowl._drop_data(Vector2.ZERO,result)
+	assert(not bowl._can_drop_data(Vector2.ZERO,result)); bench.gesture(Vector2(0,40))
 	assert(game.inventory.sunfruit==1 and game.inventory.raw_sunfruit==2 and bench.crop=="")
 	assert(not bowl._can_drop_data(Vector2.ZERO,result))
 	await process_frame
