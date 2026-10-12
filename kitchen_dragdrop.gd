@@ -6,6 +6,16 @@ static func icon(index: int) -> AtlasTexture:
 class Food extends TextureRect:
 	var view: Node
 	var id: String
+	func _draw() -> void:
+		var entry: Dictionary=view.game.tables.person(view.game.tables.selected)
+		if not entry.is_empty() and id in view.game.recipe(int(entry.recipe)).ingredients:
+			draw_rect(Rect2(Vector2(2,2),size-Vector2(4,4)),Color("69e7bc") if id in view.chosen else Color("f1c96a"),false,2)
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and not event.pressed and event.button_index==MOUSE_BUTTON_LEFT and not get_viewport().gui_is_dragging():
+			if view.game.holding<0 and view.game.inventory.get(id,0)>0 and id not in view.chosen:
+				view.chosen.append(id); view.positions[id]=view.plate.size*0.5+Vector2((view.chosen.size()%3-1)*35,(floori(view.chosen.size()/3.0)-0.5)*26)
+				view.game.play_sound(520); view.refresh()
+			accept_event()
 	func _get_drag_data(_at: Vector2):
 		if view.game.holding>=0 or view.game.inventory[id]<1 or id in view.chosen: return null
 		var preview=TextureRect.new()
@@ -216,7 +226,7 @@ class Kitchen extends VBoxContainer:
 			var required: Array=recipe.ingredients.duplicate()
 			required.sort()
 			if required==target: match_index=i; break
-		caption.text="Glisse les ingrédients de la table dans le wrap." if kind=="wrap" else "Glisse les ingrédients dans le verre."
+		caption.text="Clique ou glisse les ingrédients prêts dans le wrap." if kind=="wrap" else "Clique ou glisse les ingrédients prêts dans le verre."
 		if game.holding>=0: caption.text="Tu portes déjà une commande : sers-la ou jette-la avant de cuisiner."
 		elif match_index>=0:
 			caption.text=game.recipe(match_index).name
@@ -227,7 +237,15 @@ class Kitchen extends VBoxContainer:
 		for i in range(icons.size()):
 			var id: String=shown[i]
 			icons[i].modulate=Color(1,1,1,0.25) if id in chosen or game.inventory[id]<1 else Color.WHITE
+			icons[i].queue_redraw()
 			stocks[i].text=game.ingredient(id).short_name+" × "+str(game.inventory[id])
+		var order_entry: Dictionary=game.tables.person(game.tables.selected)
+		if not order_entry.is_empty():
+			var needed: Array=game.recipe(int(order_entry.recipe)).ingredients
+			var done=0
+			for id in needed:
+				if id in chosen: done+=1
+			caption.text="TABLE %d · %d/%d ingrédients · %s" % [order_entry.table,done,needed.size(),"PRÊT À ROULER !" if done==needed.size() and chosen.size()==needed.size() else "compose la commande"]
 		plate.queue_redraw()
 
 static func build(ui: Node, box: VBoxContainer, kind: String) -> void:

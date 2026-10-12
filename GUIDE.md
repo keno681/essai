@@ -132,3 +132,7 @@ Une nouvelle partie commence au **jour 1 avec exactement cinq clients**, qui com
 Le HUD indique le jour et le nombre de clients traités. Après les cinq accueils, les arrivées s’arrêtent ; une mauvaise commande ou un client renvoyé compte aussi parmi les cinq voyageurs. Le bilan s’ouvre lorsque toutes les commandes sont traitées et les clients partis. Le bouton JOUR SUIVANT conserve stocks, graines, argent et améliorations. Le jour 2 accueille huit clients ; les jours suivants augmentent progressivement jusqu’à douze.
 
 Jour, compteurs et guide sont sauvegardés et synchronisés en coop. Les anciennes parties déjà avancées sont conservées et passent au jour 2 ; **NOUVEAU SERVICE** démarre une nouvelle partie au jour 1. Applique `Jour-1-Tutoriel-Pokeball.json` hors ligne sur les deux PC avant de reconnecter : protocole coop 7.
+
+### Cuisine plus ludique
+
+Clique une récolte brute, puis trois fois sur la planche : trois gestes sonores la traitent et la rangent automatiquement dans les ingrédients prêts. Le bon ustensile est indiqué sur la planche. Cliquer directement le bon ustensile permet aussi de traiter ; le glisser-déposer historique reste disponible. Clique ou glisse ensuite les ingrédients prêts dans le wrap ou le verre. Les ingrédients de la commande sont encadrés, le compteur indique la progression et les ingrédients ajoutés sont marqués en vert. Aucun délai artificiel, aucune clé API ; stocks et protection contre les traitements concurrents restent partagés en coop.
