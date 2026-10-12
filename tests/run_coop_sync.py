@@ -16,7 +16,7 @@ for failure,drinks,seeds in modes:
     if not src.is_file() or rel.parts[0] in skip or any(x.startswith('.') for x in rel.parts) or src.suffix not in allowed: continue
     dst=pack/'game'/rel; dst.parent.mkdir(parents=True,exist_ok=True);dst.write_bytes(src.read_bytes())
    updates=[]
-   if drinks or seeds: updates.extend(['Cuisine-Fun-Pokeball.json','Jour-1-Tutoriel-Pokeball.json','Cuisine-Unifiee-Pokeball.json','Poubelle-Gauche-Pokeball.json','Poubelle-Pokeball.json','Table-Travail-Pokeball.json','Recolte-Directe-Pokeball.json','Tickets-Comptoir-Pokeball.json','Tables-Commandes-Pokeball.json','Cuisine-Definitive-Pokeball.json','Commande-Furie-Pokeball.json','Graines-Pokeball.json'])
+   if drinks or seeds: updates.extend(['Grand-Plan-Travail-Pokeball.json','Cuisine-Fun-Pokeball.json','Jour-1-Tutoriel-Pokeball.json','Cuisine-Unifiee-Pokeball.json','Poubelle-Gauche-Pokeball.json','Poubelle-Pokeball.json','Table-Travail-Pokeball.json','Recolte-Directe-Pokeball.json','Tickets-Comptoir-Pokeball.json','Tables-Commandes-Pokeball.json','Cuisine-Definitive-Pokeball.json','Commande-Furie-Pokeball.json','Graines-Pokeball.json'])
    if drinks: updates.append('Ingredients-Boissons-Pokeball.json')
    for name in updates:
     update=json.loads((root/'downloads'/name).read_text())

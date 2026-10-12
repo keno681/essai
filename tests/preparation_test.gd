@@ -22,18 +22,19 @@ func run() -> void:
 	var board: Control=bench.board
 	var raw={"bench":bench,"type":"raw","id":"sunfruit"}
 	assert(board._can_drop_data(Vector2.ZERO,raw)); board._drop_data(Vector2.ZERO,raw)
-	assert(not board._can_drop_data(Vector2.ZERO,{"bench":bench,"type":"tool","id":"press"}))
+	bench.use_tool("press"); bench.gesture(Vector2(40,0)); assert(not bench.processed and bench.progress==0)
 	assert(board._get_drag_data(Vector2.ZERO)==null)
 	var knife={"bench":bench,"type":"tool","id":"knife"}
 	assert(board._can_drop_data(Vector2.ZERO,knife)); board._drop_data(Vector2.ZERO,knife)
+	for i in range(4): bench.gesture(Vector2(0,40))
 	assert(bench.processed and game.inventory.sunfruit==0)
-	var bowl: Control=board.get_parent().get_child(1)
+	var bowl: Control=bench.bowl
 	var result={"bench":bench,"type":"processed","id":"sunfruit"}
 	assert(bowl._can_drop_data(Vector2.ZERO,result)); bowl._drop_data(Vector2.ZERO,result)
 	assert(game.inventory.sunfruit==1 and game.inventory.raw_sunfruit==2 and bench.crop=="")
 	assert(not bowl._can_drop_data(Vector2.ZERO,result))
 	await process_frame
-	assert("1 prêts" in bench.cells.sunfruit.label.text and game.ui.page=="cookwrap")
+	assert("2 bruts" in bench.cells.sunfruit.label.text and game.ui.page=="cookwrap")
 	var kitchen=find_kitchen(game.ui)
 	assert(kitchen!=null and kitchen.compact)
 	assert(kitchen.stocks[1].text=="TOMATE × 1" and kitchen.icons[1].modulate.a==1.0)
